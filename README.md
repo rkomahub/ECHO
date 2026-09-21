@@ -17,6 +17,24 @@ ECHO aims to provide reusable tools to:
 - study spin-spin interactions, crosstalk, and noise;
 - perform reproducible simulations through a Python API and a command-line interface.
 
+## Installation
+
+ECHO requires Python 3.9 or newer.
+
+Create and activate a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Install the library in editable mode:
+
+```bash
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
 ## Development philosophy
 
 The project is developed progressively. Simple physical models are used first to validate the numerical and software framework before more complex models are introduced.
