@@ -17,3 +17,16 @@ For a system containing \(N\) subsystems, the total Hilbert-space dimension is
 \]
 
 The implementation supports both identical-spin and mixed-spin systems.
+
+## operators.py
+
+For a spin \(s\), the library constructs the angular-momentum operators \(S_x\), \(S_y\), and \(S_z\).
+
+A local operator acting on subsystem \(i\) is embedded into the composite Hilbert space as
+
+\[
+O_i =
+I_1 \otimes \cdots \otimes O \otimes \cdots \otimes I_N
+\]
+
+This allows operators to act on arbitrary subsystems in both uniform-spin and mixed-spin systems.
