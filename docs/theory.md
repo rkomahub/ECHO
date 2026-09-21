@@ -20,9 +20,7 @@ The implementation supports both identical-spin and mixed-spin systems.
 
 ## operators.py
 
-For a spin \(s\), the library constructs the angular-momentum operators \(S_x\), \(S_y\), and \(S_z\).
-
-A local operator acting on subsystem \(i\) is embedded into the composite Hilbert space as
+For a spin \(s\), the library constructs the angular-momentum operators \(S_x\), \(S_y\), and \(S_z\). A local operator acting on subsystem \(i\) is embedded into the composite Hilbert space as
 
 \[
 O_i =
