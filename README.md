@@ -35,6 +35,20 @@ python -m pip install --upgrade pip
 python -m pip install -e .
 ```
 
+### Development installation
+
+To install ECHO together with the dependencies required for testing, use:
+
+```bash
+python -m pip install -e ".[test]"
+```
+
+Run the test suite with:
+
+```bash
+pytest
+```
+
 ## Development philosophy
 
 The project is developed progressively. Simple physical models are used first to validate the numerical and software framework before more complex models are introduced.
