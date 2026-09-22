@@ -56,3 +56,18 @@ Q I_z^2
 \]
 
 where \(Q\) is the nuclear quadrupole parameter and \(\boldsymbol{\omega}_{n}\) is the nuclear Larmor-frequency vector.
+
+### Hyperfine interaction
+
+The interaction between the NV electronic spin and the \(^{14}\mathrm N\) nuclear spin is implemented as
+
+\[
+H_{\mathrm{hf}}
+=
+\mathbf S\cdot A\cdot\mathbf I
+=
+\sum_{\alpha,\beta}
+S_\alpha A_{\alpha\beta}I_\beta
+\]
+
+where \(A\) is the \(3\times3\) hyperfine tensor.
