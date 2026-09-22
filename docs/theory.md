@@ -168,3 +168,27 @@ The geometry of an NV register can be specified through the NV positions. From t
 \[
 J_{ij} \propto \frac{1}{r_{ij}^{3}}
 \]
+
+## frames.py
+
+Cartesian frame rotations are represented by three-dimensional rotation matrices.
+
+For a rotation by an angle \(\beta\) around the \(y\) axis,
+
+\[
+R_y(\beta)
+=
+\begin{pmatrix}
+\cos\beta & 0 & \sin\beta\\
+0 & 1 & 0\\
+-\sin\beta & 0 & \cos\beta
+\end{pmatrix}
+\]
+
+A vector transforms as
+
+\[
+\mathbf v' = R\mathbf v
+\]
+
+This machinery is used to express magnetic fields and NV axes in local crystal frames.
