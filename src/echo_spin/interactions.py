@@ -72,3 +72,54 @@ def dipolar_interaction(
         scalar_product
         - 3 * projection_i * projection_j
     )
+
+def dipolar_geometry(
+    positions,
+    coupling_prefactor: float,
+):
+    """Compute pairwise dipolar couplings and directions from positions.
+
+    Parameters
+    ----------
+    positions : array-like
+        Cartesian positions with shape (N, 3).
+    coupling_prefactor : float
+        Constant C defining J_ij = C / r_ij^3.
+
+    Returns
+    -------
+    couplings : ndarray
+        NxN matrix of dipolar coupling strengths.
+    directions : ndarray
+        NxNx3 array of unit vectors pointing from i to j.
+    """
+    positions = np.asarray(positions, dtype=float)
+
+    if positions.ndim != 2 or positions.shape[1] != 3:
+        raise ValueError("positions must have shape (N, 3).")
+
+    number_of_spins = len(positions)
+
+    couplings = np.zeros((number_of_spins, number_of_spins))
+    directions = np.zeros((number_of_spins, number_of_spins, 3))
+
+    for i in range(number_of_spins):
+        for j in range(i + 1, number_of_spins):
+            displacement = positions[j] - positions[i]
+            distance = np.linalg.norm(displacement)
+
+            if np.isclose(distance, 0.0):
+                raise ValueError(
+                    "Two spins cannot occupy the same position."
+                )
+
+            direction = displacement / distance
+            coupling = coupling_prefactor / distance**3
+
+            couplings[i, j] = coupling
+            couplings[j, i] = coupling
+
+            directions[i, j] = direction
+            directions[j, i] = -direction
+
+    return couplings, directions
