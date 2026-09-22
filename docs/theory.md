@@ -226,3 +226,14 @@ ECHO associates dressed eigenstates with these spin labels by maximizing
 their overlap with the bare spin-1 basis. This defines the ordering used
 to construct the dressed operators \(\widetilde S_x\),
 \(\widetilde S_y\), and \(\widetilde S_z\).
+
+### Secular dipolar interaction
+
+The dipole-dipole interaction is expressed in the product basis of the
+dressed electronic eigenstates.
+
+When the dipolar coupling is much smaller than the electronic transition
+frequencies, rapidly oscillating off-diagonal terms are neglected.
+
+The secular interaction is therefore obtained by retaining the diagonal
+part of the dipolar Hamiltonian in the dressed basis.
