@@ -85,3 +85,25 @@ H_{\mathrm n}
 +
 H_{\mathrm{hf}}
 \]
+
+### NV register
+
+A register containing \(N\) NV centers is represented using the subsystem ordering
+
+\[
+(S_0,I_0,S_1,I_1,\ldots,S_{N-1},I_{N-1})
+\]
+
+The Hamiltonian of the non-interacting register is
+
+\[
+H_{\mathrm{register}}
+=
+\sum_{i=0}^{N-1}H_{\mathrm{NV}}^{(i)}
+\]
+
+For \(^{14}\mathrm{NV}\), every electronic and nuclear subsystem has spin 1, giving total Hilbert-space dimension
+
+\[
+\dim\mathcal H = 3^{2N}=9^N
+\]
