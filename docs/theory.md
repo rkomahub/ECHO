@@ -153,7 +153,7 @@ Given spin positions \(\mathbf r_i\), the relative direction and coupling are ca
 {|\mathbf r_j-\mathbf r_i|}
 \]
 
-and
+and for a user-defined coupling prefactor  \(C\) 
 
 \[
 J_{ij}
@@ -161,4 +161,10 @@ J_{ij}
 \frac{C}{|\mathbf r_j-\mathbf r_i|^3}
 \]
 
-where \(C\) is a user-defined coupling prefactor.
+### Position-based NV interactions
+
+The geometry of an NV register can be specified through the NV positions. From the positions, ECHO computes the relative directions and dipolar couplings automatically using the inverse-cube dependence
+
+\[
+J_{ij} \propto \frac{1}{r_{ij}^{3}}
+\]
