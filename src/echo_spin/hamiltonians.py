@@ -1,10 +1,10 @@
+import numpy as np
 from collections.abc import Sequence
 
 from qutip import Qobj
 
 from echo_spin.operators import embed_operator, spin_operators
 from echo_spin.system import SpinSystem
-
 
 def electronic_nv_hamiltonian(
     system: SpinSystem,
@@ -98,3 +98,63 @@ def nuclear_nv_hamiltonian(
         + omega_z * iz
     )
 
+def hyperfine_hamiltonian(
+    system: SpinSystem,
+    electron_site: int,
+    nuclear_site: int,
+    A: Sequence[Sequence[float]],
+) -> Qobj:
+    """Construct the electron-nuclear hyperfine Hamiltonian.
+
+    The Hamiltonian is
+
+        H_hf = sum_{a,b} S_a A_ab I_b
+
+    where A is the 3x3 hyperfine tensor.
+    """
+    if electron_site == nuclear_site:
+        raise ValueError(
+            "Electron and nuclear spins must occupy different sites."
+        )
+
+    if system.spins[electron_site] != 1:
+        raise ValueError(
+            "An NV electronic spin must have spin quantum number 1."
+        )
+
+    if system.spins[nuclear_site] != 1:
+        raise ValueError(
+            "A 14N nuclear spin must have spin quantum number 1."
+        )
+
+    A = np.asarray(A, dtype=float)
+
+    if A.shape != (3, 3):
+        raise ValueError("The hyperfine tensor A must have shape (3, 3).")
+
+    sx, sy, sz = spin_operators(1)
+    ix, iy, iz = spin_operators(1)
+
+    electron_operators = [
+        embed_operator(sx, electron_site, system),
+        embed_operator(sy, electron_site, system),
+        embed_operator(sz, electron_site, system),
+    ]
+
+    nuclear_operators = [
+        embed_operator(ix, nuclear_site, system),
+        embed_operator(iy, nuclear_site, system),
+        embed_operator(iz, nuclear_site, system),
+    ]
+
+    hamiltonian = 0
+
+    for alpha in range(3):
+        for beta in range(3):
+            hamiltonian += (
+                A[alpha, beta]
+                * electron_operators[alpha]
+                * nuclear_operators[beta]
+            )
+
+    return hamiltonian

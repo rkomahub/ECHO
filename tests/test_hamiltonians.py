@@ -4,7 +4,9 @@ import pytest
 from echo_spin.hamiltonians import (
     electronic_nv_hamiltonian,
     nuclear_nv_hamiltonian,
+    hyperfine_hamiltonian,
 )
+from echo_spin.operators import embed_operator, spin_operators
 from echo_spin.system import SpinSystem
 
 
@@ -197,4 +199,100 @@ def test_omega_n_requires_three_components():
             nuclear_site=0,
             Q=1.0,
             omega_n=(0.0, 0.0),
+        )
+
+def test_hyperfine_hamiltonian_dimension():
+    """Electron-nuclear hyperfine interaction should act on the full space."""
+    system = SpinSystem([1, 1])
+
+    A = np.eye(3)
+
+    hamiltonian = hyperfine_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        A=A,
+    )
+
+    assert hamiltonian.shape == (9, 9)
+
+
+def test_zero_hyperfine_tensor_gives_zero_hamiltonian():
+    """A zero hyperfine tensor should produce the zero operator."""
+    system = SpinSystem([1, 1])
+
+    A = np.zeros((3, 3))
+
+    hamiltonian = hyperfine_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        A=A,
+    )
+
+    assert np.allclose(
+        hamiltonian.full(),
+        np.zeros((9, 9)),
+    )
+
+
+def test_isotropic_hyperfine_interaction():
+    """For A = a I, the interaction should be a S dot I."""
+    system = SpinSystem([1, 1])
+
+    a = 2.0
+    A = a * np.eye(3)
+
+    hamiltonian = hyperfine_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        A=A,
+    )
+
+    sx, sy, sz = spin_operators(1)
+
+    sx_e = embed_operator(sx, 0, system)
+    sy_e = embed_operator(sy, 0, system)
+    sz_e = embed_operator(sz, 0, system)
+
+    sx_n = embed_operator(sx, 1, system)
+    sy_n = embed_operator(sy, 1, system)
+    sz_n = embed_operator(sz, 1, system)
+
+    expected = a * (
+        sx_e * sx_n
+        + sy_e * sy_n
+        + sz_e * sz_n
+    )
+
+    assert np.allclose(
+        hamiltonian.full(),
+        expected.full(),
+    )
+
+
+def test_invalid_hyperfine_tensor_shape():
+    """The hyperfine tensor must be a 3x3 matrix."""
+    system = SpinSystem([1, 1])
+
+    with pytest.raises(ValueError):
+        hyperfine_hamiltonian(
+            system=system,
+            electron_site=0,
+            nuclear_site=1,
+            A=np.eye(2),
+        )
+
+
+def test_same_site_hyperfine_interaction_raises_error():
+    """Electron and nucleus must occupy different subsystems."""
+    system = SpinSystem([1])
+
+    with pytest.raises(ValueError):
+        hyperfine_hamiltonian(
+            system=system,
+            electron_site=0,
+            nuclear_site=0,
+            A=np.eye(3),
         )
