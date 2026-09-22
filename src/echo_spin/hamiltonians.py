@@ -57,3 +57,44 @@ def electronic_nv_hamiltonian(
         + omega_y * sy
         + omega_z * sz
     )
+
+def nuclear_nv_hamiltonian(
+    system: SpinSystem,
+    nuclear_site: int,
+    Q: float,
+    omega_n: Sequence[float],
+) -> Qobj:
+    """Construct the nuclear Hamiltonian of an NV center.
+
+    The Hamiltonian is
+
+        H_n = Q Iz^2 + omega_n · I
+
+    where Q is the nuclear quadrupole parameter and omega_n is the
+    nuclear Larmor-frequency vector.
+    """
+    if system.spins[nuclear_site] != 1:
+        raise ValueError(
+            "A 14N nuclear spin must have spin quantum number 1."
+        )
+
+    if len(omega_n) != 3:
+        raise ValueError(
+            "omega_n must contain three Cartesian components."
+        )
+
+    ix, iy, iz = spin_operators(1)
+
+    ix = embed_operator(ix, nuclear_site, system)
+    iy = embed_operator(iy, nuclear_site, system)
+    iz = embed_operator(iz, nuclear_site, system)
+
+    omega_x, omega_y, omega_z = omega_n
+
+    return (
+        Q * iz**2
+        + omega_x * ix
+        + omega_y * iy
+        + omega_z * iz
+    )
+

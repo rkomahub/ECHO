@@ -1,7 +1,10 @@
 import numpy as np
 import pytest
 
-from echo_spin.hamiltonians import electronic_nv_hamiltonian
+from echo_spin.hamiltonians import (
+    electronic_nv_hamiltonian,
+    nuclear_nv_hamiltonian,
+)
 from echo_spin.system import SpinSystem
 
 
@@ -102,4 +105,96 @@ def test_omega_e_requires_three_components():
             electron_site=0,
             D=1.0,
             omega_e=(0.0, 0.0),
+        )
+
+def test_nuclear_nv_hamiltonian_dimension():
+    system = SpinSystem([1])
+
+    hamiltonian = nuclear_nv_hamiltonian(
+        system=system,
+        nuclear_site=0,
+        Q=1.0,
+        omega_n=(0.0, 0.0, 0.0),
+    )
+
+    assert hamiltonian.shape == (3, 3)
+
+
+def test_nuclear_quadrupole_spectrum():
+    system = SpinSystem([1])
+
+    Q = -4.95
+
+    hamiltonian = nuclear_nv_hamiltonian(
+        system=system,
+        nuclear_site=0,
+        Q=Q,
+        omega_n=(0.0, 0.0, 0.0),
+    )
+
+    eigenvalues = np.sort(hamiltonian.eigenenergies())
+
+    expected = np.sort([0.0, Q, Q])
+
+    assert np.allclose(eigenvalues, expected)
+
+
+def test_nuclear_longitudinal_zeeman_splitting():
+    system = SpinSystem([1])
+
+    Q = -4.95
+    omega_z = 0.1
+
+    hamiltonian = nuclear_nv_hamiltonian(
+        system=system,
+        nuclear_site=0,
+        Q=Q,
+        omega_n=(0.0, 0.0, omega_z),
+    )
+
+    eigenvalues = np.sort(hamiltonian.eigenenergies())
+
+    expected = np.sort([
+        0.0,
+        Q - omega_z,
+        Q + omega_z,
+    ])
+
+    assert np.allclose(eigenvalues, expected)
+
+
+def test_nuclear_hamiltonian_embeds_in_larger_system():
+    system = SpinSystem([1, 1])
+
+    hamiltonian = nuclear_nv_hamiltonian(
+        system=system,
+        nuclear_site=1,
+        Q=1.0,
+        omega_n=(0.0, 0.0, 0.0),
+    )
+
+    assert hamiltonian.shape == (9, 9)
+
+
+def test_nuclear_spin_must_be_one():
+    system = SpinSystem([0.5])
+
+    with pytest.raises(ValueError):
+        nuclear_nv_hamiltonian(
+            system=system,
+            nuclear_site=0,
+            Q=1.0,
+            omega_n=(0.0, 0.0, 0.0),
+        )
+
+
+def test_omega_n_requires_three_components():
+    system = SpinSystem([1])
+
+    with pytest.raises(ValueError):
+        nuclear_nv_hamiltonian(
+            system=system,
+            nuclear_site=0,
+            Q=1.0,
+            omega_n=(0.0, 0.0),
         )
