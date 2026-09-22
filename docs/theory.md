@@ -41,4 +41,18 @@ D S_z^2
 \boldsymbol{\omega}_{e}\cdot\mathbf S
 \]
 
-where \(D\) is the zero-field splitting and \(\boldsymbol{\omega}_{e}\) is the electronic Larmor-frequency vector. All quantities appearing in a Hamiltonian must use compatible frequency/energy units. For example, if \(D\) is expressed in GHz, the components of \(\boldsymbol{\omega}_e\) must be expressed in GHz as well The NV electronic ground state is modeled as a spin-1 subsystem.
+where \(D\) is the zero-field splitting and \(\boldsymbol{\omega}_{e}\) is the electronic Larmor-frequency vector. All quantities appearing in a Hamiltonian must use compatible frequency/energy units. For example, if \(D\) is expressed in GHz, the components of \(\boldsymbol{\omega}_e\) must be expressed in GHz as well. The NV electronic ground state is modeled as a spin-1 subsystem.
+
+### Nuclear contribution
+
+The \(^{14}\mathrm N\) nuclear spin is modeled as \(I=1\), with Hamiltonian
+
+\[
+H_{\mathrm n}
+=
+Q I_z^2
++
+\boldsymbol{\omega}_{n}\cdot\mathbf I
+\]
+
+where \(Q\) is the nuclear quadrupole parameter and \(\boldsymbol{\omega}_{n}\) is the nuclear Larmor-frequency vector.
