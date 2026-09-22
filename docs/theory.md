@@ -202,3 +202,17 @@ For an NV whose local crystal frame is rotated by an angle \(\beta\), laboratory
 \]
 
 The standard NV Hamiltonian can then be evaluated directly using the rotated magnetic-field vector.
+
+## basis.py
+
+The electronic Hamiltonian is diagonalized to obtain its energy eigenstates.
+
+Given a unitary matrix \(U\) whose columns are an ordered set of dressed eigenstates, the dressed spin operators are defined as
+
+\[
+\widetilde S_\alpha
+=
+U S_\alpha U^\dagger
+\]
+
+so that they have the usual spin-matrix representation in the dressed basis.
