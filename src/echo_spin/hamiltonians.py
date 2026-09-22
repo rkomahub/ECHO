@@ -11,7 +11,7 @@ def electronic_nv_hamiltonian(
     electron_site: int,
     D: float,
     omega_e: Sequence[float],
-    ) -> Qobj:
+) -> Qobj:
     """Construct the electronic Hamiltonian of an NV center.
 
     The Hamiltonian is
@@ -158,3 +158,46 @@ def hyperfine_hamiltonian(
             )
 
     return hamiltonian
+
+def nv_hamiltonian(
+    system: SpinSystem,
+    electron_site: int,
+    nuclear_site: int,
+    D: float,
+    omega_e: Sequence[float],
+    Q: float,
+    omega_n: Sequence[float],
+    A: Sequence[Sequence[float]],
+) -> Qobj:
+    """Construct the complete single-NV Hamiltonian.
+
+    The Hamiltonian is
+
+        H_0 = H_e + H_n + H_hf
+
+    with
+
+        H_e  = D Sz^2 + omega_e · S
+        H_n  = Q Iz^2 + omega_n · I
+        H_hf = S · A · I
+    """
+    return (
+        electronic_nv_hamiltonian(
+            system=system,
+            electron_site=electron_site,
+            D=D,
+            omega_e=omega_e,
+        )
+        + nuclear_nv_hamiltonian(
+            system=system,
+            nuclear_site=nuclear_site,
+            Q=Q,
+            omega_n=omega_n,
+        )
+        + hyperfine_hamiltonian(
+            system=system,
+            electron_site=electron_site,
+            nuclear_site=nuclear_site,
+            A=A,
+        )
+    )

@@ -5,6 +5,7 @@ from echo_spin.hamiltonians import (
     electronic_nv_hamiltonian,
     nuclear_nv_hamiltonian,
     hyperfine_hamiltonian,
+    nv_hamiltonian,
 )
 from echo_spin.operators import embed_operator, spin_operators
 from echo_spin.system import SpinSystem
@@ -296,3 +297,70 @@ def test_same_site_hyperfine_interaction_raises_error():
             nuclear_site=0,
             A=np.eye(3),
         )
+
+def test_complete_nv_hamiltonian_dimension():
+    """A complete electron+nucleus NV Hamiltonian should act on a 9D space."""
+    system = SpinSystem([1, 1])
+
+    hamiltonian = nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        D=2.87,
+        omega_e=(0.0, 0.0, 0.1),
+        Q=-4.95,
+        omega_n=(0.0, 0.0, 0.01),
+        A=np.eye(3),
+    )
+
+    assert hamiltonian.shape == (9, 9)
+
+
+def test_complete_nv_hamiltonian_equals_sum_of_terms():
+    """The complete NV Hamiltonian should equal He + Hn + Hhf."""
+    system = SpinSystem([1, 1])
+
+    D = 2.87
+    omega_e = (0.0, 0.0, 0.1)
+
+    Q = -4.95
+    omega_n = (0.0, 0.0, 0.01)
+
+    A = np.diag([0.2, 0.2, 0.3])
+
+    complete = nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        D=D,
+        omega_e=omega_e,
+        Q=Q,
+        omega_n=omega_n,
+        A=A,
+    )
+
+    expected = (
+        electronic_nv_hamiltonian(
+            system=system,
+            electron_site=0,
+            D=D,
+            omega_e=omega_e,
+        )
+        + nuclear_nv_hamiltonian(
+            system=system,
+            nuclear_site=1,
+            Q=Q,
+            omega_n=omega_n,
+        )
+        + hyperfine_hamiltonian(
+            system=system,
+            electron_site=0,
+            nuclear_site=1,
+            A=A,
+        )
+    )
+
+    assert np.allclose(
+        complete.full(),
+        expected.full(),
+    )
