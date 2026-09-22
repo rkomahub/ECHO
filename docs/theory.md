@@ -237,3 +237,18 @@ frequencies, rapidly oscillating off-diagonal terms are neglected.
 
 The secular interaction is therefore obtained by retaining the diagonal
 part of the dipolar Hamiltonian in the dressed basis.
+
+### Effective dressed-spin coupling
+
+After the secular approximation, the interaction is projected onto the
+longitudinal dressed-spin operator
+
+\[
+\widetilde S'_{z,1}\widetilde S_{z,2}
+\]
+
+to extract the effective coupling \(g\).
+
+The residual between the complete secular Hamiltonian and the effective
+\(ZZ\)-type interaction is retained to quantify the validity of the
+approximation.
