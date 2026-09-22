@@ -158,3 +158,46 @@ def secular_interaction(
         secular_dressed,
         dressed_basis,
     )
+
+
+def extract_effective_zz_coupling(
+    secular_hamiltonian: Qobj,
+    sz_i: Qobj,
+    sz_j: Qobj,
+) -> tuple[complex, Qobj]:
+    """Project a secular interaction onto an effective Sz_i Sz_j coupling.
+
+    Returns
+    -------
+    coupling : complex
+        Effective coupling strength g.
+    residual : Qobj
+        Difference between the secular Hamiltonian and g Sz_i Sz_j.
+    """
+    zz_operator = sz_i * sz_j
+
+    numerator = (zz_operator.dag() * secular_hamiltonian).tr()
+    denominator = (zz_operator.dag() * zz_operator).tr()
+
+    if np.isclose(denominator, 0.0):
+        raise ValueError("The effective ZZ operator has zero norm.")
+
+    coupling = numerator / denominator
+
+    effective_hamiltonian = coupling * zz_operator
+    residual = secular_hamiltonian - effective_hamiltonian
+
+    return coupling, residual
+
+
+def relative_operator_residual(
+    operator: Qobj,
+    residual: Qobj,
+) -> float:
+    """Return the relative Hilbert-Schmidt norm of a residual."""
+    norm = operator.norm("fro")
+
+    if np.isclose(norm, 0.0):
+        raise ValueError("Cannot normalize by a zero operator.")
+
+    return residual.norm("fro") / norm

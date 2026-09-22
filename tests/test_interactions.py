@@ -1,15 +1,18 @@
 import numpy as np
 import pytest
 
-from qutip import Qobj, basis, tensor
+from qutip import Qobj, basis, tensor, qeye
 
 from echo_spin.basis import operator_in_basis
 from echo_spin.interactions import (
     dipolar_geometry,
     dipolar_interaction,
     secular_interaction,
+    extract_effective_zz_coupling,
+    relative_operator_residual,
 )
 from echo_spin.system import SpinSystem
+from echo_spin.operators import embed_operator, spin_operators
 
 def test_dipolar_interaction_dimension():
     """The dipolar interaction should act on the full composite Hilbert space."""
@@ -230,3 +233,81 @@ def test_secular_interaction_preserves_diagonal_two_spin_terms():
         off_diagonal,
         np.zeros((9, 9)),
     )
+
+
+def test_extract_effective_zz_coupling():
+    """The projection should recover a known exact ZZ coupling."""
+    system = SpinSystem([1, 1])
+
+    _, _, sz = spin_operators(1)
+
+    sz_1 = embed_operator(sz, 0, system)
+    sz_2 = embed_operator(sz, 1, system)
+
+    expected_coupling = 0.37
+
+    interaction = expected_coupling * sz_1 * sz_2
+
+    coupling, residual = extract_effective_zz_coupling(
+        secular_hamiltonian=interaction,
+        sz_i=sz_1,
+        sz_j=sz_2,
+    )
+
+    assert np.isclose(
+        coupling,
+        expected_coupling,
+    )
+
+    assert np.allclose(
+        residual.full(),
+        np.zeros((9, 9)),
+    )
+
+
+def test_effective_zz_projection_ignores_identity_term():
+    """An identity energy offset should not modify the extracted ZZ coupling."""
+    system = SpinSystem([1, 1])
+
+    _, _, sz = spin_operators(1)
+
+    sz_1 = embed_operator(sz, 0, system)
+    sz_2 = embed_operator(sz, 1, system)
+
+    coupling_expected = 0.42
+
+    interaction = (
+        coupling_expected * sz_1 * sz_2
+        + 3.0 * qeye([3, 3])
+    )
+
+    coupling, _ = extract_effective_zz_coupling(
+        secular_hamiltonian=interaction,
+        sz_i=sz_1,
+        sz_j=sz_2,
+    )
+
+    assert np.isclose(
+        coupling,
+        coupling_expected,
+    )
+
+
+def test_relative_operator_residual_zero_for_exact_match():
+    """An exact effective interaction should have zero relative residual."""
+    system = SpinSystem([1, 1])
+
+    _, _, sz = spin_operators(1)
+
+    sz_1 = embed_operator(sz, 0, system)
+    sz_2 = embed_operator(sz, 1, system)
+
+    interaction = 0.5 * sz_1 * sz_2
+    residual = 0 * interaction
+
+    error = relative_operator_residual(
+        operator=interaction,
+        residual=residual,
+    )
+
+    assert np.isclose(error, 0.0)
