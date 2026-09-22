@@ -3,6 +3,10 @@ from qutip import Qobj
 
 from echo_spin.operators import embed_operator, spin_operators
 from echo_spin.system import SpinSystem
+from echo_spin.basis import (
+    operator_from_basis,
+    operator_in_basis,
+)
 
 
 def dipolar_interaction(
@@ -73,6 +77,7 @@ def dipolar_interaction(
         - 3 * projection_i * projection_j
     )
 
+
 def dipolar_geometry(
     positions,
     coupling_prefactor: float,
@@ -123,3 +128,33 @@ def dipolar_geometry(
             directions[j, i] = -direction
 
     return couplings, directions
+
+
+def secular_interaction(
+    interaction: Qobj,
+    dressed_basis: list[Qobj],
+) -> Qobj:
+    """Return the diagonal secular part of an interaction Hamiltonian.
+
+    The interaction is expressed in the dressed energy basis, all
+    off-diagonal matrix elements are removed, and the result is
+    transformed back to the original representation.
+    """
+    dressed_interaction = operator_in_basis(
+        interaction,
+        dressed_basis,
+    )
+
+    diagonal = np.diag(
+        np.diag(dressed_interaction.full())
+    )
+
+    secular_dressed = Qobj(
+        diagonal,
+        dims=dressed_interaction.dims,
+    )
+
+    return operator_from_basis(
+        secular_dressed,
+        dressed_basis,
+    )

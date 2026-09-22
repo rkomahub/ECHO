@@ -6,9 +6,12 @@ from qutip import Qobj, basis, jmat
 from echo_spin.basis import (
     basis_unitary,
     diagonalize_hamiltonian,
-    dressed_spin_operators,
-    order_states_by_reference,
     dressed_spin_one_basis,
+    dressed_spin_operators,
+    operator_from_basis,
+    operator_in_basis,
+    order_states_by_reference,
+    product_basis,
 )
 
 
@@ -172,3 +175,25 @@ def test_dressed_basis_handles_mixed_spin_states():
         (unitary.dag() * unitary).full(),
         np.eye(3),
     )
+
+
+def test_product_basis_dimension():
+    """Two spin-1 bases should generate nine product states."""
+    basis_a = [
+        basis(3, 0),
+        basis(3, 1),
+        basis(3, 2),
+    ]
+
+    basis_b = [
+        basis(3, 0),
+        basis(3, 1),
+        basis(3, 2),
+    ]
+
+    combined = product_basis(
+        basis_a,
+        basis_b,
+    )
+
+    assert len(combined) == 9

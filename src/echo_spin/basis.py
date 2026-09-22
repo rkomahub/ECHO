@@ -1,5 +1,5 @@
 import numpy as np
-from qutip import Qobj, jmat, basis
+from qutip import Qobj, jmat, basis, tensor
 from itertools import permutations
 
 
@@ -137,3 +137,35 @@ def dressed_spin_one_basis(
         states=eigenstates,
         reference_states=reference_states,
     )
+
+
+def operator_in_basis(
+    operator: Qobj,
+    basis_states: list[Qobj],
+) -> Qobj:
+    """Represent an operator in the supplied orthonormal basis."""
+    unitary = basis_unitary(basis_states)
+
+    return unitary.dag() * operator * unitary
+
+
+def operator_from_basis(
+    operator: Qobj,
+    basis_states: list[Qobj],
+) -> Qobj:
+    """Transform an operator from a supplied basis to the original basis."""
+    unitary = basis_unitary(basis_states)
+
+    return unitary * operator * unitary.dag()
+
+
+def product_basis(
+    basis_a: list[Qobj],
+    basis_b: list[Qobj],
+) -> list[Qobj]:
+    """Construct the tensor-product basis of two subsystems."""
+    return [
+        tensor(state_a, state_b)
+        for state_a in basis_a
+        for state_b in basis_b
+    ]

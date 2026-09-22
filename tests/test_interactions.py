@@ -1,12 +1,15 @@
 import numpy as np
 import pytest
 
+from qutip import Qobj, basis, tensor
+
+from echo_spin.basis import operator_in_basis
 from echo_spin.interactions import (
     dipolar_geometry,
     dipolar_interaction,
+    secular_interaction,
 )
 from echo_spin.system import SpinSystem
-
 
 def test_dipolar_interaction_dimension():
     """The dipolar interaction should act on the full composite Hilbert space."""
@@ -156,4 +159,74 @@ def test_dipolar_geometry_inverse_cube_scaling():
     assert np.isclose(
         couplings_1[0, 1],
         8 * couplings_2[0, 1],
+    )
+
+
+def test_secular_interaction_removes_off_diagonal_terms():
+    """The secular approximation should remove dressed-basis transitions."""
+    dressed_basis = [
+        basis(2, 0),
+        basis(2, 1),
+    ]
+
+    interaction = Qobj([
+        [1.0, 0.5],
+        [0.5, 2.0],
+    ])
+
+    secular = secular_interaction(
+        interaction=interaction,
+        dressed_basis=dressed_basis,
+    )
+
+    expected = np.diag([1.0, 2.0])
+
+    assert np.allclose(
+        secular.full(),
+        expected,
+    )
+
+
+def test_secular_interaction_preserves_diagonal_two_spin_terms():
+    """Interactions diagonal in the dressed product basis should be unchanged."""
+    single_basis = [
+        basis(3, 0),
+        basis(3, 1),
+        basis(3, 2),
+    ]
+
+    dressed_basis = [
+        tensor(a, b)
+        for a in single_basis
+        for b in single_basis
+    ]
+
+    system = SpinSystem([1, 1])
+
+    interaction = dipolar_interaction(
+        system=system,
+        site_i=0,
+        site_j=1,
+        coupling=1.0,
+        direction=(0.0, 0.0, 1.0),
+    )
+
+    secular = secular_interaction(
+        interaction=interaction,
+        dressed_basis=dressed_basis,
+    )
+
+    dressed_matrix = operator_in_basis(
+        secular,
+        dressed_basis,
+    ).full()
+
+    off_diagonal = (
+        dressed_matrix
+        - np.diag(np.diag(dressed_matrix))
+    )
+
+    assert np.allclose(
+        off_diagonal,
+        np.zeros((9, 9)),
     )
