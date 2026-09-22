@@ -192,3 +192,13 @@ A vector transforms as
 \]
 
 This machinery is used to express magnetic fields and NV axes in local crystal frames.
+
+### Misaligned NV frames
+
+For an NV whose local crystal frame is rotated by an angle \(\beta\), laboratory-frame vectors are transformed into the local frame as
+
+\[
+\mathbf v' = R(-\beta)\mathbf v
+\]
+
+The standard NV Hamiltonian can then be evaluated directly using the rotated magnetic-field vector.
