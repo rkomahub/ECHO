@@ -1,5 +1,6 @@
 import numpy as np
-from qutip import Qobj, jmat
+from qutip import Qobj, jmat, basis
+from itertools import permutations
 
 
 def diagonalize_hamiltonian(
@@ -75,4 +76,64 @@ def dressed_spin_operators(
         unitary * sx * unitary.dag(),
         unitary * sy * unitary.dag(),
         unitary * sz * unitary.dag(),
+    )
+
+
+def order_states_by_reference(
+    states: list[Qobj],
+    reference_states: list[Qobj],
+) -> list[Qobj]:
+    """Order eigenstates by maximum overlap with a reference basis.
+
+    The returned states follow the ordering of reference_states.
+    """
+    if len(states) != len(reference_states):
+        raise ValueError(
+            "states and reference_states must have the same length."
+        )
+
+    number_of_states = len(states)
+
+    best_score = -1.0
+    best_order = None
+
+    for permutation in permutations(range(number_of_states)):
+        score = 0.0
+
+        for reference_index, state_index in enumerate(permutation):
+            overlap = reference_states[reference_index].overlap(
+                states[state_index]
+            )
+
+            score += abs(overlap) ** 2
+
+        if score > best_score:
+            best_score = score
+            best_order = permutation
+
+    return [
+        states[index]
+        for index in best_order
+    ]
+
+
+def dressed_spin_one_basis(
+    hamiltonian: Qobj,
+) -> list[Qobj]:
+    """Return spin-1 eigenstates ordered as +1, 0, -1.
+
+    The Hamiltonian eigenstates are matched to the bare spin-1 basis
+    by maximizing their total overlap.
+    """
+    _, eigenstates = diagonalize_hamiltonian(hamiltonian)
+
+    reference_states = [
+        basis(3, 0),  # |+1>
+        basis(3, 1),  # |0>
+        basis(3, 2),  # |-1>
+    ]
+
+    return order_states_by_reference(
+        states=eigenstates,
+        reference_states=reference_states,
     )
