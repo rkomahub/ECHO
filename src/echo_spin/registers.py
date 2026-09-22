@@ -5,13 +5,18 @@ from qutip import Qobj
 
 from echo_spin.hamiltonians import nv_hamiltonian
 from echo_spin.system import SpinSystem
-from echo_spin.interactions import dipolar_interaction
+from echo_spin.interactions import (
+    dipolar_geometry,
+    dipolar_interaction,
+)
 
 def nv_register_hamiltonian(
     system: SpinSystem,
     nv_parameters: Sequence[dict],
     dipolar_couplings=None,
     dipolar_directions=None,
+    positions=None,
+    coupling_prefactor=None,
 ) -> Qobj:
     """Construct the Hamiltonian of a register of non-interacting NV centers.
 
@@ -61,6 +66,25 @@ def nv_register_hamiltonian(
             Q=parameters["Q"],
             omega_n=parameters["omega_n"],
             A=parameters["A"],
+        )
+
+    if positions is not None:
+        if coupling_prefactor is None:
+            raise ValueError(
+                "coupling_prefactor must be provided when positions are used."
+            )
+
+        if (
+            dipolar_couplings is not None
+            or dipolar_directions is not None
+        ):
+            raise ValueError(
+                "Provide either positions or explicit dipolar data, not both."
+            )
+
+        dipolar_couplings, dipolar_directions = dipolar_geometry(
+            positions=positions,
+            coupling_prefactor=coupling_prefactor,
         )
 
     if dipolar_couplings is not None or dipolar_directions is not None:

@@ -240,3 +240,102 @@ def test_couplings_without_directions_raise_error():
             nv_parameters=parameters,
             dipolar_couplings=np.zeros((1, 1)),
         )
+
+def test_register_can_build_dipolar_interaction_from_positions():
+    """NV positions should generate the same interaction as explicit geometry."""
+    system = SpinSystem([1, 1, 1, 1])
+
+    parameters = [
+        {
+            "D": 2.87,
+            "omega_e": (0.0, 0.0, 0.1),
+            "Q": -4.95,
+            "omega_n": (0.0, 0.0, 0.01),
+            "A": np.eye(3),
+        },
+        {
+            "D": 2.87,
+            "omega_e": (0.0, 0.0, 0.1),
+            "Q": -4.95,
+            "omega_n": (0.0, 0.0, 0.01),
+            "A": np.eye(3),
+        },
+    ]
+
+    positions = [
+        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 2.0],
+    ]
+
+    automatic = nv_register_hamiltonian(
+        system=system,
+        nv_parameters=parameters,
+        positions=positions,
+        coupling_prefactor=8.0,
+    )
+
+    couplings = np.array([
+        [0.0, 1.0],
+        [1.0, 0.0],
+    ])
+
+    directions = np.zeros((2, 2, 3))
+    directions[0, 1] = [0.0, 0.0, 1.0]
+    directions[1, 0] = [0.0, 0.0, -1.0]
+
+    explicit = nv_register_hamiltonian(
+        system=system,
+        nv_parameters=parameters,
+        dipolar_couplings=couplings,
+        dipolar_directions=directions,
+    )
+
+    assert np.allclose(
+        automatic.full(),
+        explicit.full(),
+    )
+
+def test_positions_require_coupling_prefactor():
+    """Position-based interactions require a coupling prefactor."""
+    system = SpinSystem([1, 1])
+
+    parameters = [
+        {
+            "D": 2.87,
+            "omega_e": (0.0, 0.0, 0.1),
+            "Q": -4.95,
+            "omega_n": (0.0, 0.0, 0.01),
+            "A": np.eye(3),
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        nv_register_hamiltonian(
+            system=system,
+            nv_parameters=parameters,
+            positions=[[0.0, 0.0, 0.0]],
+        )
+
+def test_positions_and_explicit_geometry_cannot_be_mixed():
+    """Automatic and explicit dipolar geometry should be mutually exclusive."""
+    system = SpinSystem([1, 1])
+
+    parameters = [
+        {
+            "D": 2.87,
+            "omega_e": (0.0, 0.0, 0.1),
+            "Q": -4.95,
+            "omega_n": (0.0, 0.0, 0.01),
+            "A": np.eye(3),
+        }
+    ]
+
+    with pytest.raises(ValueError):
+        nv_register_hamiltonian(
+            system=system,
+            nv_parameters=parameters,
+            positions=[[0.0, 0.0, 0.0]],
+            coupling_prefactor=1.0,
+            dipolar_couplings=np.zeros((1, 1)),
+            dipolar_directions=np.zeros((1, 1, 3)),
+        )
