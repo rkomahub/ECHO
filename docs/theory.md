@@ -107,3 +107,21 @@ For \(^{14}\mathrm{NV}\), every electronic and nuclear subsystem has spin 1, giv
 \[
 \dim\mathcal H = 3^{2N}=9^N
 \]
+
+## interactions.py
+
+The magnetic dipole-dipole interaction between two spins is implemented as
+
+\[
+H_{ij}^{\mathrm{dip}}
+=
+J_{ij}
+\left[
+\mathbf S_i\cdot\mathbf S_j
+-
+3(\mathbf S_i\cdot\hat{\mathbf r}_{ij})
+(\mathbf S_j\cdot\hat{\mathbf r}_{ij})
+\right]
+\]
+
+where \(J_{ij}\) is the coupling strength and \(\hat{\mathbf r}_{ij}\) is the unit vector connecting the two spins.
