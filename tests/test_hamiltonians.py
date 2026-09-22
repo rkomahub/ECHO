@@ -5,7 +5,8 @@ from echo_spin.hamiltonians import (
     electronic_nv_hamiltonian,
     nuclear_nv_hamiltonian,
     hyperfine_hamiltonian,
-    nv_hamiltonian
+    nv_hamiltonian,
+    rotated_electronic_nv_hamiltonian
 )
 from echo_spin.operators import embed_operator, spin_operators
 from echo_spin.system import SpinSystem
@@ -362,5 +363,56 @@ def test_complete_nv_hamiltonian_equals_sum_of_terms():
 
     assert np.allclose(
         complete.full(),
+        expected.full(),
+    )
+
+
+def test_zero_rotation_recovers_standard_nv_hamiltonian():
+    """Zero misalignment should reproduce the ordinary NV Hamiltonian."""
+    system = SpinSystem([1])
+
+    standard = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e=(0.1, 0.2, 0.3),
+    )
+
+    rotated = rotated_electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e_lab=(0.1, 0.2, 0.3),
+        axis="y",
+        angle=0.0,
+    )
+
+    assert np.allclose(
+        standard.full(),
+        rotated.full(),
+    )
+
+
+def test_misaligned_nv_rotates_magnetic_field():
+    """A misaligned NV should use the field expressed in its local frame."""
+    system = SpinSystem([1])
+
+    angle = np.pi / 2
+
+    hamiltonian = rotated_electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=0.0,
+        omega_e_lab=(0.0, 0.0, 1.0),
+        axis="y",
+        angle=angle,
+    )
+
+    sx, _, _ = spin_operators(1)
+
+    expected = -sx
+
+    assert np.allclose(
+        hamiltonian.full(),
         expected.full(),
     )

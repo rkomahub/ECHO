@@ -58,3 +58,14 @@ def rotate_vector(
         raise ValueError("rotation must have shape (3, 3).")
 
     return rotation @ vector
+
+
+def rotate_to_local_frame(
+    vector,
+    axis: str,
+    angle: float,
+) -> np.ndarray:
+    """Express a laboratory-frame vector in a rotated local frame."""
+    rotation = rotation_matrix(axis, -angle)
+
+    return rotate_vector(vector, rotation)

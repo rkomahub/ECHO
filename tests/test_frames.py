@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
 
-from echo_spin.frames import rotation_matrix, rotate_vector
+from echo_spin.frames import (
+    rotate_to_local_frame, 
+    rotation_matrix, 
+    rotate_vector,
+)
 
 
 def test_zero_angle_returns_identity():
@@ -64,3 +68,19 @@ def test_invalid_vector_shape_raises_error():
 
     with pytest.raises(ValueError):
         rotate_vector([1.0, 2.0], rotation)
+
+
+def test_rotate_to_local_frame():
+    """The inverse rotation should express a vector in the local frame."""
+    vector = [0.0, 0.0, 1.0]
+
+    local = rotate_to_local_frame(
+        vector=vector,
+        axis="y",
+        angle=np.pi / 2,
+    )
+
+    assert np.allclose(
+        local,
+        [-1.0, 0.0, 0.0],
+    )

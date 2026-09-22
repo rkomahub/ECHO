@@ -5,6 +5,7 @@ from qutip import Qobj
 
 from echo_spin.operators import embed_operator, spin_operators
 from echo_spin.system import SpinSystem
+from echo_spin.frames import rotate_to_local_frame
 
 def electronic_nv_hamiltonian(
     system: SpinSystem,
@@ -200,4 +201,30 @@ def nv_hamiltonian(
             nuclear_site=nuclear_site,
             A=A,
         )
+    )
+
+def rotated_electronic_nv_hamiltonian(
+    system: SpinSystem,
+    electron_site: int,
+    D: float,
+    omega_e_lab: Sequence[float],
+    axis: str,
+    angle: float,
+) -> Qobj:
+    """Construct the NV electronic Hamiltonian in its local crystal frame.
+
+    The laboratory-frame Larmor vector is rotated into the local NV frame
+    before constructing the standard electronic NV Hamiltonian.
+    """
+    omega_e_local = rotate_to_local_frame(
+        vector=omega_e_lab,
+        axis=axis,
+        angle=angle,
+    )
+
+    return electronic_nv_hamiltonian(
+        system=system,
+        electron_site=electron_site,
+        D=D,
+        omega_e=omega_e_local,
     )
