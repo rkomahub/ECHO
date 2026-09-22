@@ -125,3 +125,19 @@ J_{ij}
 \]
 
 where \(J_{ij}\) is the coupling strength and \(\hat{\mathbf r}_{ij}\) is the unit vector connecting the two spins.
+
+### Interacting NV register
+
+The interacting NV-register Hamiltonian is constructed as
+
+\[
+H
+=
+\sum_i H_{\mathrm{NV}}^{(i)}
++
+\sum_{i<j} H_{ij}^{\mathrm{dip}}
+\]
+
+where the dipolar terms currently couple the electronic spins of different NV centers.
+
+Each pair \(i<j\) is included exactly once.
