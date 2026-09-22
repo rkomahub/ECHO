@@ -216,3 +216,13 @@ U S_\alpha U^\dagger
 \]
 
 so that they have the usual spin-matrix representation in the dressed basis.
+
+### Dressed-state ordering
+
+The eigenstates of \(H_e\) are generally mixtures of the bare
+\(|+1\rangle\), \(|0\rangle\), and \(|-1\rangle\) states.
+
+ECHO associates dressed eigenstates with these spin labels by maximizing
+their overlap with the bare spin-1 basis. This defines the ordering used
+to construct the dressed operators \(\widetilde S_x\),
+\(\widetilde S_y\), and \(\widetilde S_z\).
