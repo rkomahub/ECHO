@@ -28,3 +28,17 @@ I_1 \otimes \cdots \otimes O \otimes \cdots \otimes I_N
 \]
 
 This allows operators to act on arbitrary subsystems in both uniform-spin and mixed-spin systems.
+
+## hamiltonians.py
+
+The electronic ground-state Hamiltonian of an NV center is implemented as
+
+\[
+H_{\mathrm e}
+=
+D S_z^2
++
+\boldsymbol{\omega}_{e}\cdot\mathbf S
+\]
+
+where \(D\) is the zero-field splitting and \(\boldsymbol{\omega}_{e}\) is the electronic Larmor-frequency vector. The NV electronic ground state is modeled as a spin-1 subsystem.
