@@ -71,3 +71,17 @@ S_\alpha A_{\alpha\beta}I_\beta
 \]
 
 where \(A\) is the \(3\times3\) hyperfine tensor.
+
+### Complete single-NV Hamiltonian
+
+The complete single-NV Hamiltonian is constructed using the previously defined electronic, nuclear, and hyperfine contributions.
+
+\[
+H_0
+=
+H_{\mathrm e}
++
+H_{\mathrm n}
++
+H_{\mathrm{hf}}
+\]
