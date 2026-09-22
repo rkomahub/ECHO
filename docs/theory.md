@@ -141,3 +141,24 @@ H
 where the dipolar terms currently couple the electronic spins of different NV centers.
 
 Each pair \(i<j\) is included exactly once.
+
+### Dipolar geometry
+
+Given spin positions \(\mathbf r_i\), the relative direction and coupling are calculated as
+
+\[
+\hat{\mathbf r}_{ij}
+=
+\frac{\mathbf r_j-\mathbf r_i}
+{|\mathbf r_j-\mathbf r_i|}
+\]
+
+and
+
+\[
+J_{ij}
+=
+\frac{C}{|\mathbf r_j-\mathbf r_i|^3}
+\]
+
+where \(C\) is a user-defined coupling prefactor.
