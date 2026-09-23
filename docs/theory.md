@@ -274,3 +274,27 @@ The control operator includes both dressed electronic-spin operators and the wea
 =
 \frac{\gamma_n}{\gamma_e}
 \]
+
+## joas.py
+
+The noiseless model is assembled as
+
+\[
+H_{\mathrm{driven}}(t)
+=
+H^{\mathrm{free}}
++
+H^{\mathrm{mw}}(t)
+\]
+
+with
+
+\[
+H^{\mathrm{free}}
+=
+\sum_i H_{\mathrm{NV},i}^{0}
++
+H^{\mathrm{int}}
+\]
+
+where \(H^{\mathrm{int}}\) is the effective secular interaction between NV centers.
