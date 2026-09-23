@@ -252,3 +252,25 @@ to extract the effective coupling \(g\).
 The residual between the complete secular Hamiltonian and the effective
 \(ZZ\)-type interaction is retained to quantify the validity of the
 approximation.
+
+## controls.py
+
+The driven Hamiltonian is written as
+
+\[
+H_{\mathrm{driven}}(t)
+=
+H^{\mathrm{free}}
++
+H^{\mathrm{mw}}(t)
+\]
+
+The microwave contribution is constructed from slowly varying control amplitudes \(\Omega_{i,x}(t)\), \(\Omega_{i,y}(t)\), carrier frequencies \(\omega_i\), and phases \(\xi_i\).
+
+The control operator includes both dressed electronic-spin operators and the weaker nuclear-spin contribution weighted by
+
+\[
+\widetilde\gamma
+=
+\frac{\gamma_n}{\gamma_e}
+\]
