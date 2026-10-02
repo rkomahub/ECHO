@@ -1,0 +1,1 @@
+"""ECHO: tools for simulating interacting quantum spin systems."""

@@ -1,15 +1,15 @@
 import numpy as np
 import pytest
 
-from echo_spin.hamiltonians import (
+from echo_spin.nv.hamiltonians import (
     electronic_nv_hamiltonian,
     nuclear_nv_hamiltonian,
     hyperfine_hamiltonian,
     nv_hamiltonian,
     rotated_electronic_nv_hamiltonian
 )
-from echo_spin.operators import embed_operator, spin_operators
-from echo_spin.system import SpinSystem
+from echo_spin.core.operators import embed_operator, spin_operators
+from echo_spin.core.system import SpinSystem
 
 
 def test_electronic_nv_hamiltonian_dimension():

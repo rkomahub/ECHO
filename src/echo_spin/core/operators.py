@@ -1,6 +1,6 @@
 from qutip import Qobj, jmat, qeye, tensor
 
-from echo_spin.system import SpinSystem
+from echo_spin.core.system import SpinSystem
 
 
 def spin_operators(spin: float) -> tuple[Qobj, Qobj, Qobj]:

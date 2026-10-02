@@ -3,9 +3,9 @@ import numpy as np
 from collections.abc import Sequence
 from qutip import Qobj
 
-from echo_spin.hamiltonians import nv_hamiltonian
-from echo_spin.system import SpinSystem
-from echo_spin.interactions import (
+from echo_spin.nv.hamiltonians import nv_hamiltonian
+from echo_spin.core.system import SpinSystem
+from echo_spin.nv.interactions import (
     dipolar_geometry,
     dipolar_interaction,
 )

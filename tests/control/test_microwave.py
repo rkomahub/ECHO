@@ -3,7 +3,7 @@ import pytest
 
 from qutip import qeye
 
-from echo_spin.controls import (
+from echo_spin.control.microwave import (
     control_amplitude,
     control_operator,
     microwave_coefficient,

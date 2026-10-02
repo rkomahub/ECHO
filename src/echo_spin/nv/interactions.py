@@ -1,9 +1,9 @@
 import numpy as np
 from qutip import Qobj
 
-from echo_spin.operators import embed_operator, spin_operators
-from echo_spin.system import SpinSystem
-from echo_spin.basis import (
+from echo_spin.core.operators import embed_operator, spin_operators
+from echo_spin.core.system import SpinSystem
+from echo_spin.core.basis import (
     operator_from_basis,
     operator_in_basis,
 )

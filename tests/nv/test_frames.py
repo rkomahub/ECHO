@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from echo_spin.frames import (
+from echo_spin.nv.frames import (
     rotate_to_local_frame, 
     rotation_matrix, 
     rotate_vector,

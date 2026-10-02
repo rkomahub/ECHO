@@ -3,7 +3,7 @@ import pytest
 
 from qutip import Qobj, basis, jmat
 
-from echo_spin.basis import (
+from echo_spin.core.basis import (
     basis_unitary,
     diagonalize_hamiltonian,
     dressed_spin_one_basis,

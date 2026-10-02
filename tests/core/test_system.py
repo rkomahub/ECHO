@@ -1,6 +1,6 @@
 import pytest
 
-from echo_spin.system import SpinSystem
+from echo_spin.core.system import SpinSystem
 
 
 def test_single_spin_half_dimension():

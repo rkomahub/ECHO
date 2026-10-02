@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-from echo_spin.hamiltonians import nv_hamiltonian
-from echo_spin.interactions import dipolar_interaction
-from echo_spin.registers import (
+from echo_spin.nv.hamiltonians import nv_hamiltonian
+from echo_spin.nv.interactions import dipolar_interaction
+from echo_spin.nv.registers import (
     nv_dipolar_interaction,
     nv_register_hamiltonian,
 )
-from echo_spin.system import SpinSystem
+from echo_spin.core.system import SpinSystem
 
 def test_two_nv_register_dimension():
     """Two complete NV centers should have Hilbert-space dimension 81."""

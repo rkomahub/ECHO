@@ -1,6 +1,6 @@
 from qutip import Qobj
 
-from echo_spin.controls import microwave_hamiltonian
+from echo_spin.control.microwave import microwave_hamiltonian
 
 
 def free_hamiltonian(

@@ -3,8 +3,8 @@ import pytest
 
 from qutip import jmat
 
-from echo_spin.operators import embed_operator, spin_operators
-from echo_spin.system import SpinSystem
+from echo_spin.core.operators import embed_operator, spin_operators
+from echo_spin.core.system import SpinSystem
 
 
 def test_spin_half_operator_dimensions():

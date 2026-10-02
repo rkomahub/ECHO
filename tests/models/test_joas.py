@@ -2,7 +2,7 @@ import numpy as np
 
 from qutip import qeye
 
-from echo_spin.joas import (
+from echo_spin.models.joas import (
     driven_hamiltonian,
     free_hamiltonian,
 )
