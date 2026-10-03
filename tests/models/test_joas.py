@@ -1,21 +1,27 @@
 import numpy as np
-
 import pytest
-from qutip import qeye
+
+from qutip import qeye, tensor, sigmax
 
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.dynamics.sequences import (
     toggling_hamiltonians,
     toggling_propagator,
+    finite_pulse_propagator,
+    finite_pulse_sequence_propagator
 )
 from echo_spin.models.joas import (
     driven_hamiltonian,
     free_hamiltonian,
+    interaction_time,
     reduced_free_hamiltonian,
-    two_pulse_gate_durations
+    sequence_duration,
+    two_pulse_gate_durations,
+    xy8_gate_times
 )
 from echo_spin.gates.gates import sqrt_zz_gate
-
+from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
     """The free Hamiltonian should sum all NV and interaction terms."""
@@ -332,3 +338,224 @@ def test_sqrt_zz_gate_time_scales_inverse_with_coupling():
     tau_2_2 = np.pi / (4 * g_2)
 
     assert np.isclose(tau_2_2, tau_2_1 / 2)
+
+
+def test_finite_pi_pulse_on_nv1_converges_to_ideal_rotation():
+    """A short finite pulse on NV1 approaches the ideal X pi rotation."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+    g = 0.08
+
+    duration = 0.01
+    steps = 1000
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=g,
+    )
+
+    x1 = two_qubit_rotation(
+        qubit=1,  # NV1 in the Joas reduced-basis convention
+        angle=np.pi,
+        axis="x",
+    )
+
+    x1_operator = tensor(qeye(2), sigmax())
+
+    peak_amplitude = sine_pi_pulse_amplitude(duration)
+
+    def hamiltonian(time):
+        omega = sine_envelope(
+            time=time,
+            duration=duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        return free + 0.5 * omega * x1_operator
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=duration,
+        steps=steps,
+    )
+
+    assert np.allclose(
+        propagator.full(),
+        x1.full(),
+        atol=1e-2,
+    )
+
+
+def test_finite_pi_pulse_on_nv2_converges_to_ideal_rotation():
+    """A short finite pulse on NV2 approaches the ideal X pi rotation."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+    g = 0.08
+
+    duration = 0.01
+    steps = 1000
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=g,
+    )
+
+    x2 = two_qubit_rotation(
+        qubit=0,  # NV2 in the Joas reduced-basis convention
+        angle=np.pi,
+        axis="x",
+    )
+
+    x2_operator = tensor(sigmax(), qeye(2))
+
+    peak_amplitude = sine_pi_pulse_amplitude(duration)
+
+    def hamiltonian(time):
+        omega = sine_envelope(
+            time=time,
+            duration=duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        return free + 0.5 * omega * x2_operator
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=duration,
+        steps=steps,
+    )
+
+    assert np.allclose(
+        propagator.full(),
+        x2.full(),
+        atol=1e-2,
+    )
+
+
+def test_finite_joas_sequence_converges_to_sqrt_zz():
+    """The finite-pulse Joas gate approaches sqrt(ZZ) for short pulses."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+    g = 0.08
+
+    tau_2 = np.pi / (4 * g)
+    tau_1 = 2.5 * tau_2
+
+    pulse_duration = 1e-3
+    steps = 500
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=g,
+    )
+
+    durations = two_pulse_gate_durations(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    # Joas reduced-basis convention.
+    x1_operator = tensor(qeye(2), sigmax())
+    x2_operator = tensor(sigmax(), qeye(2))
+
+    peak_amplitude = sine_pi_pulse_amplitude(
+        pulse_duration
+    )
+
+    def envelope(time):
+        return sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+    pulse_1 = finite_pulse_propagator(
+        free_hamiltonian=free,
+        control_operator=0.5 * x1_operator,
+        duration=pulse_duration,
+        envelope=envelope,
+        steps=steps,
+    )
+
+    pulse_2 = finite_pulse_propagator(
+        free_hamiltonian=free,
+        control_operator=0.5 * x2_operator,
+        duration=pulse_duration,
+        envelope=envelope,
+        steps=steps,
+    )
+
+    propagator = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=durations,
+        pulse_propagators=[
+            pulse_1,
+            pulse_2,
+            pulse_1,
+            pulse_2,
+        ],
+    )
+
+    matrix = propagator.full()
+
+    # Remove global phase.
+    matrix *= np.exp(
+        -1j * np.angle(matrix[0, 0])
+    )
+
+    expected = sqrt_zz_gate().full()
+
+    assert np.allclose(
+        matrix,
+        expected,
+        atol=1e-2,
+    )
+
+
+def test_joas_sequence_timing():
+    tau_1 = 3000e-9
+    tau_2 = 200e-9
+    n_pi = 8
+
+    assert np.isclose(
+        interaction_time(tau_2, n_pi),  
+        1600e-9,
+    )
+
+    assert np.isclose(
+        sequence_duration(tau_1, n_pi),
+        24e-6,
+    )
+
+
+def test_xy8_gate_times():
+    tau_1 = 800e-9
+    tau_2 = 200e-9
+
+    nv1, nv2 = xy8_gate_times(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    assert len(nv1) == 8
+    assert len(nv2) == 8
+
+    for t1, t2 in zip(nv1, nv2):
+        assert np.isclose(t2 - t1, tau_2)
+
+    for k, (t1, t2) in enumerate(zip(nv1, nv2)):
+        center = (k + 0.5) * tau_1
+        assert np.isclose((t1 + t2) / 2, center)
+
+
+def test_xy8_gate_times_rejects_invalid_tau_2():
+    with pytest.raises(ValueError):
+        xy8_gate_times(
+            tau_1=800e-9,
+            tau_2=500e-9,
+        )

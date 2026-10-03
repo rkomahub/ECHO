@@ -76,3 +76,62 @@ def two_pulse_gate_durations(
         tau_1 / 2 - tau_2,
         tau_2,
     ]
+
+
+def interaction_time(
+    tau_2: float,
+    n_pi: int,
+) -> float:
+    """Effective dipolar evolution time of the Joas sequence."""
+    if n_pi <= 0:
+        raise ValueError("n_pi must be positive.")
+
+    return n_pi * tau_2
+
+
+def sequence_duration(
+    tau_1: float,
+    n_pi: int,
+) -> float:
+    """Total duration of the ideal Joas refocusing sequence."""
+    if tau_1 <= 0:
+        raise ValueError("tau_1 must be positive.")
+
+    if n_pi <= 0:
+        raise ValueError("n_pi must be positive.")
+
+    return n_pi * tau_1
+
+
+def xy8_gate_times(
+    tau_1: float,
+    tau_2: float,
+    n_pi: int = 8,
+):
+    """Pulse-center times for the two staggered NV pulse trains."""
+
+    if tau_1 <= 0:
+        raise ValueError("tau_1 must be positive.")
+
+    if abs(tau_2) > tau_1 / 2:
+        raise ValueError("tau_2 must satisfy |tau_2| <= tau_1 / 2.")
+
+    if n_pi <= 0:
+        raise ValueError("n_pi must be positive.")
+
+    centers = [
+        (k + 0.5) * tau_1
+        for k in range(n_pi)
+    ]
+
+    nv1_times = [
+        center - tau_2 / 2
+        for center in centers
+    ]
+
+    nv2_times = [
+        center + tau_2 / 2
+        for center in centers
+    ]
+
+    return nv1_times, nv2_times
