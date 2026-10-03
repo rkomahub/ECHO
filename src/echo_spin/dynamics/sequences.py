@@ -1,5 +1,6 @@
 from qutip import Qobj, qeye
 
+from echo_spin.dynamics.propagators import time_dependent_propagator
 
 def toggling_hamiltonians(
     free_hamiltonian: Qobj,
@@ -37,5 +38,54 @@ def toggling_propagator(
     for hamiltonian, duration in zip(hamiltonians, durations):
         interval = (-1j * hamiltonian * duration).expm()
         propagator = interval * propagator
+
+    return propagator
+
+
+def finite_pulse_propagator(
+    free_hamiltonian: Qobj,
+    control_operator: Qobj,
+    duration: float,
+    envelope,
+    steps: int,
+) -> Qobj:
+    """Propagate a finite control pulse while the free Hamiltonian remains active."""
+
+    def hamiltonian(time):
+        return (
+            free_hamiltonian
+            + envelope(time) * control_operator
+        )
+
+    return time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=duration,
+        steps=steps,
+    )
+
+
+def finite_pulse_sequence_propagator(
+    free_hamiltonian: Qobj,
+    durations: list[float],
+    pulse_propagators: list[Qobj],
+) -> Qobj:
+    """Propagate alternating free-evolution intervals and finite pulses."""
+    if len(durations) != len(pulse_propagators) + 1:
+        raise ValueError(
+            "There must be one more free interval than pulse propagators."
+        )
+
+    propagator = qeye(free_hamiltonian.dims[0])
+
+    for index, duration in enumerate(durations):
+        free_interval = (
+            -1j * free_hamiltonian * duration
+        ).expm()
+
+        propagator = free_interval * propagator
+
+        if index < len(pulse_propagators):
+            propagator = pulse_propagators[index] * propagator
 
     return propagator

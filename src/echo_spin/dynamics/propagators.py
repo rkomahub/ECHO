@@ -54,3 +54,11 @@ def rotating_frame_hamiltonian(
     hamiltonian = driven_hamiltonian(time)
 
     return frame.dag() * (hamiltonian - generator) * frame
+
+
+def transformed_hamiltonian(
+    hamiltonian: Qobj,
+    transformation: Qobj,
+) -> Qobj:
+    """Transform a Hamiltonian by a unitary operator."""
+    return transformation * hamiltonian * transformation.dag()

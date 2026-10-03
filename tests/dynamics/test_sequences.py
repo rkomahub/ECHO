@@ -5,7 +5,10 @@ from qutip import Qobj, sigmax, sigmay, sigmaz, qeye
 from echo_spin.dynamics.sequences import (
     toggling_hamiltonians,
     toggling_propagator,
+    finite_pulse_propagator,
+    finite_pulse_sequence_propagator,
 )
+from echo_spin.control.rotations import single_qubit_rotation
 
 
 def test_toggling_hamiltonians():
@@ -78,4 +81,60 @@ def test_pi_pulse_refocuses_static_detuning():
     assert np.allclose(
         propagator.full(),
         qeye(2).full(),
+    )
+
+
+def test_finite_pulse_propagator_without_free_evolution():
+    """Finite pulse propagation reproduces a known constant rotation."""
+    duration = 1.0
+    omega = np.pi
+
+    free = 0.0 * sigmaz()
+    control = 0.5 * sigmax()
+
+    propagator = finite_pulse_propagator(
+        free_hamiltonian=free,
+        control_operator=control,
+        duration=duration,
+        envelope=lambda time: omega,
+        steps=1000,
+    )
+
+    expected = single_qubit_rotation(
+        angle=np.pi,
+        axis="x",
+    )
+
+    assert np.allclose(
+        propagator.full(),
+        expected.full(),
+        atol=1e-5,
+    )
+
+
+def test_finite_pulse_sequence_reproduces_explicit_sequence():
+    """Sequence propagator applies free intervals and pulses in time order."""
+    free = 0.3 * sigmaz()
+
+    x_pi = single_qubit_rotation(
+        angle=np.pi,
+        axis="x",
+    )
+
+    durations = [0.2, 0.4]
+
+    actual = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=durations,
+        pulse_propagators=[x_pi],
+    )
+
+    u1 = (-1j * free * durations[0]).expm()
+    u2 = (-1j * free * durations[1]).expm()
+
+    expected = u2 * x_pi * u1
+
+    assert np.allclose(
+        actual.full(),
+        expected.full(),
     )
