@@ -347,6 +347,18 @@ Microwave control amplitudes can be represented by finite-duration pulse envelop
 \qquad 0\leq t\leq T
 \]
 
-and the amplitude is zero outside the pulse interval.
+and the amplitude is zero outside the pulse interval. This envelope can be used as the time-dependent amplitude entering the microwave control Hamiltonian. For a sine-shaped \(\pi\) pulse, the Rabi frequency is related to the pulse duration by
 
-This envelope can be used as the time-dependent amplitude entering the microwave control Hamiltonian.
+\[
+\Omega_{\mathrm{Rabi}}=\frac{\pi}{t_\pi}
+\]
+
+The required peak amplitude is therefore
+
+\[
+\Omega_{\max}
+=
+\frac{\pi}{2}\Omega_{\mathrm{Rabi}}
+=
+\frac{\pi^2}{2t_\pi}
+\]

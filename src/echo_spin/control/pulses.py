@@ -14,3 +14,12 @@ def sine_envelope(
         return 0.0
 
     return peak_amplitude * np.sin(np.pi * time / duration)
+
+
+def sine_pi_pulse_amplitude(duration: float) -> float:
+    """Return the peak amplitude of a sine-shaped pi pulse."""
+    if duration <= 0:
+        raise ValueError("duration must be positive.")
+
+    rabi_frequency = np.pi / duration
+    return (np.pi / 2) * rabi_frequency
