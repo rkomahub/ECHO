@@ -445,3 +445,62 @@ H_k=U_kH_{\mathrm{free}}U_k^\dagger
 The complete evolution is obtained by chronologically composing the propagators generated
 during the individual free-evolution intervals. This representation allows refocusing of
 single-qubit detunings and, later, selective retention of desired spin-spin interactions.
+
+### Tensor-product and reduced-basis ordering conventions
+
+ECHO uses the standard tensor-product convention in which, for a two-qubit
+system,
+
+\[
+\mathcal{H}
+=
+\mathcal{H}_0\otimes\mathcal{H}_1
+\]
+
+an operator acting on qubit \(0\) is represented as
+
+\[
+O_0 = O\otimes I
+\]
+
+whereas an operator acting on qubit \(1\) is
+
+\[
+O_1 = I\otimes O
+\]
+
+The reduced two-qubit basis used in the Joas gate derivation follows a different
+label ordering. It is
+
+\[
+\{
+|+1,0\rangle,
+|0,0\rangle,
+|+1,-1\rangle,
+|0,-1\rangle
+\}
+\]
+
+where the first label denotes NV1 and the second label denotes NV2.
+
+In this ordering, the NV1 state changes between adjacent basis states, whereas
+the NV2 state changes between pairs. Consequently, when this basis is represented
+using the generic ECHO two-qubit tensor convention,
+
+\[
+\mathrm{NV1}\longleftrightarrow \text{qubit }1,
+\qquad
+\mathrm{NV2}\longleftrightarrow \text{qubit }0
+\]
+
+Thus, within the Joas reduced model,
+
+\[
+U_{\mathrm{NV1}} = I\otimes U_1,
+\qquad
+U_{\mathrm{NV2}} = U_2\otimes I
+\]
+
+This mapping is specific to the ordering chosen for the Joas reduced basis and
+does not modify ECHO's generic tensor-product convention. Explicit tests are used
+to verify the mapping before constructing the gate dynamics.
