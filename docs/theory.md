@@ -362,3 +362,21 @@ The required peak amplitude is therefore
 =
 \frac{\pi^2}{2t_\pi}
 \]
+
+## gates/gates.py
+
+The target two-qubit entangling operation is the \(\sqrt{ZZ}\) gate. In the computational basis
+
+\[
+\{|00\rangle,|01\rangle,|10\rangle,|11\rangle\}
+\]
+
+the target unitary is defined, up to a global phase, as
+
+\[
+U_{\sqrt{ZZ}}
+=
+\operatorname{diag}(1,i,i,1)
+\]
+
+This gate will be used as the target operation when validating dynamically decoupled dipolar evolution.
