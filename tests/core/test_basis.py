@@ -12,6 +12,7 @@ from echo_spin.core.basis import (
     operator_in_basis,
     order_states_by_reference,
     product_basis,
+    project_operator,
 )
 
 
@@ -197,3 +198,45 @@ def test_product_basis_dimension():
     )
 
     assert len(combined) == 9
+
+
+def test_project_operator():
+    """Check projection of an operator onto a selected subspace."""
+    operator = Qobj(np.diag([1.0, 2.0, 3.0]))
+
+    selected_basis = [
+        basis(3, 0),
+        basis(3, 2),
+    ]
+
+    projected = project_operator(
+        operator=operator,
+        basis_states=selected_basis,
+    )
+
+    expected = np.diag([1.0, 3.0])
+
+    assert np.allclose(projected.full(), expected)
+
+
+def test_project_operator_preserves_couplings():
+    """Check that projection preserves matrix elements within the subspace."""
+    operator = Qobj([
+        [1.0, 2.0, 3.0],
+        [2.0, 4.0, 5.0],
+        [3.0, 5.0, 6.0],
+    ])
+
+    selected_basis = [
+        basis(3, 0),
+        basis(3, 2),
+    ]
+
+    projected = project_operator(operator, selected_basis)
+
+    expected = np.array([
+        [1.0, 3.0],
+        [3.0, 6.0],
+    ])
+
+    assert np.allclose(projected.full(), expected)

@@ -253,6 +253,22 @@ The residual between the complete secular Hamiltonian and the effective
 \(ZZ\)-type interaction is retained to quantify the validity of the
 approximation.
 
+### Projection onto an effective subspace
+
+A full spin Hamiltonian can be restricted to a selected effective subspace. If the
+columns of \(P\) are the selected basis states, the projected operator is
+
+\[
+O_{\mathrm{eff}}=P^\dagger O P
+\]
+
+For the two-NV gate, this allows the full two-qutrit Hamiltonian to be reduced to the
+four-dimensional computational subspace formed by the two microwave-addressed
+transitions.
+
+The full spin-1 description is retained separately so that leakage into off-resonant
+levels can later be studied explicitly.
+
 ## controls.py
 
 The driven Hamiltonian is written as

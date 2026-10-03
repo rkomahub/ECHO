@@ -169,3 +169,19 @@ def product_basis(
         for state_a in basis_a
         for state_b in basis_b
     ]
+
+
+def project_operator(
+    operator: Qobj,
+    basis_states: list[Qobj],
+) -> Qobj:
+    """Project an operator onto a subspace spanned by basis states."""
+    matrix = np.array([
+        [
+            (state_i.dag() * operator * state_j)
+            for state_j in basis_states
+        ]
+        for state_i in basis_states
+    ], dtype=complex)
+
+    return Qobj(matrix)
