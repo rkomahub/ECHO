@@ -1,4 +1,4 @@
-from qutip import Qobj
+from qutip import Qobj, qeye
 
 
 def static_propagator(
@@ -19,3 +19,25 @@ def rotating_frame_propagator(
 
     return frame.dag() * propagator
 
+def time_dependent_propagator(
+    hamiltonian,
+    t0: float,
+    t1: float,
+    steps: int,
+) -> Qobj:
+    """Numerically propagate a time-dependent Hamiltonian."""
+    if steps <= 0:
+        raise ValueError("steps must be positive.")
+
+    dt = (t1 - t0) / steps
+
+    first_hamiltonian = hamiltonian(t0 + dt)
+    propagator = qeye(first_hamiltonian.dims[0])
+
+    for step in range(1, steps + 1):
+        time = t0 + step * dt
+        h_step = hamiltonian(time)
+
+        propagator = (-1j * h_step * dt).expm() * propagator
+
+    return propagator

@@ -318,3 +318,12 @@ so that the propagator in the rotating frame is
 \[
 U_{\mathrm{rot}}(t)=V^\dagger(t)U(t).
 \]
+
+For a time-dependent Hamiltonian, the propagator is the time-ordered exponential
+\[
+U(t,t_0)=\mathcal{T}\exp\left[-i\int_{t_0}^{t}H(t')\,dt'\right]
+\]
+ECHO approximates this evolution by dividing the interval into \(N\) steps of duration \(\Delta t\) and multiplying the corresponding short-time propagators in chronological order
+\[
+U(t,t_0)\approx e^{-iH(t_N)\Delta t}\cdots e^{-iH(t_1)\Delta t}
+\]

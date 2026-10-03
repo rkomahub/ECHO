@@ -1,9 +1,11 @@
 import numpy as np
+import pytest
 from qutip import Qobj, qeye
 
 from echo_spin.dynamics.propagators import (
     rotating_frame_propagator,
     static_propagator,
+    time_dependent_propagator,
 )
 
 
@@ -83,3 +85,51 @@ def test_rotating_frame_removes_matching_evolution():
         rotating.full(),
         qeye(2).full(),
     )
+
+
+def test_time_dependent_propagator_zero_hamiltonian():
+    """Check that a zero Hamiltonian produces identity evolution."""
+    hamiltonian = lambda time: Qobj([[0.0, 0.0], [0.0, 0.0]])
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=1.0,
+        steps=10,
+    )
+
+    assert np.allclose(propagator.full(), qeye(2).full())
+
+
+def test_time_dependent_propagator_constant_hamiltonian():
+    """Check numerical propagation against exact static evolution."""
+    h = Qobj([[1.0, 0.0], [0.0, -1.0]])
+
+    hamiltonian = lambda time: h
+
+    numerical = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=0.7,
+        steps=20,
+    )
+
+    exact = static_propagator(
+        hamiltonian=h,
+        time=0.7,
+    )
+
+    assert np.allclose(numerical.full(), exact.full())
+
+
+def test_time_dependent_propagator_rejects_invalid_steps():
+    """Check that the propagator requires a positive number of steps."""
+    hamiltonian = lambda time: Qobj([[0.0, 0.0], [0.0, 0.0]])
+
+    with pytest.raises(ValueError):
+        time_dependent_propagator(
+            hamiltonian=hamiltonian,
+            t0=0.0,
+            t1=1.0,
+            steps=0,
+        )
