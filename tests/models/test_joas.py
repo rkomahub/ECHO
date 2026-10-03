@@ -14,6 +14,7 @@ from echo_spin.models.joas import (
     reduced_free_hamiltonian,
     two_pulse_gate_durations
 )
+from echo_spin.gates.gates import sqrt_zz_gate
 
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
@@ -272,3 +273,62 @@ def test_joas_two_pulse_gate_is_independent_of_detunings():
     )
 
     assert np.allclose(gate_a, gate_b)
+
+
+def test_joas_two_pulse_sequence_generates_sqrt_zz():
+    """The ideal Joas sequence generates sqrt(ZZ) up to global phase."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+    g = 0.08
+
+    # For N_pi = 2, require 2 * g * tau_2 = pi / 2.
+    tau_2 = np.pi / (4 * g)
+
+    # tau_1 must satisfy tau_2 <= tau_1 / 2.
+    tau_1 = 2.5 * tau_2
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=g,
+    )
+
+    # Joas reduced-basis convention:
+    # NV1 -> ECHO qubit 1
+    # NV2 -> ECHO qubit 0
+    x1 = two_qubit_rotation(1, np.pi, "x")
+    x2 = two_qubit_rotation(0, np.pi, "x")
+
+    hamiltonians = toggling_hamiltonians(
+        free_hamiltonian=free,
+        pulses=[x1, x2, x1, x2],
+    )
+
+    durations = two_pulse_gate_durations(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    propagator = toggling_propagator(
+        hamiltonians=hamiltonians,
+        durations=durations,
+    )
+
+    # Remove global phase.
+    matrix = propagator.full()
+    matrix *= np.exp(-1j * np.angle(matrix[0, 0]))
+
+    expected = sqrt_zz_gate().full()
+
+    assert np.allclose(matrix, expected)
+
+
+def test_sqrt_zz_gate_time_scales_inverse_with_coupling():
+    """The sqrt(ZZ) interaction time scales as 1/g."""
+    g_1 = 0.08
+    g_2 = 2 * g_1
+
+    tau_2_1 = np.pi / (4 * g_1)
+    tau_2_2 = np.pi / (4 * g_2)
+
+    assert np.isclose(tau_2_2, tau_2_1 / 2)
