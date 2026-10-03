@@ -19,6 +19,7 @@ def rotating_frame_propagator(
 
     return frame.dag() * propagator
 
+
 def time_dependent_propagator(
     hamiltonian,
     t0: float,
@@ -41,3 +42,15 @@ def time_dependent_propagator(
         propagator = (-1j * h_step * dt).expm() * propagator
 
     return propagator
+
+
+def rotating_frame_hamiltonian(
+    time: float,
+    driven_hamiltonian,
+    generator: Qobj,
+) -> Qobj:
+    """Transform a time-dependent Hamiltonian into a rotating frame."""
+    frame = (-1j * generator * time).expm()
+    hamiltonian = driven_hamiltonian(time)
+
+    return frame.dag() * (hamiltonian - generator) * frame
