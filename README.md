@@ -1,3 +1,5 @@
+![Banner](results/figure/banner.png)
+
 # ECHO
 
 **Avoid the Noise, Embrace the ECHO: Eliminating Crosstalk in Highly-Interacting On-Chip Spins**
