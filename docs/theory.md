@@ -423,3 +423,25 @@ R_\alpha(\theta)
 \]
 
 A refocusing pulse corresponds to \(\theta=\pi\).
+
+## dynamics/sequences.py
+
+Ideal dynamical-decoupling sequences can be described in the toggling frame. After a
+sequence of instantaneous pulses, the cumulative pulse propagator determines the
+Hamiltonian during the following free-evolution interval.
+
+If \(P_k\) denotes the \(k\)-th pulse, the cumulative transformation after \(k\) pulses is
+
+\[
+U_k=P_kP_{k-1}\cdots P_1
+\]
+
+The corresponding toggling-frame Hamiltonian is
+
+\[
+H_k=U_kH_{\mathrm{free}}U_k^\dagger
+\]
+
+The complete evolution is obtained by chronologically composing the propagators generated
+during the individual free-evolution intervals. This representation allows refocusing of
+single-qubit detunings and, later, selective retention of desired spin-spin interactions.
