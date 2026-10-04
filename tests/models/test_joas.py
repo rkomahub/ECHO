@@ -5,6 +5,7 @@ from qutip import Qobj, qeye, basis, tensor, sigmax, sigmay
 
 from echo_spin.core.system import SpinSystem
 from echo_spin.core.basis import project_operator
+from echo_spin.nv.frames import rotate_to_local_frame
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.dynamics.sequences import (
@@ -1001,3 +1002,23 @@ def test_electron_logical_states_tilted_field_are_orthonormal():
         0.0,
         abs=1e-12,
     )
+
+
+def test_joas_nv1_local_frame_rotation():
+    beta = np.deg2rad(70.53)
+
+    vector = np.array([1.0, 2.0, 3.0])
+
+    actual = rotate_to_local_frame(
+        vector=vector,
+        axis="y",
+        angle=beta,
+    )
+
+    expected = np.array([
+        np.cos(beta) * vector[0] - np.sin(beta) * vector[2],
+        vector[1],
+        np.sin(beta) * vector[0] + np.cos(beta) * vector[2],
+    ])
+
+    assert np.allclose(actual, expected)
