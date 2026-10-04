@@ -1,7 +1,7 @@
 import numpy as np
 from qutip import Qobj
 from echo_spin.control.microwave import microwave_hamiltonian
-
+from echo_spin.control.rotations import two_qubit_rotation
 
 def free_hamiltonian(
     nv_hamiltonians: list[Qobj],
@@ -109,29 +109,23 @@ def xy8_gate_times(
     n_pi: int = 8,
 ):
     """Pulse-center times for the two staggered NV pulse trains."""
-
     if tau_1 <= 0:
-        raise ValueError("tau_1 must be positive.")
+        raise ValueError("tau_1 must be positive")
 
     if abs(tau_2) > tau_1 / 2:
-        raise ValueError("tau_2 must satisfy |tau_2| <= tau_1 / 2.")
+        raise ValueError("tau_2 must satisfy |tau_2| <= tau_1 / 2")
 
     if n_pi <= 0:
-        raise ValueError("n_pi must be positive.")
+        raise ValueError("n_pi must be positive")
 
-    centers = [
+    nv1_times = [
         (k + 0.5) * tau_1
         for k in range(n_pi)
     ]
 
-    nv1_times = [
-        center - tau_2 / 2
-        for center in centers
-    ]
-
     nv2_times = [
-        center + tau_2 / 2
-        for center in centers
+        (k + 1.0) * tau_1 - tau_2
+        for k in range(n_pi)
     ]
 
     return nv1_times, nv2_times
@@ -182,3 +176,30 @@ def xy8_gate_intervals(
         boundaries[index + 1] - boundaries[index]
         for index in range(len(boundaries) - 1)
     ]
+
+
+def xy8_gate_pulses(
+    tau_1: float,
+    tau_2: float,
+):
+    """Return chronological ideal pi pulses for the Joas XY8-1 gate."""
+
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    pulses = []
+
+    for _, nv, phase in schedule:
+        qubit = 1 if nv == 1 else 0
+
+        pulses.append(
+            two_qubit_rotation(
+                qubit=qubit,
+                angle=np.pi,
+                axis=phase,
+            )
+        )
+
+    return pulses

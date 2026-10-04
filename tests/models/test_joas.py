@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qutip import qeye, tensor, sigmax
+from qutip import Qobj, qeye, tensor, sigmax
 
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.dynamics.sequences import (
@@ -18,6 +18,7 @@ from echo_spin.models.joas import (
     sequence_duration,
     two_pulse_gate_durations,
     xy8_gate_intervals,
+    xy8_gate_pulses,
     xy8_gate_schedule,
     xy8_gate_times
 )
@@ -535,26 +536,6 @@ def test_joas_sequence_timing():
     )
 
 
-def test_xy8_gate_times():
-    tau_1 = 800e-9
-    tau_2 = 200e-9
-
-    nv1, nv2 = xy8_gate_times(
-        tau_1=tau_1,
-        tau_2=tau_2,
-    )
-
-    assert len(nv1) == 8
-    assert len(nv2) == 8
-
-    for t1, t2 in zip(nv1, nv2):
-        assert np.isclose(t2 - t1, tau_2)
-
-    for k, (t1, t2) in enumerate(zip(nv1, nv2)):
-        center = (k + 0.5) * tau_1
-        assert np.isclose((t1 + t2) / 2, center)
-
-
 def test_xy8_gate_times_rejects_invalid_tau_2():
     with pytest.raises(ValueError):
         xy8_gate_times(
@@ -647,3 +628,79 @@ def test_xy8_gate_intervals_tau_2_zero():
     )
 
     assert np.isclose(sum(intervals), 8 * tau_1)
+
+
+def test_xy8_gate_pulses_contains_sixteen_pulses():
+    pulses = xy8_gate_pulses(
+        tau_1=800e-9,
+        tau_2=200e-9,
+    )
+
+    assert len(pulses) == 16
+
+
+def test_xy8_gate_accumulates_expected_conditional_phase():
+    delta_1 = 0.31
+    delta_2 = -0.17
+    coupling = 0.08
+
+    tau_1 = 1.0
+    tau_2 = 0.2
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=coupling,
+    )
+
+    intervals = xy8_gate_intervals(tau_1, tau_2)
+    pulses = xy8_gate_pulses(tau_1, tau_2)
+
+    propagator = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=intervals,
+        pulse_propagators=pulses,
+    )
+
+    phase = 8 * coupling * tau_2
+
+    expected = Qobj(
+        np.diag([
+            1.0,
+            np.exp(1j * phase),
+            np.exp(1j * phase),
+            1.0,
+        ]),
+        dims=[[2, 2], [2, 2]],
+    )
+
+    # Remove global phase before comparison.
+    global_phase = propagator[0, 0] / expected[0, 0]
+
+    assert (
+        propagator - global_phase * expected
+    ).norm() < 1e-10
+
+
+def test_xy8_gate_times_follow_joas_timing():
+    tau_1 = 800e-9
+    tau_2 = 200e-9
+
+    nv1_times, nv2_times = xy8_gate_times(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    assert len(nv1_times) == 8
+    assert len(nv2_times) == 8
+
+    for k in range(8):
+        assert np.isclose(
+            nv1_times[k],
+            (k + 0.5) * tau_1,
+        )
+
+        assert np.isclose(
+            nv2_times[k],
+            (k + 1.0) * tau_1 - tau_2,
+        )
