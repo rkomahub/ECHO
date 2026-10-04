@@ -241,9 +241,21 @@ def two_electron_logical_basis(
 
 def electron_logical_states(
     hamiltonian: Qobj,
+    excited_state: str = "+1",
 ) -> tuple[Qobj, Qobj]:
     """Return dressed |0> and |1> electron-qubit states."""
 
-    plus_one, zero, _ = dressed_spin_one_basis(hamiltonian)
+    plus_one, zero, minus_one = dressed_spin_one_basis(
+        hamiltonian
+    )
 
-    return zero, plus_one
+    if excited_state == "+1":
+        one = plus_one
+    elif excited_state == "-1":
+        one = minus_one
+    else:
+        raise ValueError(
+            "excited_state must be '+1' or '-1'."
+        )
+
+    return zero, one

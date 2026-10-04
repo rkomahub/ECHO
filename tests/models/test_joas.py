@@ -1187,7 +1187,7 @@ def test_joas_setting_2_dressed_spin_operators():
 
 
 def test_joas_setting_2_logical_effective_interaction():
-    """The effective interaction in the logical subspace is consistent with the coupling."""
+    """The two-electron interaction projects to the expected logical subspace operator."""
     system = SpinSystem([1])
 
     omega = 2 * np.pi * 295.18
@@ -1242,8 +1242,18 @@ def test_joas_setting_2_logical_effective_interaction():
         sz_nv2,
     )
 
-    logical_nv1 = electron_logical_states(h_nv1)
-    logical_nv2 = electron_logical_states(h_nv2)
+    # Joas setting 2:
+    # NV1 addresses the +1-like dressed state.
+    # NV2 addresses the -1-like dressed state.
+    logical_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    logical_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
 
     logical_basis = two_electron_logical_basis(
         nv1_states=logical_nv1,
@@ -1260,7 +1270,7 @@ def test_joas_setting_2_logical_effective_interaction():
             0.0,
             0.0,
             0.0,
-            coupling,
+            -coupling,
         ])
     )
 
@@ -1269,3 +1279,176 @@ def test_joas_setting_2_logical_effective_interaction():
         expected.full(),
         atol=1e-12,
     )
+
+
+def test_joas_setting_2_physical_to_logical_hamiltonian():
+    """The two-electron Hamiltonian projects to the expected logical subspace operator."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # NV1 = A = target, misaligned
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    # NV2 = B = control, aligned
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    coupling = 2 * np.pi * 0.11261
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # Actual addressed transitions in Joas setting 2.
+    logical_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    logical_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    logical_basis = two_electron_logical_basis(
+        nv1_states=logical_nv1,
+        nv2_states=logical_nv2,
+    )
+
+    h_logical = project_operator(
+        operator=h_two,
+        basis_states=logical_basis,
+    )
+
+    e0_nv1 = (
+        logical_nv1[0].dag()
+        * h_nv1
+        * logical_nv1[0]
+    )
+
+    e1_nv1 = (
+        logical_nv1[1].dag()
+        * h_nv1
+        * logical_nv1[1]
+    )
+
+    e0_nv2 = (
+        logical_nv2[0].dag()
+        * h_nv2
+        * logical_nv2[0]
+    )
+
+    e1_nv2 = (
+        logical_nv2[1].dag()
+        * h_nv2
+        * logical_nv2[1]
+    )
+
+    expected = Qobj(
+        np.diag([
+            e0_nv1 + e0_nv2,
+            e0_nv1 + e1_nv2,
+            e1_nv1 + e0_nv2,
+            e1_nv1 + e1_nv2 - coupling,
+        ])
+    )
+
+    assert np.allclose(
+        h_logical.full(),
+        expected.full(),
+        atol=1e-10,
+    )
+
+
+def test_electron_logical_states_select_excited_branch():
+    """The electron logical states select the correct excited branch."""
+    system = SpinSystem([1])
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e=[0.0, 0.0, 0.10],
+    )
+
+    plus_one, zero, minus_one = dressed_spin_one_basis(
+        hamiltonian
+    )
+
+    logical_zero_plus, logical_one_plus = electron_logical_states(
+        hamiltonian,
+        excited_state="+1",
+    )
+
+    logical_zero_minus, logical_one_minus = electron_logical_states(
+        hamiltonian,
+        excited_state="-1",
+    )
+
+    assert abs(logical_zero_plus.overlap(zero)) == pytest.approx(1.0)
+    assert abs(logical_one_plus.overlap(plus_one)) == pytest.approx(1.0)
+
+    assert abs(logical_zero_minus.overlap(zero)) == pytest.approx(1.0)
+    assert abs(logical_one_minus.overlap(minus_one)) == pytest.approx(1.0)
+
+
+def test_electron_logical_states_invalid_excited_branch():
+    """The electron logical states raise an error for an invalid excited branch."""
+    system = SpinSystem([1])
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e=[0.0, 0.0, 0.10],
+    )
+
+    with pytest.raises(ValueError):
+        electron_logical_states(
+            hamiltonian,
+            excited_state="banana",
+        )
