@@ -17,6 +17,7 @@ from echo_spin.models.joas import (
     reduced_free_hamiltonian,
     sequence_duration,
     two_pulse_gate_durations,
+    xy8_gate_intervals,
     xy8_gate_schedule,
     xy8_gate_times
 )
@@ -603,3 +604,46 @@ def test_xy8_gate_schedule_preserves_xy8_cycles():
 
     assert nv1_phases == expected_phases
     assert nv2_phases == expected_phases
+
+
+def test_xy8_gate_intervals_contains_seventeen_intervals():
+    intervals = xy8_gate_intervals(
+        tau_1=800e-9,
+        tau_2=200e-9,
+    )
+
+    assert len(intervals) == 17
+
+
+def test_xy8_gate_intervals_sum_to_gate_duration():
+    tau_1 = 800e-9
+
+    intervals = xy8_gate_intervals(
+        tau_1=tau_1,
+        tau_2=200e-9,
+    )
+
+    assert np.isclose(
+        sum(intervals),
+        8 * tau_1,
+    )
+
+
+def test_xy8_gate_intervals_are_positive():
+    intervals = xy8_gate_intervals(
+        tau_1=800e-9,
+        tau_2=200e-9,
+    )
+
+    assert all(interval > 0 for interval in intervals)
+
+
+def test_xy8_gate_intervals_tau_2_zero():
+    tau_1 = 800e-9
+
+    intervals = xy8_gate_intervals(
+        tau_1=tau_1,
+        tau_2=0.0,
+    )
+
+    assert np.isclose(sum(intervals), 8 * tau_1)

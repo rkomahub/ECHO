@@ -160,3 +160,25 @@ def xy8_gate_schedule(
         schedule.append((time, 2, phase))
 
     return sorted(schedule, key=lambda event: event[0])
+
+
+def xy8_gate_intervals(
+    tau_1: float,
+    tau_2: float,
+):
+    """Return free-evolution intervals of the Joas XY8-1 gate."""
+
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    pulse_times = [time for time, _, _ in schedule]
+    gate_duration = 8 * tau_1
+
+    boundaries = [0.0] + pulse_times + [gate_duration]
+
+    return [
+        boundaries[index + 1] - boundaries[index]
+        for index in range(len(boundaries) - 1)
+    ]
