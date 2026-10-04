@@ -135,3 +135,28 @@ def xy8_gate_times(
     ]
 
     return nv1_times, nv2_times
+
+
+def xy8_gate_schedule(
+    tau_1: float,
+    tau_2: float,
+):
+    """Return the chronological 16-pulse schedule of the Joas XY8-1 gate."""
+
+    nv1_times, nv2_times = xy8_gate_times(
+        tau_1=tau_1,
+        tau_2=tau_2,
+        n_pi=8,
+    )
+
+    phases = ["x", "y", "x", "y", "y", "x", "y", "x"]
+
+    schedule = []
+
+    for time, phase in zip(nv1_times, phases):
+        schedule.append((time, 1, phase))
+
+    for time, phase in zip(nv2_times, phases):
+        schedule.append((time, 2, phase))
+
+    return sorted(schedule, key=lambda event: event[0])

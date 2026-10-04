@@ -17,6 +17,7 @@ from echo_spin.models.joas import (
     reduced_free_hamiltonian,
     sequence_duration,
     two_pulse_gate_durations,
+    xy8_gate_schedule,
     xy8_gate_times
 )
 from echo_spin.gates.gates import sqrt_zz_gate
@@ -559,3 +560,46 @@ def test_xy8_gate_times_rejects_invalid_tau_2():
             tau_1=800e-9,
             tau_2=500e-9,
         )
+
+
+def test_xy8_gate_schedule_contains_sixteen_pulses():
+    schedule = xy8_gate_schedule(
+        tau_1=800e-9,
+        tau_2=200e-9,
+    )
+
+    assert len(schedule) == 16
+
+
+def test_xy8_gate_schedule_is_chronological():
+    schedule = xy8_gate_schedule(
+        tau_1=800e-9,
+        tau_2=200e-9,
+    )
+
+    times = [event[0] for event in schedule]
+
+    assert all(
+        t_next > t
+        for t, t_next in zip(times, times[1:])
+    )
+
+
+def test_xy8_gate_schedule_preserves_xy8_cycles():
+    schedule = xy8_gate_schedule(
+        tau_1=800e-9,
+        tau_2=200e-9,
+    )
+
+    expected_phases = ["x", "y", "x", "y", "y", "x", "y", "x"]
+
+    nv1_phases = [
+        phase for _, nv, phase in schedule if nv == 1
+    ]
+
+    nv2_phases = [
+        phase for _, nv, phase in schedule if nv == 2
+    ]
+
+    assert nv1_phases == expected_phases
+    assert nv2_phases == expected_phases
