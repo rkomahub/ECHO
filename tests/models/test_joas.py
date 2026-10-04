@@ -1452,3 +1452,145 @@ def test_electron_logical_states_invalid_excited_branch():
             hamiltonian,
             excited_state="banana",
         )
+
+
+def test_joas_nv1_physical_resonant_pi_pulse():
+    """A physical resonant pi pulse on NV1 rotates the logical states."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+    theta_nv1 = np.deg2rad(74.08)
+
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    logical_zero, logical_one = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    # Physical spin-1 transverse microwave operator.
+    sx, _, _ = spin_operators(1)
+
+    # Resonance frequency of the addressed dressed transition.
+    e0 = logical_zero.dag() * h_nv1 * logical_zero
+    e1 = logical_one.dag() * h_nv1 * logical_one
+    drive_frequency = float(np.real(e1 - e0))
+
+    # Matrix element of the physical Sx operator on the addressed transition.
+    matrix_element = abs(
+        logical_one.dag() * sx * logical_zero
+    )
+
+    pulse_duration = 0.1
+
+    # For H_drive = amplitude*cos(omega*t)*Sx,
+    # RWA gives an effective coupling
+    # amplitude*matrix_element/2.
+    # A pi pulse therefore requires
+    # amplitude*matrix_element*pulse_duration = pi.
+    amplitude = np.pi / (
+        matrix_element * pulse_duration
+    )
+
+    def hamiltonian(time):
+        return (
+            h_nv1
+            + amplitude
+            * np.cos(drive_frequency * time)
+            * sx
+        )
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * logical_zero
+
+    population_one = abs(
+        logical_one.overlap(final_state)
+    ) ** 2
+
+    assert population_one > 0.99
+
+
+def test_joas_nv2_physical_resonant_pi_pulse():
+    """A physical resonant pi pulse on NV2 rotates the logical states."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+    theta_nv2 = np.deg2rad(3.58)
+
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    logical_zero, logical_one = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    # Physical spin-1 transverse microwave operator.
+    sx, _, _ = spin_operators(1)
+
+    # Resonance frequency of the addressed dressed transition.
+    e0 = logical_zero.dag() * h_nv2 * logical_zero
+    e1 = logical_one.dag() * h_nv2 * logical_one
+    drive_frequency = float(np.real(e1 - e0))
+
+    # Physical transition matrix element.
+    matrix_element = abs(
+        logical_one.dag() * sx * logical_zero
+    )
+
+    pulse_duration = 0.1
+
+    # Calibrate a pi pulse in the rotating-wave approximation.
+    amplitude = np.pi / (
+        matrix_element * pulse_duration
+    )
+
+    def hamiltonian(time):
+        return (
+            h_nv2
+            + amplitude
+            * np.cos(drive_frequency * time)
+            * sx
+        )
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * logical_zero
+
+    population_one = abs(
+        logical_one.overlap(final_state)
+    ) ** 2
+
+    assert population_one > 0.99
