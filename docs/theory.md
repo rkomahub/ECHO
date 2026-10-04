@@ -504,3 +504,29 @@ U_{\mathrm{NV2}} = U_2\otimes I
 This mapping is specific to the ordering chosen for the Joas reduced basis and
 does not modify ECHO's generic tensor-product convention. Explicit tests are used
 to verify the mapping before constructing the gate dynamics.
+
+### Effective dressed-state interaction
+
+For two NV centers with different crystallographic orientations, the microscopic
+dipolar interaction must account for the rotation between their local frames, e.g.
+\[
+\mathbf{S}'_1 = R(\beta)\mathbf{S}_1.
+\]
+
+After diagonalizing the single-NV Hamiltonians and applying the secular
+approximation, the interaction reduces to
+\[
+H_{\mathrm{int}}^{\mathrm{eff}}
+=
+g(\mathbf r_{12},\beta,\mathbf B)\,
+\widetilde S'_{z,1}\otimes\widetilde S_{z,2}.
+\]
+
+The geometric rotation is therefore already incorporated in the derivation of
+the effective coupling \(g\) and the dressed operators. In the Joas
+reproduction, \(g\) is taken directly from the reported effective dipolar
+coupling, so no additional rotation of \(\widetilde S_{z,1}\) is applied.
+Applying \(R(\beta)\) again would double-count the geometric transformation.
+
+For a future geometry-resolved model, the rotation should instead be introduced
+at the microscopic dipolar-Hamiltonian level, before dressing and secularization.
