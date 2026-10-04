@@ -704,3 +704,53 @@ def test_xy8_gate_times_follow_joas_timing():
             nv2_times[k],
             (k + 1.0) * tau_1 - tau_2,
         )
+
+
+def test_xy8_joas_sequence_generates_sqrt_zz():
+    """The ideal XY8-1 Joas sequence generates sqrt(ZZ)."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+
+    nu_dip = 0.08
+    coupling = 2 * np.pi * nu_dip
+
+    n_pi = 8
+
+    tau_2 = 1 / (4 * n_pi * nu_dip)
+
+    # Must satisfy tau_2 <= tau_1 / 2.
+    tau_1 = 2.5 * tau_2
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=coupling,
+    )
+
+    intervals = xy8_gate_intervals(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    pulses = xy8_gate_pulses(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    propagator = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=intervals,
+        pulse_propagators=pulses,
+    )
+
+    matrix = propagator.full()
+
+    # Remove global phase.
+    matrix *= np.exp(
+        -1j * np.angle(matrix[0, 0])
+    )
+
+    assert np.allclose(
+        matrix,
+        sqrt_zz_gate().full(),
+    )
