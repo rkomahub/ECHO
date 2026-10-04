@@ -2060,3 +2060,176 @@ def test_joas_selective_dressed_pi_rotations():
     assert abs(
         spectator_nv2.overlap(x_nv2 * spectator_nv2)
     ) == pytest.approx(1.0)
+
+
+def test_joas_two_electron_ideal_xy8_gate():
+    """The physical 9D XY8 sequence implements sqrt(ZZ) or its inverse."""
+
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Physical single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    # --- Dressed bases and effective interaction ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    nu_dip = 0.11261
+    coupling = 2 * np.pi * nu_dip
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Actual logical states used in Joas setting 2 ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    logical_basis = two_electron_logical_basis(
+        nv1_states=(zero_nv1, one_nv1),
+        nv2_states=(zero_nv2, one_nv2),
+    )
+
+    # --- Test both signs of the staggered pulse offset ---
+
+    n_pi = 8
+
+    for tau_2_sign, target in [
+        (-1, sqrt_zz_gate()),
+        (+1, sqrt_zz_gate().dag()),
+    ]:
+        tau_2 = tau_2_sign / (
+            4 * n_pi * nu_dip
+        )
+
+        tau_1 = 2.5 * abs(tau_2)
+
+        schedule = xy8_gate_schedule(
+            tau_1=tau_1,
+            tau_2=tau_2,
+        )
+
+        durations = xy8_gate_intervals(
+            tau_1=tau_1,
+            tau_2=tau_2,
+        )
+
+        # --- Physical selective spin-1 pulses ---
+
+        identity = qeye(3)
+        pulses = []
+
+        for _, nv, phase in schedule:
+            if nv == 1:
+                local_pulse = selective_rotation(
+                    state_0=zero_nv1,
+                    state_1=one_nv1,
+                    angle=np.pi,
+                    axis=phase,
+                )
+
+                pulse = tensor(
+                    local_pulse,
+                    identity,
+                )
+
+            else:
+                local_pulse = selective_rotation(
+                    state_0=zero_nv2,
+                    state_1=one_nv2,
+                    angle=np.pi,
+                    axis=phase,
+                )
+
+                pulse = tensor(
+                    identity,
+                    local_pulse,
+                )
+
+            pulses.append(pulse)
+
+        # --- Ideal physical 9D XY8 evolution ---
+
+        propagator = finite_pulse_sequence_propagator(
+            free_hamiltonian=h_two,
+            durations=durations,
+            pulse_propagators=pulses,
+        )
+
+        # --- Projection onto the logical two-qubit subspace ---
+
+        logical_propagator = project_operator(
+            operator=propagator,
+            basis_states=logical_basis,
+        )
+
+        # Remove the physically irrelevant global phase.
+        phase = np.angle(
+            logical_propagator.full()[0, 0]
+        )
+
+        logical_propagator = (
+            np.exp(-1j * phase)
+            * logical_propagator
+        )
+
+        assert np.allclose(
+            logical_propagator.full(),
+            target.full(),
+            atol=1e-8,
+        )
