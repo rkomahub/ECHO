@@ -1594,3 +1594,383 @@ def test_joas_nv2_physical_resonant_pi_pulse():
     ) ** 2
 
     assert population_one > 0.99
+
+
+def test_joas_two_electron_nv1_physical_pi_pulse():
+    """The physical NV1 pulse survives embedding into the interacting \(9D\) system."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    # --- Dressed operators ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    coupling = 2 * np.pi * 0.11261
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Logical states ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, _ = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    initial_state = tensor(
+        zero_nv1,
+        zero_nv2,
+    )
+
+    target_state = tensor(
+        one_nv1,
+        zero_nv2,
+    )
+
+    # --- Physical NV1 microwave drive ---
+
+    sx, _, _ = spin_operators(1)
+
+    sx_nv1 = tensor(
+        sx,
+        qeye(3),
+    )
+
+    e0_nv1 = zero_nv1.dag() * h_nv1 * zero_nv1
+    e1_nv1 = one_nv1.dag() * h_nv1 * one_nv1
+
+    drive_frequency = float(
+        np.real(e1_nv1 - e0_nv1)
+    )
+
+    matrix_element = abs(
+        one_nv1.dag() * sx * zero_nv1
+    )
+
+    pulse_duration = 0.1
+
+    amplitude = np.pi / (
+        matrix_element * pulse_duration
+    )
+
+    def hamiltonian(time):
+        return (
+            h_two
+            + amplitude
+            * np.cos(drive_frequency * time)
+            * sx_nv1
+        )
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * initial_state
+
+    target_population = abs(
+        target_state.overlap(final_state)
+    ) ** 2
+
+    assert target_population > 0.99
+
+
+def test_joas_nv1_conditional_transition_shift():
+    """The NV1 transition frequency shifts in the presence of NV2 in the logical |1> state."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    # --- Effective dressed interaction ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    coupling = 2 * np.pi * 0.11261
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Actual Joas logical states ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    _, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    state_01 = tensor(
+        zero_nv1,
+        one_nv2,
+    )
+
+    state_11 = tensor(
+        one_nv1,
+        one_nv2,
+    )
+
+    # Transition frequency with NV2 in |1>.
+    energy_01 = state_01.dag() * h_two * state_01
+    energy_11 = state_11.dag() * h_two * state_11
+
+    conditional_frequency = float(
+        np.real(energy_11 - energy_01)
+    )
+
+    # Bare NV1 logical transition.
+    energy_0_nv1 = zero_nv1.dag() * h_nv1 * zero_nv1
+    energy_1_nv1 = one_nv1.dag() * h_nv1 * one_nv1
+
+    bare_frequency = float(
+        np.real(energy_1_nv1 - energy_0_nv1)
+    )
+
+    assert conditional_frequency == pytest.approx(
+        bare_frequency - coupling,
+        abs=1e-10,
+    )
+
+
+def test_joas_two_electron_nv2_physical_pi_pulse():
+    """The physical NV2 pulse survives embedding into the interacting \(9D\) system."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    # --- Dressed interaction ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    coupling = 2 * np.pi * 0.11261
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Logical states ---
+
+    zero_nv1, _ = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    initial_state = tensor(
+        zero_nv1,
+        zero_nv2,
+    )
+
+    target_state = tensor(
+        zero_nv1,
+        one_nv2,
+    )
+
+    # --- Physical NV2 microwave drive ---
+
+    sx, _, _ = spin_operators(1)
+
+    sx_nv2 = tensor(
+        qeye(3),
+        sx,
+    )
+
+    e0_nv2 = zero_nv2.dag() * h_nv2 * zero_nv2
+    e1_nv2 = one_nv2.dag() * h_nv2 * one_nv2
+
+    drive_frequency = float(
+        np.real(e1_nv2 - e0_nv2)
+    )
+
+    matrix_element = abs(
+        one_nv2.dag() * sx * zero_nv2
+    )
+
+    pulse_duration = 0.1
+
+    amplitude = np.pi / (
+        matrix_element * pulse_duration
+    )
+
+    def hamiltonian(time):
+        return (
+            h_two
+            + amplitude
+            * np.cos(drive_frequency * time)
+            * sx_nv2
+        )
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * initial_state
+
+    target_population = abs(
+        target_state.overlap(final_state)
+    ) ** 2
+
+    assert target_population > 0.99
