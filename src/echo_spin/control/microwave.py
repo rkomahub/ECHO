@@ -75,20 +75,3 @@ def microwave_hamiltonian(
         )
 
     return coefficient * control
-
-""" later describe two MW carries as (REMOVE LATER)
-drives = [
-    {
-        "omega": omega_1,
-        "phase": 0.0,
-        "omega_x": Omega_1_x,
-        "omega_y": Omega_1_y,
-    },
-    {
-        "omega": omega_2,
-        "phase": 0.0,
-        "omega_x": Omega_2_x,
-        "omega_y": Omega_2_y,
-    },
-]
-"""
