@@ -4,7 +4,13 @@ import pytest
 from qutip import Qobj, qeye, basis, tensor, sigmax, sigmay
 
 from echo_spin.core.system import SpinSystem
-from echo_spin.core.basis import project_operator
+from echo_spin.core.operators import spin_operators
+from echo_spin.core.basis import (
+    dressed_spin_one_basis,
+    dressed_spin_operators,
+    operator_in_basis,
+    project_operator,
+)
 from echo_spin.nv.frames import rotate_to_local_frame
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
@@ -1113,4 +1119,153 @@ def test_joas_setting_2_two_electron_spectrum():
         nv2_transitions,
         [2572.85177892, 3162.04745120],
         atol=1e-6,
+    )
+
+
+def test_joas_setting_2_dressed_spin_operators():
+    """The dressed spin operators are consistent with the spin-one operators."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # NV1 = A = target, misaligned
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    # NV2 = B = control, aligned
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    _, _, sz = spin_operators(1)
+
+    assert np.allclose(
+        operator_in_basis(sz_nv1, basis_nv1).full(),
+        sz.full(),
+        atol=1e-12,
+    )
+
+    assert np.allclose(
+        operator_in_basis(sz_nv2, basis_nv2).full(),
+        sz.full(),
+        atol=1e-12,
+    )
+
+
+def test_joas_setting_2_logical_effective_interaction():
+    """The effective interaction in the logical subspace is consistent with the coupling."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # NV1 = A = target, misaligned
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    # NV2 = B = control, aligned
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    coupling = 2 * np.pi * 0.11261
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    logical_nv1 = electron_logical_states(h_nv1)
+    logical_nv2 = electron_logical_states(h_nv2)
+
+    logical_basis = two_electron_logical_basis(
+        nv1_states=logical_nv1,
+        nv2_states=logical_nv2,
+    )
+
+    logical_interaction = project_operator(
+        operator=interaction,
+        basis_states=logical_basis,
+    )
+
+    expected = Qobj(
+        np.diag([
+            0.0,
+            0.0,
+            0.0,
+            coupling,
+        ])
+    )
+
+    assert np.allclose(
+        logical_interaction.full(),
+        expected.full(),
+        atol=1e-12,
     )
