@@ -12,7 +12,7 @@ from echo_spin.core.basis import (
     project_operator,
 )
 from echo_spin.nv.frames import rotate_to_local_frame
-from echo_spin.control.rotations import two_qubit_rotation
+from echo_spin.control.rotations import selective_rotation, two_qubit_rotation
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.dynamics.sequences import (
     toggling_hamiltonians,
@@ -1974,3 +1974,89 @@ def test_joas_two_electron_nv2_physical_pi_pulse():
     ) ** 2
 
     assert target_population > 0.99
+
+
+def test_joas_selective_dressed_pi_rotations():
+    """The selective dressed pi rotations swap the addressed logical states."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # NV1 = target, +1-like addressed branch
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    # NV2 = control, -1-like addressed branch
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    plus_nv1, _, minus_nv1 = dressed_spin_one_basis(h_nv1)
+    plus_nv2, _, minus_nv2 = dressed_spin_one_basis(h_nv2)
+
+    # Unused dressed level for each addressed transition.
+    spectator_nv1 = minus_nv1
+    spectator_nv2 = plus_nv2
+
+    x_nv1 = selective_rotation(
+        state_0=zero_nv1,
+        state_1=one_nv1,
+        angle=np.pi,
+        axis="x",
+    )
+
+    x_nv2 = selective_rotation(
+        state_0=zero_nv2,
+        state_1=one_nv2,
+        angle=np.pi,
+        axis="x",
+    )
+
+    # Addressed states are swapped.
+    assert abs(
+        one_nv1.overlap(x_nv1 * zero_nv1)
+    ) == pytest.approx(1.0)
+
+    assert abs(
+        one_nv2.overlap(x_nv2 * zero_nv2)
+    ) == pytest.approx(1.0)
+
+    # Unused spin-1 levels are spectators.
+    assert abs(
+        spectator_nv1.overlap(x_nv1 * spectator_nv1)
+    ) == pytest.approx(1.0)
+
+    assert abs(
+        spectator_nv2.overlap(x_nv2 * spectator_nv2)
+    ) == pytest.approx(1.0)
