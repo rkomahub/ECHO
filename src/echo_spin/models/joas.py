@@ -1,5 +1,6 @@
 import numpy as np
 from qutip import Qobj, qeye, tensor
+from echo_spin.core.basis import dressed_spin_one_basis
 from echo_spin.control.microwave import microwave_hamiltonian
 from echo_spin.control.rotations import two_qubit_rotation
 
@@ -236,3 +237,13 @@ def two_electron_logical_basis(
         tensor(nv1_1, nv2_0),
         tensor(nv1_1, nv2_1),
     ]
+
+
+def electron_logical_states(
+    hamiltonian: Qobj,
+) -> tuple[Qobj, Qobj]:
+    """Return dressed |0> and |1> electron-qubit states."""
+
+    plus_one, zero, _ = dressed_spin_one_basis(hamiltonian)
+
+    return zero, plus_one

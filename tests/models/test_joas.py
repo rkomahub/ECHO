@@ -3,8 +3,10 @@ import pytest
 
 from qutip import Qobj, qeye, basis, tensor, sigmax, sigmay
 
+from echo_spin.core.system import SpinSystem
 from echo_spin.core.basis import project_operator
 from echo_spin.control.rotations import two_qubit_rotation
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.dynamics.sequences import (
     toggling_hamiltonians,
     toggling_propagator,
@@ -13,6 +15,7 @@ from echo_spin.dynamics.sequences import (
 )
 from echo_spin.models.joas import (
     driven_hamiltonian,
+    electron_logical_states,
     free_hamiltonian,
     interaction_time,
     reduced_free_hamiltonian,
@@ -959,3 +962,42 @@ def test_two_electron_hamiltonian_projects_to_logical_subspace():
     )
 
     assert projected.shape == (4, 4)
+
+
+def test_electron_logical_states_axial_field():
+    system = SpinSystem([1])
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e=[0.0, 0.0, 0.10],
+    )
+
+    zero, one = electron_logical_states(hamiltonian)
+
+    expected_zero = basis(3, 1)
+    expected_one = basis(3, 0)
+
+    assert abs(expected_zero.overlap(zero)) ** 2 == pytest.approx(1.0)
+    assert abs(expected_one.overlap(one)) ** 2 == pytest.approx(1.0)
+
+
+def test_electron_logical_states_tilted_field_are_orthonormal():
+    system = SpinSystem([1])
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e=[0.05, 0.0, 0.10],
+    )
+
+    zero, one = electron_logical_states(hamiltonian)
+
+    assert zero.norm() == pytest.approx(1.0)
+    assert one.norm() == pytest.approx(1.0)
+    assert abs(zero.overlap(one)) == pytest.approx(
+        0.0,
+        abs=1e-12,
+    )
