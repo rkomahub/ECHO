@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qutip import Qobj, qeye, tensor, sigmax
+from qutip import Qobj, qeye, tensor, sigmax, sigmay
 
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.dynamics.sequences import (
@@ -753,4 +753,95 @@ def test_xy8_joas_sequence_generates_sqrt_zz():
     assert np.allclose(
         matrix,
         sqrt_zz_gate().full(),
+    )
+
+
+def test_finite_xy8_joas_gate_converges_to_sqrt_zz():
+    """Finite sine pulses approach the ideal XY8-1 sqrt(ZZ) gate."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+
+    nu_dip = 0.08
+    coupling = 2 * np.pi * nu_dip
+
+    n_pi = 8
+
+    tau_2 = 1 / (4 * n_pi * nu_dip)
+    tau_1 = 2.5 * tau_2
+
+    pulse_duration = 1e-3
+    steps = 500
+
+    free = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=coupling,
+    )
+
+    intervals = xy8_gate_intervals(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    peak_amplitude = sine_pi_pulse_amplitude(
+        pulse_duration
+    )
+
+    def envelope(time):
+        return sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+    pulse_propagators = []
+
+    for _, nv, phase in schedule:
+        if nv == 1:
+            qubit = 1
+        else:
+            qubit = 0
+
+        if phase == "x":
+            pauli = sigmax()
+        else:
+            pauli = sigmay()
+
+        if qubit == 0:
+            control = tensor(pauli, qeye(2))
+        else:
+            control = tensor(qeye(2), pauli)
+
+        pulse = finite_pulse_propagator(
+            free_hamiltonian=free,
+            control_operator=0.5 * control,
+            duration=pulse_duration,
+            envelope=envelope,
+            steps=steps,
+        )
+
+        pulse_propagators.append(pulse)
+
+    propagator = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=intervals,
+        pulse_propagators=pulse_propagators,
+    )
+
+    matrix = propagator.full()
+
+    # Remove global phase.
+    matrix *= np.exp(
+        -1j * np.angle(matrix[0, 0])
+    )
+
+    assert np.allclose(
+        matrix,
+        sqrt_zz_gate().full(),
+        atol=1e-2,
     )
