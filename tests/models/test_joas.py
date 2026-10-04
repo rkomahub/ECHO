@@ -2472,3 +2472,330 @@ def test_joas_nv1_finite_microwave_carrier_phase():
         -1.0,
         abs=1e-2,
     )
+
+
+def test_joas_nv1_finite_sine_pi_pulse_in_interacting_pair():
+    """A finite sine MW pi pulse drives NV1 correctly in the physical 9D pair."""
+
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Physical single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    # --- Dressed effective interaction ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    nu_dip = 0.11261
+    coupling = 2 * np.pi * nu_dip
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Joas logical branches ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, _ = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    initial = tensor(
+        zero_nv1,
+        zero_nv2,
+    )
+
+    target = tensor(
+        one_nv1,
+        zero_nv2,
+    )
+
+    # --- Physical NV1 microwave operator ---
+
+    sx, _, _ = spin_operators(1)
+    identity = qeye(3)
+
+    sx_nv1 = tensor(
+        sx,
+        identity,
+    )
+
+    # NV1 resonance frequency on the NV2 = |0> branch.
+    energy_zero = np.real(
+        zero_nv1.dag() * h_nv1 * zero_nv1
+    )
+
+    energy_one = np.real(
+        one_nv1.dag() * h_nv1 * one_nv1
+    )
+
+    transition_frequency = (
+        energy_one - energy_zero
+    )
+
+    matrix_element = abs(
+        one_nv1.dag()
+        * sx
+        * zero_nv1
+    )
+
+    # --- Finite sine-shaped pi pulse ---
+
+    pulse_duration = 0.1
+
+    peak_amplitude = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2.0)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def hamiltonian(time):
+        envelope = sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=sx_nv1,
+            drives=[
+                {
+                    "omega": transition_frequency,
+                    "phase": 0.0,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }
+            ],
+        )
+
+        return h_two + microwave
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final = propagator * initial
+
+    population = abs(
+        target.overlap(final)
+    ) ** 2
+
+    assert population > 0.99
+
+
+def test_joas_nv1_finite_sine_pi_pulse_with_conditional_shift():
+    """A finite NV1 pi pulse follows the dipolar conditional frequency shift."""
+
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    nu_dip = 0.11261
+    coupling = 2 * np.pi * nu_dip
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    _, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    initial = tensor(
+        zero_nv1,
+        one_nv2,
+    )
+
+    target = tensor(
+        one_nv1,
+        one_nv2,
+    )
+
+    sx, _, _ = spin_operators(1)
+    identity = qeye(3)
+
+    sx_nv1 = tensor(
+        sx,
+        identity,
+    )
+
+    energy_zero = np.real(
+        initial.dag() * h_two * initial
+    )
+
+    energy_one = np.real(
+        target.dag() * h_two * target
+    )
+
+    transition_frequency = (
+        energy_one - energy_zero
+    )
+
+    matrix_element = abs(
+        one_nv1.dag()
+        * sx
+        * zero_nv1
+    )
+
+    pulse_duration = 0.1
+
+    peak_amplitude = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2.0)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def hamiltonian(time):
+        envelope = sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=sx_nv1,
+            drives=[
+                {
+                    "omega": transition_frequency,
+                    "phase": 0.0,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }
+            ],
+        )
+
+        return h_two + microwave
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final = propagator * initial
+
+    population = abs(
+        target.overlap(final)
+    ) ** 2
+
+    assert population > 0.99
