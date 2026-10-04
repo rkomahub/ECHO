@@ -36,8 +36,9 @@ from echo_spin.models.joas import (
     xy8_gate_times
 )
 from echo_spin.gates.gates import sqrt_zz_gate
-from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.dynamics.propagators import time_dependent_propagator, rotating_frame_propagator
 from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude
+from echo_spin.control.microwave import microwave_hamiltonian
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
     """The free Hamiltonian should sum all NV and interaction terms."""
@@ -2233,3 +2234,241 @@ def test_joas_two_electron_ideal_xy8_gate():
             target.full(),
             atol=1e-8,
         )
+
+
+@pytest.mark.parametrize(
+    "axis, phase",
+    [
+        ("x", 0.0),
+        ("y", np.pi / 2),
+    ],
+)
+def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
+    """A resonant finite MW pulse implements the expected dressed X/Y pi rotation."""
+
+    system = SpinSystem([1])
+
+    omega_e = 2 * np.pi * 295.18
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega_e * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    # --- Addressed dressed transition: |0> <-> |+1> ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    energy_zero = np.real(
+        zero_nv1.dag() * h_nv1 * zero_nv1
+    )
+
+    energy_one = np.real(
+        one_nv1.dag() * h_nv1 * one_nv1
+    )
+
+    transition_frequency = energy_one - energy_zero
+
+    # --- Embed NV1 into the physical two-electron 9D space ---
+
+    identity = qeye(3)
+
+    h_two = tensor(h_nv1, identity)
+
+    sx, _, _ = spin_operators(1)
+    sx_nv1 = tensor(sx, identity)
+
+    initial = tensor(
+        zero_nv1,
+        zero_nv1,
+    )
+
+    target = tensor(
+        one_nv1,
+        zero_nv1,
+    )
+
+    # --- Finite sine-shaped pi pulse ---
+
+    pulse_duration = 0.1
+
+    matrix_element = abs(
+        one_nv1.dag() * sx * zero_nv1
+    )
+
+    # microwave_hamiltonian contributes a sqrt(2) factor.
+    # For a sine envelope,
+    #
+    # integral_0^T sin(pi t / T) dt = 2T/pi.
+    #
+    # Matching the pi-pulse area of the validated resonant
+    # rectangular drive gives:
+    #
+    # peak_amplitude = pi^2 / (2 sqrt(2) |<1|Sx|0>| T)
+    peak_amplitude = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2.0)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def hamiltonian(time):
+        envelope = sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=sx_nv1,
+            drives=[
+                {
+                    "omega": transition_frequency,
+                    "phase": phase,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }
+            ],
+        )
+
+        return h_two + microwave
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final = propagator * initial
+
+    population = abs(
+        target.overlap(final)
+    ) ** 2
+
+    assert population > 0.99
+
+
+def test_joas_nv1_finite_microwave_carrier_phase():
+    """A pi/2 carrier-phase shift changes the dressed rotation axis by pi/2."""
+
+    system = SpinSystem([1])
+
+    omega_e = 2 * np.pi * 295.18
+    theta_nv1 = np.deg2rad(74.08)
+
+    omega_nv1 = omega_e * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    sx, _, _ = spin_operators(1)
+
+    energy_zero = np.real(
+        zero_nv1.dag() * h_nv1 * zero_nv1
+    )
+    energy_one = np.real(
+        one_nv1.dag() * h_nv1 * one_nv1
+    )
+
+    transition_frequency = energy_one - energy_zero
+
+    matrix_element = abs(
+        one_nv1.dag() * sx * zero_nv1
+    )
+
+    pulse_duration = 0.1
+
+    peak_amplitude = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2.0)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def pulse_propagator(phase):
+        def hamiltonian(time):
+            envelope = sine_envelope(
+                time=time,
+                duration=pulse_duration,
+                peak_amplitude=peak_amplitude,
+            )
+
+            microwave = microwave_hamiltonian(
+                time=time,
+                control=sx,
+                drives=[
+                    {
+                        "omega": transition_frequency,
+                        "phase": phase,
+                        "omega_x": envelope,
+                        "omega_y": 0.0,
+                    }
+                ],
+            )
+
+            return h_nv1 + microwave
+
+        return time_dependent_propagator(
+            hamiltonian=hamiltonian,
+            t0=0.0,
+            t1=pulse_duration,
+            steps=5000,
+        )
+
+    x_logical = project_operator(
+        operator=pulse_propagator(0.0),
+        basis_states=[zero_nv1, one_nv1],
+    )
+
+    y_logical = project_operator(
+        operator=pulse_propagator(np.pi / 2),
+        basis_states=[zero_nv1, one_nv1],
+    )
+
+    x_ratio = (
+        x_logical.full()[0, 1]
+        / x_logical.full()[1, 0]
+    )
+
+    y_ratio = (
+        y_logical.full()[0, 1]
+        / y_logical.full()[1, 0]
+    )
+
+    assert y_ratio / x_ratio == pytest.approx(
+        -1.0,
+        abs=1e-2,
+    )
