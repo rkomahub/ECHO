@@ -966,6 +966,7 @@ def test_two_electron_hamiltonian_projects_to_logical_subspace():
 
 
 def test_electron_logical_states_axial_field():
+    """The electron logical states are the m_s = 0 and m_s = -1 states for an axial field."""
     system = SpinSystem([1])
 
     hamiltonian = electronic_nv_hamiltonian(
@@ -985,6 +986,7 @@ def test_electron_logical_states_axial_field():
 
 
 def test_electron_logical_states_tilted_field_are_orthonormal():
+    """The electron logical states are orthonormal for a tilted field."""
     system = SpinSystem([1])
 
     hamiltonian = electronic_nv_hamiltonian(
@@ -1005,6 +1007,7 @@ def test_electron_logical_states_tilted_field_are_orthonormal():
 
 
 def test_joas_nv1_local_frame_rotation():
+    """The Joas NV1 local frame rotation is consistent with the rotation matrix."""
     beta = np.deg2rad(70.53)
 
     vector = np.array([1.0, 2.0, 3.0])
@@ -1022,3 +1025,92 @@ def test_joas_nv1_local_frame_rotation():
     ])
 
     assert np.allclose(actual, expected)
+
+
+def test_joas_setting_2_two_electron_spectrum():
+    """The two-electron Hamiltonian spectrum matches the Joas setting 2 spectrum."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # NV1 = center A = target, strongly misaligned
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    # NV2 = center B = control, approximately aligned
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    interaction = Qobj(
+        np.zeros((9, 9)),
+        dims=[[3, 3], [3, 3]],
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    energies_nv1 = np.sort(h_nv1.eigenenergies())
+    energies_nv2 = np.sort(h_nv2.eigenenergies())
+
+    expected = np.sort(
+        np.array([
+            e1 + e2
+            for e1 in energies_nv1
+            for e2 in energies_nv2
+        ])
+    )
+
+    actual = np.sort(h_two.eigenenergies())
+
+    assert h_two.shape == (9, 9)
+    assert np.allclose(actual, expected)
+
+    # Ground-state energy of the two-electron system
+    ground = actual[0]
+
+    # Excite NV1 while NV2 remains in its ground state
+    nv1_transitions = (
+        energies_nv1[1:] - energies_nv1[0]
+    ) / (2 * np.pi)
+
+    # Excite NV2 while NV1 remains in its ground state
+    nv2_transitions = (
+        energies_nv2[1:] - energies_nv2[0]
+    ) / (2 * np.pi)
+
+    assert np.allclose(
+        nv1_transitions,
+        [2825.45481206, 2988.99810054],
+        atol=1e-6,
+    )
+
+    assert np.allclose(
+        nv2_transitions,
+        [2572.85177892, 3162.04745120],
+        atol=1e-6,
+    )
