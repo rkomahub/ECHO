@@ -16,6 +16,7 @@ from echo_spin.models.joas import (
     interaction_time,
     reduced_free_hamiltonian,
     sequence_duration,
+    two_electron_hamiltonian,
     two_pulse_gate_durations,
     xy8_gate_intervals,
     xy8_gate_pulses,
@@ -844,4 +845,44 @@ def test_finite_xy8_joas_gate_converges_to_sqrt_zz():
         matrix,
         sqrt_zz_gate().full(),
         atol=1e-2,
+    )
+
+
+def test_two_electron_hamiltonian_has_dimension_nine():
+    h_nv1 = Qobj(np.diag([1.0, 0.0, 2.0]))
+    h_nv2 = Qobj(np.diag([3.0, 0.0, 4.0]))
+
+    interaction = 0.1 * qeye([3, 3])
+
+    hamiltonian = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    assert hamiltonian.shape == (9, 9)
+    assert hamiltonian.dims == [[3, 3], [3, 3]]
+
+
+def test_two_electron_hamiltonian_sums_local_terms():
+    h_nv1 = Qobj(np.diag([1.0, 0.0, 2.0]))
+    h_nv2 = Qobj(np.diag([3.0, 0.0, 4.0]))
+
+    interaction = 0.1 * qeye([3, 3])
+
+    actual = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    expected = (
+        tensor(h_nv1, qeye(3))
+        + tensor(qeye(3), h_nv2)
+        + interaction
+    )
+
+    assert np.allclose(
+        actual.full(),
+        expected.full(),
     )

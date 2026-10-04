@@ -1,5 +1,5 @@
 import numpy as np
-from qutip import Qobj
+from qutip import Qobj, qeye, tensor
 from echo_spin.control.microwave import microwave_hamiltonian
 from echo_spin.control.rotations import two_qubit_rotation
 
@@ -203,3 +203,19 @@ def xy8_gate_pulses(
         )
 
     return pulses
+
+
+def two_electron_hamiltonian(
+    h_nv1: Qobj,
+    h_nv2: Qobj,
+    interaction: Qobj,
+) -> Qobj:
+    """Hamiltonian of two spin-1 NV electrons."""
+
+    identity = qeye(3)
+
+    return (
+        tensor(h_nv1, identity)
+        + tensor(identity, h_nv2)
+        + interaction
+    )
