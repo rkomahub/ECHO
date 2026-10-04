@@ -219,3 +219,20 @@ def two_electron_hamiltonian(
         + tensor(identity, h_nv2)
         + interaction
     )
+
+
+def two_electron_logical_basis(
+    nv1_states: tuple[Qobj, Qobj],
+    nv2_states: tuple[Qobj, Qobj],
+) -> list[Qobj]:
+    """Construct the two-electron logical product basis."""
+
+    nv1_0, nv1_1 = nv1_states
+    nv2_0, nv2_1 = nv2_states
+
+    return [
+        tensor(nv1_0, nv2_0),
+        tensor(nv1_0, nv2_1),
+        tensor(nv1_1, nv2_0),
+        tensor(nv1_1, nv2_1),
+    ]

@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 
-from qutip import Qobj, qeye, tensor, sigmax, sigmay
+from qutip import Qobj, qeye, basis, tensor, sigmax, sigmay
 
+from echo_spin.core.basis import project_operator
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.dynamics.sequences import (
     toggling_hamiltonians,
@@ -17,6 +18,7 @@ from echo_spin.models.joas import (
     reduced_free_hamiltonian,
     sequence_duration,
     two_electron_hamiltonian,
+    two_electron_logical_basis,
     two_pulse_gate_durations,
     xy8_gate_intervals,
     xy8_gate_pulses,
@@ -157,6 +159,7 @@ def test_joas_two_pulse_toggling_hamiltonians():
 
 
 def test_two_pulse_gate_durations():
+    """The two-pulse gate durations are consistent with the Joas timing convention."""
     tau_1 = 0.8
     tau_2 = 0.2
 
@@ -177,6 +180,7 @@ def test_two_pulse_gate_durations():
 
 
 def test_two_pulse_gate_durations_rejects_large_tau_2():
+    """The two-pulse gate durations reject tau_2 > tau_1 / 2."""
     with pytest.raises(ValueError):
         two_pulse_gate_durations(
             tau_1=0.8,
@@ -522,6 +526,7 @@ def test_finite_joas_sequence_converges_to_sqrt_zz():
 
 
 def test_joas_sequence_timing():
+    """The Joas sequence timing functions return the expected values."""
     tau_1 = 3000e-9
     tau_2 = 200e-9
     n_pi = 8
@@ -538,6 +543,7 @@ def test_joas_sequence_timing():
 
 
 def test_xy8_gate_times_rejects_invalid_tau_2():
+    """The XY8 gate times reject tau_2 > tau_1 / 2."""
     with pytest.raises(ValueError):
         xy8_gate_times(
             tau_1=800e-9,
@@ -546,6 +552,7 @@ def test_xy8_gate_times_rejects_invalid_tau_2():
 
 
 def test_xy8_gate_schedule_contains_sixteen_pulses():
+    """The XY8-1 Joas gate schedule contains 16 ideal pi pulses."""
     schedule = xy8_gate_schedule(
         tau_1=800e-9,
         tau_2=200e-9,
@@ -555,6 +562,7 @@ def test_xy8_gate_schedule_contains_sixteen_pulses():
 
 
 def test_xy8_gate_schedule_is_chronological():
+    """The XY8 gate schedule is chronological for valid tau_1 and tau_2."""
     schedule = xy8_gate_schedule(
         tau_1=800e-9,
         tau_2=200e-9,
@@ -569,6 +577,7 @@ def test_xy8_gate_schedule_is_chronological():
 
 
 def test_xy8_gate_schedule_preserves_xy8_cycles():
+    """The XY8 gate schedule preserves the XY8-1 pulse cycles on both NVs."""
     schedule = xy8_gate_schedule(
         tau_1=800e-9,
         tau_2=200e-9,
@@ -589,6 +598,7 @@ def test_xy8_gate_schedule_preserves_xy8_cycles():
 
 
 def test_xy8_gate_intervals_contains_seventeen_intervals():
+    """The XY8 gate intervals contain 17 free-evolution periods."""
     intervals = xy8_gate_intervals(
         tau_1=800e-9,
         tau_2=200e-9,
@@ -598,6 +608,7 @@ def test_xy8_gate_intervals_contains_seventeen_intervals():
 
 
 def test_xy8_gate_intervals_sum_to_gate_duration():
+    """The XY8 gate intervals sum to the total gate duration."""
     tau_1 = 800e-9
 
     intervals = xy8_gate_intervals(
@@ -612,6 +623,7 @@ def test_xy8_gate_intervals_sum_to_gate_duration():
 
 
 def test_xy8_gate_intervals_are_positive():
+    """The XY8 gate intervals are positive for valid tau_1 and tau_2."""
     intervals = xy8_gate_intervals(
         tau_1=800e-9,
         tau_2=200e-9,
@@ -621,6 +633,7 @@ def test_xy8_gate_intervals_are_positive():
 
 
 def test_xy8_gate_intervals_tau_2_zero():
+    """The XY8 gate intervals are positive when tau_2 is zero."""
     tau_1 = 800e-9
 
     intervals = xy8_gate_intervals(
@@ -632,6 +645,7 @@ def test_xy8_gate_intervals_tau_2_zero():
 
 
 def test_xy8_gate_pulses_contains_sixteen_pulses():
+    """The XY8-1 Joas gate contains 16 ideal pi pulses."""
     pulses = xy8_gate_pulses(
         tau_1=800e-9,
         tau_2=200e-9,
@@ -641,6 +655,7 @@ def test_xy8_gate_pulses_contains_sixteen_pulses():
 
 
 def test_xy8_gate_accumulates_expected_conditional_phase():
+    """The ideal XY8-1 Joas sequence accumulates the expected conditional phase."""
     delta_1 = 0.31
     delta_2 = -0.17
     coupling = 0.08
@@ -684,6 +699,7 @@ def test_xy8_gate_accumulates_expected_conditional_phase():
 
 
 def test_xy8_gate_times_follow_joas_timing():
+    """The XY8 gate times follow the Joas two-pulse timing convention."""
     tau_1 = 800e-9
     tau_2 = 200e-9
 
@@ -849,6 +865,7 @@ def test_finite_xy8_joas_gate_converges_to_sqrt_zz():
 
 
 def test_two_electron_hamiltonian_has_dimension_nine():
+    """The two-electron Hamiltonian is a 9x9 operator."""
     h_nv1 = Qobj(np.diag([1.0, 0.0, 2.0]))
     h_nv2 = Qobj(np.diag([3.0, 0.0, 4.0]))
 
@@ -865,6 +882,7 @@ def test_two_electron_hamiltonian_has_dimension_nine():
 
 
 def test_two_electron_hamiltonian_sums_local_terms():
+    """The two-electron Hamiltonian should sum the local NV terms."""
     h_nv1 = Qobj(np.diag([1.0, 0.0, 2.0]))
     h_nv2 = Qobj(np.diag([3.0, 0.0, 4.0]))
 
@@ -886,3 +904,58 @@ def test_two_electron_hamiltonian_sums_local_terms():
         actual.full(),
         expected.full(),
     )
+
+
+def test_two_electron_logical_basis():
+    """The two-electron logical basis is the tensor product of the NV logical states."""
+    nv1_0 = basis(3, 1)
+    nv1_1 = basis(3, 0)
+
+    nv2_0 = basis(3, 1)
+    nv2_1 = basis(3, 0)
+
+    logical_basis = two_electron_logical_basis(
+        nv1_states=(nv1_0, nv1_1),
+        nv2_states=(nv2_0, nv2_1),
+    )
+
+    expected = [
+        tensor(nv1_0, nv2_0),
+        tensor(nv1_0, nv2_1),
+        tensor(nv1_1, nv2_0),
+        tensor(nv1_1, nv2_1),
+    ]
+
+    assert len(logical_basis) == 4
+
+    for actual, target in zip(logical_basis, expected):
+        assert np.allclose(
+            actual.full(),
+            target.full(),
+        )
+
+
+def test_two_electron_hamiltonian_projects_to_logical_subspace():
+    """The two-electron Hamiltonian projects to a 4x4 operator in the logical subspace."""
+    h_nv1 = Qobj(np.diag([1.0, 0.0, 2.0]))
+    h_nv2 = Qobj(np.diag([3.0, 0.0, 4.0]))
+
+    interaction = 0.1 * qeye([3, 3])
+
+    full = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    logical_basis = two_electron_logical_basis(
+        nv1_states=(basis(3, 1), basis(3, 0)),
+        nv2_states=(basis(3, 1), basis(3, 0)),
+    )
+
+    projected = project_operator(
+        operator=full,
+        basis_states=logical_basis,
+    )
+
+    assert projected.shape == (4, 4)
