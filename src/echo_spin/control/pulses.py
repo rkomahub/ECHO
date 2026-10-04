@@ -23,3 +23,19 @@ def sine_pi_pulse_amplitude(duration: float) -> float:
 
     rabi_frequency = np.pi / duration
     return (np.pi / 2) * rabi_frequency
+
+
+def centered_sine_envelope(
+    time: float,
+    center: float,
+    duration: float,
+    peak_amplitude: float,
+) -> float:
+    """Return a sine pulse centered at an absolute time."""
+    local_time = time - center + duration / 2
+
+    return sine_envelope(
+        time=local_time,
+        duration=duration,
+        peak_amplitude=peak_amplitude,
+    )

@@ -3,7 +3,7 @@ import pytest
 
 from qutip import sigmax, sigmaz
 
-from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude
+from echo_spin.control.pulses import centered_sine_envelope, sine_envelope, sine_pi_pulse_amplitude
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.dynamics.propagators import time_dependent_propagator
 
@@ -164,3 +164,25 @@ def test_sine_pi_pulse_converges_to_ideal_rotation_when_shortened():
     )
 
     assert errors[-1] < 0.01
+
+
+def test_centered_sine_envelope():
+    duration = 0.2
+    center = 1.0
+    amplitude = 3.0
+
+    assert centered_sine_envelope(
+        0.9, center, duration, amplitude
+    ) == pytest.approx(0.0)
+
+    assert centered_sine_envelope(
+        1.0, center, duration, amplitude
+    ) == pytest.approx(amplitude)
+
+    assert centered_sine_envelope(
+        1.1, center, duration, amplitude
+    ) == pytest.approx(0.0)
+
+    assert centered_sine_envelope(
+        0.8, center, duration, amplitude
+    ) == pytest.approx(0.0)
