@@ -1,3 +1,5 @@
+import numpy as np
+
 from qutip import Qobj, qeye, tensor
 
 
@@ -115,3 +117,45 @@ def electron_nuclear_dynamical_map(
     )
 
     return evolved_state.ptrace([0, 2])
+
+
+def logical_electron_nuclear_dynamical_map(
+    density_matrix: Qobj,
+    propagator: Qobj,
+    logical_basis: list[Qobj],
+    nuclear_states: list[Qobj],
+) -> Qobj:
+    """Evolve a logical two-electron state and project back to the logical subspace."""
+    import numpy as np
+
+    if len(logical_basis) != density_matrix.shape[0]:
+        raise ValueError(
+            "Logical basis size must match the density-matrix dimension."
+        )
+
+    isometry = np.column_stack([
+        state.full().ravel()
+        for state in logical_basis
+    ])
+
+    physical_density = Qobj(
+        isometry
+        @ density_matrix.full()
+        @ isometry.conj().T,
+        dims=logical_basis[0].proj().dims,
+    )
+
+    final_electron_density = electron_nuclear_dynamical_map(
+        density_matrix=physical_density,
+        propagator=propagator,
+        nuclear_states=nuclear_states,
+    )
+
+    logical_density = Qobj(
+        isometry.conj().T
+        @ final_electron_density.full()
+        @ isometry,
+        dims=density_matrix.dims,
+    )
+
+    return logical_density

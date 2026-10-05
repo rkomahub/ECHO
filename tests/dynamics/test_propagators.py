@@ -9,6 +9,7 @@ from echo_spin.dynamics.propagators import (
     static_propagator,
     time_dependent_propagator,
     unitary_dynamical_map,
+    logical_electron_nuclear_dynamical_map,
 )
 
 
@@ -294,3 +295,103 @@ def test_electron_nuclear_dynamical_map_spin_one_identity():
 
     assert result.dims == [[3, 3], [3, 3]]
     assert (result - rho_e).norm() < 1e-12
+
+
+def test_logical_electron_nuclear_dynamical_map_identity():
+    """An identity evolution preserves a logical state with no leakage."""
+    logical_basis = [
+        tensor(basis(3, 0), basis(3, 0)),
+        tensor(basis(3, 0), basis(3, 1)),
+        tensor(basis(3, 1), basis(3, 0)),
+        tensor(basis(3, 1), basis(3, 1)),
+    ]
+
+    logical_state = tensor(
+        basis(2, 0),
+        basis(2, 1),
+    )
+
+    density_matrix = logical_state.proj()
+
+    propagator = qeye([3, 3, 3, 3])
+
+    nuclear_state = qeye(3) / 3
+
+    result = logical_electron_nuclear_dynamical_map(
+        density_matrix=density_matrix,
+        propagator=propagator,
+        logical_basis=logical_basis,
+        nuclear_states=[
+            nuclear_state,
+            nuclear_state,
+        ],
+    )
+
+    assert result.dims == [[2, 2], [2, 2]]
+
+    assert np.allclose(
+        result.full(),
+        density_matrix.full(),
+    )
+
+    assert np.isclose(
+        result.tr(),
+        1.0,
+    )
+
+
+def test_logical_electron_nuclear_dynamical_map_preserves_leakage():
+    """Population outside the logical subspace appears as trace loss."""
+    logical_basis = [
+        tensor(basis(3, 0), basis(3, 0)),
+        tensor(basis(3, 0), basis(3, 1)),
+        tensor(basis(3, 1), basis(3, 0)),
+        tensor(basis(3, 1), basis(3, 1)),
+    ]
+
+    initial_state = tensor(
+        basis(2, 0),
+        basis(2, 0),
+    )
+
+    density_matrix = initial_state.proj()
+
+    # Swap physical electron-1 states |0> and |2>.
+    swap = Qobj(
+        np.array([
+            [0, 0, 1],
+            [0, 1, 0],
+            [1, 0, 0],
+        ]),
+    )
+
+    electron_propagator = tensor(
+        swap,
+        qeye(3),
+    )
+
+    # Full ordering: e1, n1, e2, n2.
+    propagator = tensor(
+        swap,
+        qeye(3),
+        qeye(3),
+        qeye(3),
+    )
+
+    nuclear_state = qeye(3) / 3
+
+    result = logical_electron_nuclear_dynamical_map(
+        density_matrix=density_matrix,
+        propagator=propagator,
+        logical_basis=logical_basis,
+        nuclear_states=[
+            nuclear_state,
+            nuclear_state,
+        ],
+    )
+
+    assert np.isclose(
+        result.tr(),
+        0.0,
+        atol=1e-12,
+    )
