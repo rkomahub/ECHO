@@ -3385,7 +3385,7 @@ def test_joas_delayed_x_pulse_phase():
 
 
 def test_joas_setting_2_full_nv_hamiltonian():
-    """The full NV Hamiltonian reproduces the expected 9D Hilbert space."""
+    """Build the full Joas Setting 2 free Hamiltonian with N14 nuclei."""
     system = SpinSystem([1, 1, 1, 1])
 
     D_1 = 2 * np.pi * 2865.42
@@ -3452,8 +3452,83 @@ def test_joas_setting_2_full_nv_hamiltonian():
     assert hamiltonian.shape == (81, 81)
     assert hamiltonian.isherm
 
+    # --- Electronic dressed interaction ---
+
+    electron_system = SpinSystem([1])
+
+    h_e1 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_1,
+        omega_e=omega_e_1,
+    )
+
+    h_e2 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_2,
+        omega_e=omega_e_2,
+    )
+
+    basis_e1 = dressed_spin_one_basis(h_e1)
+    basis_e2 = dressed_spin_one_basis(h_e2)
+
+    _, _, sz_e1 = dressed_spin_operators(
+        basis_states=basis_e1,
+        spin=1,
+    )
+
+    _, _, sz_e2 = dressed_spin_operators(
+        basis_states=basis_e2,
+        spin=1,
+    )
+
+    sz_e1_full = embed_operator(
+        operator=sz_e1,
+        site=0,
+        system=system,
+    )
+
+    sz_e2_full = embed_operator(
+        operator=sz_e2,
+        site=2,
+        system=system,
+    )
+
+    g = 2 * np.pi * 0.11261
+
+    interaction = g * sz_e1_full * sz_e2_full
+
+    h_free = hamiltonian + interaction
+
     single_nv_system = SpinSystem([1, 1])
 
+    assert interaction.shape == (81, 81)
+    assert interaction.isherm
+
+    assert h_free.shape == (81, 81)
+    assert h_free.isherm
+
+    zz_full = sz_e1_full * sz_e2_full
+
+    numerator = (zz_full.dag() * interaction).tr()
+    denominator = (zz_full.dag() * zz_full).tr()
+
+    extracted_g = numerator / denominator
+
+    assert np.isclose(
+        np.real(extracted_g),
+        g,
+        rtol=1e-12,
+    )
+    assert np.isclose(
+        np.imag(extracted_g),
+        0.0,
+        atol=1e-12,
+    )
+
+    #Spectroscopy validation of the individual NV centers
+    """
     h_nv1 = nv_hamiltonian(
         system=single_nv_system,
         electron_site=0,
@@ -3502,3 +3577,4 @@ def test_joas_setting_2_full_nv_hamiltonian():
     print("NV2 allowed transitions:")
     for frequency, strength, i, j in transitions_nv2:
         print(f"{frequency / (2*np.pi):.6f} MHz  strength={strength:.6f}  {i}->{j}")
+    """
