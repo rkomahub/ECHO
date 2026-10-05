@@ -1,4 +1,4 @@
-from qutip import Qobj, qeye
+from qutip import Qobj, qeye, tensor
 
 
 def static_propagator(
@@ -70,3 +70,48 @@ def unitary_dynamical_map(
 ) -> Qobj:
     """Evolve a density matrix under a unitary propagator."""
     return propagator * density_matrix * propagator.dag()
+
+
+def reduced_dynamical_map(
+    density_matrix: Qobj,
+    propagator: Qobj,
+    environment_state: Qobj,
+    keep: list[int],
+) -> Qobj:
+    """Evolve a system with an environment and trace out unwanted subsystems."""
+    initial_state = tensor(
+        density_matrix,
+        environment_state,
+    )
+
+    evolved_state = (
+        propagator
+        * initial_state
+        * propagator.dag()
+    )
+
+    return evolved_state.ptrace(keep)
+
+
+def electron_nuclear_dynamical_map(
+    density_matrix: Qobj,
+    propagator: Qobj,
+    nuclear_states: list[Qobj],
+) -> Qobj:
+    """Evolve two electrons with interleaved nuclei and trace out the nuclei."""
+    if len(nuclear_states) != 2:
+        raise ValueError("Two nuclear states must be provided.")
+
+    initial_state = tensor(
+        density_matrix,
+        nuclear_states[0],
+        nuclear_states[1],
+    ).permute([0, 2, 1, 3])
+
+    evolved_state = (
+        propagator
+        * initial_state
+        * propagator.dag()
+    )
+
+    return evolved_state.ptrace([0, 2])

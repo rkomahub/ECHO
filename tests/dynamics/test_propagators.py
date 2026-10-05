@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
-from qutip import Qobj, basis, qeye, sigmax
+from qutip import Qobj, basis, qeye, sigmax, tensor
 
 from echo_spin.dynamics.propagators import (
+    electron_nuclear_dynamical_map,
     rotating_frame_hamiltonian,
     rotating_frame_propagator,
     static_propagator,
@@ -189,3 +190,81 @@ def test_unitary_dynamical_map():
         evolved.full(),
         expected.full(),
     )
+
+
+def test_partial_trace_interleaved_electron_nuclear_system():
+    """Check that the partial trace works for an interleaved electron-nuclear system."""
+    rho_e1 = basis(2, 0).proj()
+    rho_n1 = qeye(3) / 3
+    rho_e2 = basis(2, 1).proj()
+    rho_n2 = qeye(3) / 3
+
+    rho_full = tensor(
+        rho_e1,
+        rho_n1,
+        rho_e2,
+        rho_n2,
+    )
+
+    rho_electronic = rho_full.ptrace([0, 2])
+
+    expected = tensor(
+        rho_e1,
+        rho_e2,
+    )
+
+    assert (rho_electronic - expected).norm() < 1e-12
+
+
+def test_embed_electronic_state_with_interleaved_nuclei():
+    """Check that an electronic state can be embedded in a larger system with interleaved nuclei."""
+    bell = (
+    tensor(basis(2, 0), basis(2, 0))
+    + tensor(basis(2, 1), basis(2, 1))
+    ).unit()
+
+    rho_e = bell.proj()
+
+    rho_n1 = qeye(3) / 3
+    rho_n2 = qeye(3) / 3
+
+    rho_full = tensor(
+        rho_e,
+        rho_n1,
+        rho_n2,
+    ).permute([0, 2, 1, 3])
+
+    assert rho_full.dims == [
+        [2, 3, 2, 3],
+        [2, 3, 2, 3],
+    ]
+
+    recovered_electrons = rho_full.ptrace([0, 2])
+
+    assert (recovered_electrons - rho_e).norm() < 1e-12
+
+
+def test_electron_nuclear_dynamical_map_identity():
+    """Check that the electron-nuclear dynamical map reduces to the identity for a trivial propagator."""
+    bell = (
+        tensor(basis(2, 0), basis(2, 0))
+        + tensor(basis(2, 1), basis(2, 1))
+    ).unit()
+
+    rho_e = bell.proj()
+
+    nuclear_states = [
+        qeye(3) / 3,
+        qeye(3) / 3,
+    ]
+
+    propagator = qeye([2, 3, 2, 3])
+
+    result = electron_nuclear_dynamical_map(
+        density_matrix=rho_e,
+        propagator=propagator,
+        nuclear_states=nuclear_states,
+    )
+
+    assert result.dims == [[2, 2], [2, 2]]
+    assert (result - rho_e).norm() < 1e-12
