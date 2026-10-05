@@ -27,3 +27,36 @@ def electronic_spectrum(
     )
 
     return transition_frequencies(hamiltonian)
+
+
+def allowed_transitions(
+    hamiltonian: Qobj,
+    control_operator: Qobj,
+    threshold: float = 1e-10,
+) -> list[tuple]:
+    """Return transitions coupled by a control operator."""
+    eigenvalues, eigenstates = hamiltonian.eigenstates()
+
+    transitions = []
+
+    for i in range(len(eigenstates)):
+        for j in range(i + 1, len(eigenstates)):
+            matrix_element = (
+                eigenstates[j].dag()
+                * control_operator
+                * eigenstates[i]
+            )
+
+            strength = abs(matrix_element) ** 2
+
+            if strength > threshold:
+                transitions.append(
+                    (
+                        eigenvalues[j] - eigenvalues[i],
+                        strength,
+                        i,
+                        j,
+                    )
+                )
+
+    return transitions
