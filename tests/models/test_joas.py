@@ -35,8 +35,16 @@ from echo_spin.models.joas import (
     xy8_gate_schedule,
     xy8_gate_times
 )
-from echo_spin.gates.gates import sqrt_zz_gate, conditional_phase
-from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.gates.gates import (
+    sqrt_zz_gate,
+    conditional_phase,
+    remove_local_z_phases,
+    average_gate_fidelity,
+)
+from echo_spin.dynamics.propagators import(
+     time_dependent_propagator,
+     unitary_dynamical_map,
+)
 from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude, centered_sine_envelope
 from echo_spin.control.microwave import microwave_hamiltonian
 
@@ -3084,6 +3092,8 @@ def test_joas_two_electron_finite_xy8_gate():
         basis_states=logical_basis,
     )
 
+    logical_propagator.dims = [[2, 2], [2, 2]]
+
     # First diagnostic: logical-subspace survival.
     survival = (
         np.linalg.norm(
@@ -3096,6 +3106,45 @@ def test_joas_two_electron_finite_xy8_gate():
     assert survival > 0.95
 
     target = sqrt_zz_gate().dag()
+
+    corrected_propagator = remove_local_z_phases(
+            logical_propagator
+        )
+    
+    corrected_target = remove_local_z_phases(
+        target
+    )
+
+    corrected_gate_error = np.linalg.norm(
+        corrected_propagator.full()
+        - corrected_target.full()
+    )
+
+    print(
+        "corrected gate error =",
+        corrected_gate_error,
+    )
+
+    logical_basis_states = [
+        tensor(basis(2, 0), basis(2, 0)),
+        tensor(basis(2, 0), basis(2, 1)),
+        tensor(basis(2, 1), basis(2, 0)),
+        tensor(basis(2, 1), basis(2, 1)),
+    ]
+
+    def dynamical_map(density_matrix):
+        return unitary_dynamical_map(
+            density_matrix=density_matrix,
+            propagator=corrected_propagator,
+        )
+
+    fidelity = average_gate_fidelity(
+        dynamical_map=dynamical_map,
+        target=corrected_target,
+        basis_states=logical_basis_states,
+    )
+
+    print("average gate fidelity =", fidelity)
 
     # Remove global phase using the Hilbert-Schmidt overlap.
     overlap = np.trace(
@@ -3136,6 +3185,7 @@ def test_joas_two_electron_finite_xy8_gate():
 
     assert survival > 0.999
     assert abs(phase_error) < 0.01
+    assert fidelity > 0.999
 
 
 def test_joas_finite_pi_pulse_at_nonzero_time():
