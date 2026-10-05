@@ -49,7 +49,7 @@ from echo_spin.dynamics.propagators import(
      unitary_dynamical_map,
 )
 from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude, centered_sine_envelope
-from echo_spin.control.microwave import microwave_hamiltonian
+from echo_spin.control.microwave import microwave_hamiltonian, control_operator
 from echo_spin.spectroscopy.transitions import allowed_transitions
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
@@ -3619,3 +3619,134 @@ def test_joas_setting_2_full_nv_hamiltonian():
     purity = (rho_evolved * rho_evolved).tr().real
 
     assert 0.0 < purity < 1.0
+
+
+def test_joas_setting_2_full_control_operator():
+    """Build the full Joas microwave control operator with N14 nuclei."""
+
+    # ------------------------------------------------------------------
+    # 1. Define the full two-NV system
+    # ------------------------------------------------------------------
+
+    system = SpinSystem([1, 1, 1, 1])
+    electron_system = SpinSystem([1])
+
+    D_1 = 2 * np.pi * 2865.42
+    D_2 = 2 * np.pi * 2867.27
+
+    omega_e = 2 * np.pi * 295.18
+
+    theta_1 = np.deg2rad(74.08)
+    theta_2 = np.deg2rad(3.58)
+
+    omega_e_1 = omega_e * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_e_2 = omega_e * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    # ------------------------------------------------------------------
+    # 2. Build the electronic dressed bases
+    # ------------------------------------------------------------------
+
+    h_e1 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_1,
+        omega_e=omega_e_1,
+    )
+
+    h_e2 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_2,
+        omega_e=omega_e_2,
+    )
+
+    basis_e1 = dressed_spin_one_basis(h_e1)
+    basis_e2 = dressed_spin_one_basis(h_e2)
+
+    # ------------------------------------------------------------------
+    # 3. Build the dressed electronic Sx operators
+    # ------------------------------------------------------------------
+
+    sx_e1, _, _ = dressed_spin_operators(
+        basis_states=basis_e1,
+        spin=1,
+    )
+
+    sx_e2, _, _ = dressed_spin_operators(
+        basis_states=basis_e2,
+        spin=1,
+    )
+
+    sx_e1_full = embed_operator(
+        operator=sx_e1,
+        site=0,
+        system=system,
+    )
+
+    sx_e2_full = embed_operator(
+        operator=sx_e2,
+        site=2,
+        system=system,
+    )
+
+    # ------------------------------------------------------------------
+    # 4. Build the nuclear Ix operators
+    # ------------------------------------------------------------------
+
+    ix, _, _ = spin_operators(1)
+
+    ix_n1_full = embed_operator(
+        operator=ix,
+        site=1,
+        system=system,
+    )
+
+    ix_n2_full = embed_operator(
+        operator=ix,
+        site=3,
+        system=system,
+    )
+
+    # ------------------------------------------------------------------
+    # 5. Construct the complete Joas control operator
+    # ------------------------------------------------------------------
+
+    gamma_ratio = 3.076272e-3 / (-28.02495)
+
+    control = control_operator(
+        electronic_x_operators=[
+            sx_e1_full,
+            sx_e2_full,
+        ],
+        nuclear_x_operators=[
+            ix_n1_full,
+            ix_n2_full,
+        ],
+        gamma_ratio=gamma_ratio,
+    )
+
+    # ------------------------------------------------------------------
+    # 6. Validate the full operator
+    # ------------------------------------------------------------------
+
+    expected = (
+        sx_e1_full
+        + sx_e2_full
+        + gamma_ratio * (
+            ix_n1_full
+            + ix_n2_full
+        )
+    )
+
+    assert control.shape == (81, 81)
+    assert control.isherm
+    assert (control - expected).norm() < 1e-12
