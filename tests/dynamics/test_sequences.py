@@ -162,3 +162,59 @@ def test_finite_pulse_propagator_preserves_absolute_time():
 
     assert min(sampled_times) > 0.5
     assert max(sampled_times) == pytest.approx(0.7)
+
+
+def test_piecewise_finite_pulse_sequence_matches_explicit_propagation():
+    """Finite pulses at absolute times compose with exact free intervals."""
+
+    free = 0.3 * sigmaz()
+    control = 0.5 * sigmax()
+
+    pulse_duration = 0.1
+    centers = [0.3, 0.8]
+    final_time = 1.0
+
+    pulse_propagators = []
+
+    for center in centers:
+        start = center - pulse_duration / 2
+
+        pulse = finite_pulse_propagator(
+            free_hamiltonian=free,
+            control_operator=control,
+            duration=pulse_duration,
+            envelope=lambda time: np.pi,
+            steps=1000,
+            start_time=start,
+        )
+
+        pulse_propagators.append(pulse)
+
+    durations = [
+        centers[0] - pulse_duration / 2,
+        centers[1] - centers[0] - pulse_duration,
+        final_time - centers[1] - pulse_duration / 2,
+    ]
+
+    actual = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=durations,
+        pulse_propagators=pulse_propagators,
+    )
+
+    u_free_1 = (-1j * free * durations[0]).expm()
+    u_free_2 = (-1j * free * durations[1]).expm()
+    u_free_3 = (-1j * free * durations[2]).expm()
+
+    expected = (
+        u_free_3
+        * pulse_propagators[1]
+        * u_free_2
+        * pulse_propagators[0]
+        * u_free_1
+    )
+
+    assert np.allclose(
+        actual.full(),
+        expected.full(),
+    )
