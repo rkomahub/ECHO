@@ -268,3 +268,29 @@ def test_electron_nuclear_dynamical_map_identity():
 
     assert result.dims == [[2, 2], [2, 2]]
     assert (result - rho_e).norm() < 1e-12
+
+
+def test_electron_nuclear_dynamical_map_spin_one_identity():
+    """Preserve a two-electron spin-1 state under trivial evolution."""
+    electron_state = tensor(
+        basis(3, 1),
+        basis(3, 1),
+    )
+
+    rho_e = electron_state.proj()
+
+    nuclear_states = [
+        qeye(3) / 3,
+        qeye(3) / 3,
+    ]
+
+    propagator = qeye([3, 3, 3, 3])
+
+    result = electron_nuclear_dynamical_map(
+        density_matrix=rho_e,
+        propagator=propagator,
+        nuclear_states=nuclear_states,
+    )
+
+    assert result.dims == [[3, 3], [3, 3]]
+    assert (result - rho_e).norm() < 1e-12
