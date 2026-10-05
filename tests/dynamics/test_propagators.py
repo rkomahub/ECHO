@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
-from qutip import Qobj, qeye
+from qutip import Qobj, basis, qeye, sigmax
 
 from echo_spin.dynamics.propagators import (
     rotating_frame_hamiltonian,
     rotating_frame_propagator,
     static_propagator,
     time_dependent_propagator,
+    unitary_dynamical_map,
 )
 
 
@@ -167,3 +168,24 @@ def test_rotating_frame_hamiltonian_preserves_commuting_term():
     )
 
     assert np.allclose(rotating.full(), interaction.full())
+
+
+def test_unitary_dynamical_map():
+    """Check that a unitary propagator evolves a density matrix correctly."""
+    state = basis(2, 0)
+    density_matrix = state * state.dag()
+
+    propagator = sigmax()
+
+    evolved = unitary_dynamical_map(
+        density_matrix=density_matrix,
+        propagator=propagator,
+    )
+
+    expected_state = basis(2, 1)
+    expected = expected_state * expected_state.dag()
+
+    assert np.allclose(
+        evolved.full(),
+        expected.full(),
+    )

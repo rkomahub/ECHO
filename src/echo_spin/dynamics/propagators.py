@@ -62,3 +62,11 @@ def transformed_hamiltonian(
 ) -> Qobj:
     """Transform a Hamiltonian by a unitary operator."""
     return transformation * hamiltonian * transformation.dag()
+
+
+def unitary_dynamical_map(
+    density_matrix: Qobj,
+    propagator: Qobj,
+) -> Qobj:
+    """Evolve a density matrix under a unitary propagator."""
+    return propagator * density_matrix * propagator.dag()
