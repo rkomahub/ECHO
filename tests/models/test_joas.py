@@ -4,16 +4,17 @@ import pytest
 from qutip import Qobj, qeye, basis, tensor, sigmax, sigmay
 
 from echo_spin.core.system import SpinSystem
-from echo_spin.core.operators import spin_operators
+from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.basis import (
     dressed_spin_one_basis,
     dressed_spin_operators,
     operator_in_basis,
     project_operator,
 )
-from echo_spin.nv.frames import rotate_to_local_frame
 from echo_spin.control.rotations import selective_rotation, two_qubit_rotation
-from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
+from echo_spin.nv.registers import nv_register_hamiltonian
+from echo_spin.nv.frames import rotate_to_local_frame
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian, nv_hamiltonian
 from echo_spin.dynamics.sequences import (
     toggling_hamiltonians,
     toggling_propagator,
@@ -47,6 +48,7 @@ from echo_spin.dynamics.propagators import(
 )
 from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude, centered_sine_envelope
 from echo_spin.control.microwave import microwave_hamiltonian
+from echo_spin.spectroscopy.transitions import allowed_transitions
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
     """The free Hamiltonian should sum all NV and interaction terms."""
@@ -3380,3 +3382,123 @@ def test_joas_delayed_x_pulse_phase():
     print("ratio_0 =", ratio_0)
     print("ratio_delayed =", ratio_delayed)
     print("relative =", ratio_delayed / ratio_0)
+
+
+def test_joas_setting_2_full_nv_hamiltonian():
+    """The full NV Hamiltonian reproduces the expected 9D Hilbert space."""
+    system = SpinSystem([1, 1, 1, 1])
+
+    D_1 = 2 * np.pi * 2865.42
+    D_2 = 2 * np.pi * 2867.27
+
+    Q = 2 * np.pi * (-4.945)
+
+    A = 2 * np.pi * np.diag([
+        -2.62,
+        -2.62,
+        -2.162,
+    ])
+
+    omega_e = 2 * np.pi * 295.18
+    omega_n = 2 * np.pi * 0.03241
+
+    theta_1 = np.deg2rad(74.08)
+    theta_2 = np.deg2rad(3.58)
+
+    omega_e_1 = omega_e * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_e_2 = omega_e * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    omega_n_1 = omega_n * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_n_2 = omega_n * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    hamiltonian = nv_register_hamiltonian(
+        system=system,
+        nv_parameters=[
+            {
+                "D": D_1,
+                "omega_e": omega_e_1,
+                "Q": Q,
+                "omega_n": omega_n_1,
+                "A": A,
+            },
+            {
+                "D": D_2,
+                "omega_e": omega_e_2,
+                "Q": Q,
+                "omega_n": omega_n_2,
+                "A": A,
+            },
+        ],
+    )
+
+    assert hamiltonian.shape == (81, 81)
+    assert hamiltonian.isherm
+
+    single_nv_system = SpinSystem([1, 1])
+
+    h_nv1 = nv_hamiltonian(
+        system=single_nv_system,
+        electron_site=0,
+        nuclear_site=1,
+        D=D_1,
+        omega_e=omega_e_1,
+        Q=Q,
+        omega_n=omega_n_1,
+        A=A,
+    )
+
+    h_nv2 = nv_hamiltonian(
+        system=single_nv_system,
+        electron_site=0,
+        nuclear_site=1,
+        D=D_2,
+        omega_e=omega_e_2,
+        Q=Q,
+        omega_n=omega_n_2,
+        A=A,
+    )
+
+    single_nv_system = SpinSystem([1, 1])
+
+    sx, _, _ = spin_operators(1)
+    sx_electron = embed_operator(
+        operator=sx,
+        site=0,
+        system=single_nv_system,
+    )
+    
+    transitions_nv1 = allowed_transitions(
+        hamiltonian=h_nv1,
+        control_operator=sx_electron,
+    )
+
+    transitions_nv2 = allowed_transitions(
+        hamiltonian=h_nv2,
+        control_operator=sx_electron,
+    )
+
+    print("NV1 allowed transitions:")
+    for frequency, strength, i, j in transitions_nv1:
+        print(f"{frequency / (2*np.pi):.6f} MHz  strength={strength:.6f}  {i}->{j}")
+
+    print("NV2 allowed transitions:")
+    for frequency, strength, i, j in transitions_nv2:
+        print(f"{frequency / (2*np.pi):.6f} MHz  strength={strength:.6f}  {i}->{j}")
