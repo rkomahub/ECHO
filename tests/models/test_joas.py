@@ -3397,8 +3397,8 @@ def test_joas_setting_2_full_nv_hamiltonian():
 
     system = SpinSystem([1, 1, 1, 1])
 
-    D_1 = 2 * np.pi * 2865.42
-    D_2 = 2 * np.pi * 2867.27
+    D_1 = 2 * np.pi * 2867.27  # NV1: misaligned, 2990.8 MHz
+    D_2 = 2 * np.pi * 2865.42  # NV2: aligned, 2571.0 MHz
 
     Q = 2 * np.pi * (-4.945)
 
@@ -3633,8 +3633,8 @@ def test_joas_setting_2_full_control_operator():
     system = SpinSystem([1, 1, 1, 1])
     electron_system = SpinSystem([1])
 
-    D_1 = 2 * np.pi * 2865.42
-    D_2 = 2 * np.pi * 2867.27
+    D_1 = 2 * np.pi * 2867.27  # NV1: misaligned, 2990.8 MHz
+    D_2 = 2 * np.pi * 2865.42  # NV2: aligned, 2571.0 MHz
 
     omega_e = 2 * np.pi * 295.18
 
@@ -3764,8 +3764,8 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     system = SpinSystem([1, 1, 1, 1])
     electron_system = SpinSystem([1])
 
-    D_1 = 2 * np.pi * 2865.42
-    D_2 = 2 * np.pi * 2867.27
+    D_1 = 2 * np.pi * 2867.27  # NV1: misaligned, 2990.8 MHz
+    D_2 = 2 * np.pi * 2865.42  # NV2: aligned, 2571.0 MHz
 
     Q = 2 * np.pi * (-4.945)
 
@@ -4057,8 +4057,8 @@ def test_joas_setting_2_rotating_frame_generator():
     system = SpinSystem([1, 1, 1, 1])
     electron_system = SpinSystem([1])
 
-    D_1 = 2 * np.pi * 2865.42
-    D_2 = 2 * np.pi * 2867.27
+    D_1 = 2 * np.pi * 2867.27  # NV1: misaligned, 2990.8 MHz
+    D_2 = 2 * np.pi * 2865.42  # NV2: aligned, 2571.0 MHz
 
     omega_e = 2 * np.pi * 295.18
 
@@ -4145,8 +4145,8 @@ def test_joas_full_electronic_basis_transformation():
     system = SpinSystem([1, 1, 1, 1])
     electron_system = SpinSystem([1])
 
-    D_1 = 2 * np.pi * 2865.42
-    D_2 = 2 * np.pi * 2867.27
+    D_1 = 2 * np.pi * 2867.27  # NV1: misaligned, 2990.8 MHz
+    D_2 = 2 * np.pi * 2865.42  # NV2: aligned, 2571.0 MHz
 
     omega_e = 2 * np.pi * 295.18
 
@@ -4236,7 +4236,6 @@ def test_joas_nv1_isolated_finite_microwave_pi_pulse():
 
     system = SpinSystem([1])
 
-    # D_1 = 2 * np.pi * 2865.42
     D_1 = 2 * np.pi * 2867.27
     omega_e = 2 * np.pi * 295.18
     theta_1 = np.deg2rad(74.08)
