@@ -35,9 +35,9 @@ from echo_spin.models.joas import (
     xy8_gate_schedule,
     xy8_gate_times
 )
-from echo_spin.gates.gates import sqrt_zz_gate
-from echo_spin.dynamics.propagators import time_dependent_propagator, rotating_frame_propagator
-from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude
+from echo_spin.gates.gates import sqrt_zz_gate, conditional_phase
+from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude, centered_sine_envelope
 from echo_spin.control.microwave import microwave_hamiltonian
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
@@ -2799,3 +2799,534 @@ def test_joas_nv1_finite_sine_pi_pulse_with_conditional_shift():
     ) ** 2
 
     assert population > 0.99
+
+
+def test_joas_two_electron_finite_xy8_gate():
+    """Finite physical MW pulses reproduce the Joas sqrt(ZZ) sequence."""
+
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1), 0.0, np.cos(theta_nv1)
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2), 0.0, np.cos(theta_nv2)
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27,
+        omega_e=omega_nv2,
+    )
+
+    # --- Interaction ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    nu_dip = 0.11261
+    coupling = 2 * np.pi * nu_dip
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Logical states ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    logical_basis = two_electron_logical_basis(
+        nv1_states=(zero_nv1, one_nv1),
+        nv2_states=(zero_nv2, one_nv2),
+    )
+
+    # --- XY8 timing ---
+
+    n_pi = 8
+
+    tau_2 = 1 / (4 * n_pi * nu_dip)
+
+    tau_1 = 2.5 * abs(tau_2)
+
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    gate_duration = 8 * tau_1
+
+    # --- Physical microwave operators ---
+
+    sx, _, _ = spin_operators(1)
+    identity = qeye(3)
+
+    sx_nv1 = tensor(sx, identity)
+    sx_nv2 = tensor(identity, sx)
+
+    frequency_nv1 = np.real(
+        one_nv1.dag() * h_nv1 * one_nv1
+        - zero_nv1.dag() * h_nv1 * zero_nv1
+    )
+
+    frequency_nv2 = np.real(
+        one_nv2.dag() * h_nv2 * one_nv2
+        - zero_nv2.dag() * h_nv2 * zero_nv2
+    )
+
+    matrix_element_nv1 = abs(
+        one_nv1.dag() * sx * zero_nv1
+    )
+
+    matrix_element_nv2 = abs(
+        one_nv2.dag() * sx * zero_nv2
+    )
+
+    # 100 ns finite pi pulses.
+    pulse_duration = 0.05
+
+    gate_start = 0.0
+
+    gate_end = 8 * tau_1
+
+    peak_nv1 = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2)
+            * matrix_element_nv1
+            * pulse_duration
+        )
+    )
+
+    peak_nv2 = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2)
+            * matrix_element_nv2
+            * pulse_duration
+        )
+    )
+
+    # --- Full time-dependent Hamiltonian ---
+
+    def hamiltonian(time):
+        microwave = 0 * h_two
+
+        for center, nv, axis in schedule:
+            if nv == 1:
+                control = sx_nv1
+                frequency = frequency_nv1
+                peak = peak_nv1
+            else:
+                control = sx_nv2
+                frequency = frequency_nv2
+                peak = peak_nv2
+
+            envelope = centered_sine_envelope(
+                time=time,
+                center=center,
+                duration=pulse_duration,
+                peak_amplitude=peak,
+            )
+
+            if envelope == 0.0:
+                continue
+
+            axis_phase = (
+                0.0
+                if axis == "x"
+                else np.pi / 2
+            )
+
+            phase = axis_phase
+
+            microwave += microwave_hamiltonian(
+                time=time,
+                control=control,
+                drives=[
+                    {
+                        "omega": frequency,
+                        "phase": phase,
+                        "omega_x": envelope,
+                        "omega_y": 0.0,
+                    }
+                ],
+            )
+
+        return h_two + microwave
+
+    # --- Piecewise finite-pulse propagation ---
+
+    pulse_propagators = []
+    pulse_starts = []
+    pulse_ends = []
+
+    steps_per_pulse = 5000
+
+    for center, nv, axis in schedule:
+        start = center - pulse_duration / 2
+        end = center + pulse_duration / 2
+
+        if nv == 1:
+            control = sx_nv1
+            frequency = frequency_nv1
+            peak = peak_nv1
+        else:
+            control = sx_nv2
+            frequency = frequency_nv2
+            peak = peak_nv2
+
+        axis_phase = (
+            0.0
+            if axis == "x"
+            else np.pi / 2
+        )
+
+        def envelope(
+            time,
+            center=center,
+            peak=peak,
+            frequency=frequency,
+            axis_phase=axis_phase,
+        ):
+            amplitude = centered_sine_envelope(
+                time=time,
+                center=center,
+                duration=pulse_duration,
+                peak_amplitude=peak,
+            )
+
+            return np.sqrt(2.0) * amplitude * np.cos(
+                frequency * time + axis_phase
+            )
+
+        pulse = finite_pulse_propagator(
+            free_hamiltonian=h_two,
+            control_operator=control,
+            duration=pulse_duration,
+            envelope=envelope,
+            steps=steps_per_pulse,
+            start_time=start,
+        )
+
+        pulse_propagators.append(pulse)
+        pulse_starts.append(start)
+        pulse_ends.append(end)
+
+    durations = [pulse_starts[0] - gate_start]
+
+    for previous_end, next_start in zip(
+        pulse_ends[:-1],
+        pulse_starts[1:],
+    ):
+        duration = next_start - previous_end
+
+        if duration < 0:
+            raise ValueError(
+                "Finite microwave pulses overlap."
+            )
+
+        durations.append(duration)
+
+    durations.append(
+        gate_end - pulse_ends[-1]
+    )
+
+    propagator = finite_pulse_sequence_propagator(
+        free_hamiltonian=h_two,
+        durations=durations,
+        pulse_propagators=pulse_propagators,
+    )
+
+    logical_propagator = project_operator(
+        operator=propagator,
+        basis_states=logical_basis,
+    )
+
+    # First diagnostic: logical-subspace survival.
+    survival = (
+        np.linalg.norm(
+            logical_propagator.full(),
+            "fro",
+        ) ** 2
+        / 4
+    )
+
+    assert survival > 0.95
+
+    target = sqrt_zz_gate().dag()
+
+    # Remove global phase using the Hilbert-Schmidt overlap.
+    overlap = np.trace(
+        target.full().conj().T
+        @ logical_propagator.full()
+    )
+
+    phase = np.angle(overlap)
+
+    corrected = (
+        np.exp(-1j * phase)
+        * logical_propagator
+    )
+
+    gate_error = np.linalg.norm(
+        corrected.full() - target.full(),
+        "fro",
+    )
+
+    print("survival =", survival)
+    print("gate_error =", gate_error)
+    print("logical propagator =")
+    print(corrected.full())
+    print(logical_propagator.full()) # to remove later
+    print("gate_duration =", gate_duration)
+    print("last pulse =", schedule[-1])
+
+    phase = conditional_phase(logical_propagator)
+    target_phase = conditional_phase(target)
+
+    phase_error = np.angle(
+        np.exp(1j * (phase - target_phase))
+    )
+
+    print("conditional phase =", phase)
+    print("target conditional phase =", target_phase)
+    print("conditional phase error =", phase_error)
+
+    assert survival > 0.999
+    assert abs(phase_error) < 0.01
+
+
+def test_joas_finite_pi_pulse_at_nonzero_time():
+    """A delayed resonant pulse must still implement the intended pi rotation."""
+
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    theta = np.deg2rad(74.08)
+    omega_nv = omega * np.array([
+        np.sin(theta),
+        0.0,
+        np.cos(theta),
+    ])
+
+    h_nv = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv,
+    )
+
+    zero, one = electron_logical_states(
+        h_nv,
+        excited_state="+1",
+    )
+
+    sx, _, _ = spin_operators(1)
+
+    e0 = np.real(zero.dag() * h_nv * zero)
+    e1 = np.real(one.dag() * h_nv * one)
+
+    frequency = e1 - e0
+
+    matrix_element = abs(
+        one.dag() * sx * zero
+    )
+
+    pulse_duration = 0.1
+    center = 0.5
+
+    peak = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def hamiltonian(time):
+        envelope = centered_sine_envelope(
+            time=time,
+            center=center,
+            duration=pulse_duration,
+            peak_amplitude=peak,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=sx,
+            drives=[
+                {
+                    "omega": frequency,
+                    "phase": 0.0,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }
+            ],
+        )
+
+        return h_nv + microwave
+
+    initial_time = center - pulse_duration / 2
+    final_time = center + pulse_duration / 2
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=initial_time,
+        t1=final_time,
+        steps=5000,
+    )
+
+    final_state = propagator * zero
+
+    population_one = abs(
+        one.dag() * final_state
+    ) ** 2
+
+    print("population_one =", population_one)
+
+    assert population_one > 0.99
+
+
+def test_joas_delayed_x_pulse_phase():
+    """A delayed physical pulse must preserve the intended rotation axis."""
+
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+    theta = np.deg2rad(74.08)
+
+    omega_nv = omega * np.array([
+        np.sin(theta),
+        0.0,
+        np.cos(theta),
+    ])
+
+    h_nv = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42,
+        omega_e=omega_nv,
+    )
+
+    zero, one = electron_logical_states(
+        h_nv,
+        excited_state="+1",
+    )
+
+    sx, _, _ = spin_operators(1)
+
+    e0 = np.real(zero.dag() * h_nv * zero)
+    e1 = np.real(one.dag() * h_nv * one)
+
+    frequency = e1 - e0
+
+    matrix_element = abs(
+        one.dag() * sx * zero
+    )
+
+    pulse_duration = 0.1
+    peak = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def pulse_ratio(center):
+        def hamiltonian(time):
+            envelope = centered_sine_envelope(
+                time=time,
+                center=center,
+                duration=pulse_duration,
+                peak_amplitude=peak,
+            )
+
+            return h_nv + microwave_hamiltonian(
+                time=time,
+                control=sx,
+                drives=[{
+                    "omega": frequency,
+                    "phase": 0.0,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }],
+            )
+
+        t0 = center - pulse_duration / 2
+        t1 = center + pulse_duration / 2
+
+        propagator = time_dependent_propagator(
+            hamiltonian=hamiltonian,
+            t0=t0,
+            t1=t1,
+            steps=5000,
+        )
+
+        free_final = (1j * h_nv * t1).expm()
+        free_initial = (-1j * h_nv * t0).expm()
+
+        propagator = (
+            free_final
+            * propagator
+            * free_initial
+        )
+
+        u01 = zero.dag() * propagator * one
+        u10 = one.dag() * propagator * zero
+
+        return u01 / u10
+
+    ratio_0 = pulse_ratio(0.1)
+    ratio_delayed = pulse_ratio(0.5)
+
+    print("ratio_0 =", ratio_0)
+    print("ratio_delayed =", ratio_delayed)
+    print("relative =", ratio_delayed / ratio_0)
