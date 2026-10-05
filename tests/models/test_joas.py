@@ -43,6 +43,8 @@ from echo_spin.gates.gates import (
     average_gate_fidelity,
 )
 from echo_spin.dynamics.propagators import(
+     electron_nuclear_dynamical_map,
+     static_propagator,
      time_dependent_propagator,
      unitary_dynamical_map,
 )
@@ -3385,7 +3387,12 @@ def test_joas_delayed_x_pulse_phase():
 
 
 def test_joas_setting_2_full_nv_hamiltonian():
-    """Build the full Joas Setting 2 free Hamiltonian with N14 nuclei."""
+    """Build and evolve the full Joas Setting 2 model with N14 nuclei."""
+
+    # ------------------------------------------------------------------
+    # 1. Define the full two-NV system and Joas Setting 2 parameters
+    # ------------------------------------------------------------------
+
     system = SpinSystem([1, 1, 1, 1])
 
     D_1 = 2 * np.pi * 2865.42
@@ -3429,6 +3436,10 @@ def test_joas_setting_2_full_nv_hamiltonian():
         np.cos(theta_2),
     ])
 
+    # ------------------------------------------------------------------
+    # 2. Build the non-interacting 81D two-NV Hamiltonian
+    # ------------------------------------------------------------------
+
     hamiltonian = nv_register_hamiltonian(
         system=system,
         nv_parameters=[
@@ -3452,7 +3463,9 @@ def test_joas_setting_2_full_nv_hamiltonian():
     assert hamiltonian.shape == (81, 81)
     assert hamiltonian.isherm
 
-    # --- Electronic dressed interaction ---
+    # ------------------------------------------------------------------
+    # 3. Build the electronic-only Hamiltonians
+    # ------------------------------------------------------------------
 
     electron_system = SpinSystem([1])
 
@@ -3470,6 +3483,10 @@ def test_joas_setting_2_full_nv_hamiltonian():
         omega_e=omega_e_2,
     )
 
+    # ------------------------------------------------------------------
+    # 4. Construct the dressed electronic spin operators
+    # ------------------------------------------------------------------
+
     basis_e1 = dressed_spin_one_basis(h_e1)
     basis_e2 = dressed_spin_one_basis(h_e2)
 
@@ -3483,6 +3500,10 @@ def test_joas_setting_2_full_nv_hamiltonian():
         spin=1,
     )
 
+    # ------------------------------------------------------------------
+    # 5. Embed the dressed electronic operators in the 81D Hilbert space
+    # ------------------------------------------------------------------
+
     sz_e1_full = embed_operator(
         operator=sz_e1,
         site=0,
@@ -3495,13 +3516,15 @@ def test_joas_setting_2_full_nv_hamiltonian():
         system=system,
     )
 
+    # ------------------------------------------------------------------
+    # 6. Build the effective dipolar interaction and free Hamiltonian
+    # ------------------------------------------------------------------
+
     g = 2 * np.pi * 0.11261
 
     interaction = g * sz_e1_full * sz_e2_full
 
     h_free = hamiltonian + interaction
-
-    single_nv_system = SpinSystem([1, 1])
 
     assert interaction.shape == (81, 81)
     assert interaction.isherm
@@ -3509,10 +3532,21 @@ def test_joas_setting_2_full_nv_hamiltonian():
     assert h_free.shape == (81, 81)
     assert h_free.isherm
 
+    # ------------------------------------------------------------------
+    # 7. Verify that the embedded interaction retains the Joas coupling g
+    # ------------------------------------------------------------------
+
     zz_full = sz_e1_full * sz_e2_full
 
-    numerator = (zz_full.dag() * interaction).tr()
-    denominator = (zz_full.dag() * zz_full).tr()
+    numerator = (
+        zz_full.dag()
+        * interaction
+    ).tr()
+
+    denominator = (
+        zz_full.dag()
+        * zz_full
+    ).tr()
 
     extracted_g = numerator / denominator
 
@@ -3521,60 +3555,67 @@ def test_joas_setting_2_full_nv_hamiltonian():
         g,
         rtol=1e-12,
     )
+
     assert np.isclose(
         np.imag(extracted_g),
         0.0,
         atol=1e-12,
     )
 
-    #Spectroscopy validation of the individual NV centers
-    """
-    h_nv1 = nv_hamiltonian(
-        system=single_nv_system,
-        electron_site=0,
-        nuclear_site=1,
-        D=D_1,
-        omega_e=omega_e_1,
-        Q=Q,
-        omega_n=omega_n_1,
-        A=A,
+    # ------------------------------------------------------------------
+    # 8. Prepare the electronic and nuclear initial states
+    # ------------------------------------------------------------------
+
+    zero_e1 = basis_e1[1]
+    zero_e2 = basis_e2[1]
+
+    electron_state = tensor(
+        zero_e1,
+        zero_e2,
     )
 
-    h_nv2 = nv_hamiltonian(
-        system=single_nv_system,
-        electron_site=0,
-        nuclear_site=1,
-        D=D_2,
-        omega_e=omega_e_2,
-        Q=Q,
-        omega_n=omega_n_2,
-        A=A,
+    rho_e = electron_state.proj()
+
+    nuclear_states = [
+        qeye(3) / 3,
+        qeye(3) / 3,
+    ]
+
+    # ------------------------------------------------------------------
+    # 9. Propagate the complete electron-nuclear system
+    # ------------------------------------------------------------------
+
+    evolution_time = 0.1  # microseconds
+
+    propagator = static_propagator(
+        hamiltonian=h_free,
+        time=evolution_time,
     )
 
-    single_nv_system = SpinSystem([1, 1])
-
-    sx, _, _ = spin_operators(1)
-    sx_electron = embed_operator(
-        operator=sx,
-        site=0,
-        system=single_nv_system,
-    )
-    
-    transitions_nv1 = allowed_transitions(
-        hamiltonian=h_nv1,
-        control_operator=sx_electron,
+    rho_evolved = electron_nuclear_dynamical_map(
+        density_matrix=rho_e,
+        propagator=propagator,
+        nuclear_states=nuclear_states,
     )
 
-    transitions_nv2 = allowed_transitions(
-        hamiltonian=h_nv2,
-        control_operator=sx_electron,
+    # ------------------------------------------------------------------
+    # 10. Validate the reduced electronic density matrix
+    # ------------------------------------------------------------------
+
+    assert rho_evolved.dims == [[3, 3], [3, 3]]
+    assert rho_evolved.isherm
+
+    assert np.isclose(
+        rho_evolved.tr(),
+        1.0,
     )
 
-    print("NV1 allowed transitions:")
-    for frequency, strength, i, j in transitions_nv1:
-        print(f"{frequency / (2*np.pi):.6f} MHz  strength={strength:.6f}  {i}->{j}")
+    assert (
+        np.min(rho_evolved.eigenenergies())
+        > -1e-12
+    )
 
-    print("NV2 allowed transitions:")
-    for frequency, strength, i, j in transitions_nv2:
-        print(f"{frequency / (2*np.pi):.6f} MHz  strength={strength:.6f}  {i}->{j}")
-    """
+    # compute the electronic purity to check for decoherence.
+    purity = (rho_evolved * rho_evolved).tr().real
+
+    assert 0.0 < purity < 1.0
