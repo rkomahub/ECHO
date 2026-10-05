@@ -4113,6 +4113,58 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     assert target_population > 0.95
     assert electron_target_population > 0.98
 
+    # ------------------------------------------------------------------
+    # 13. Repeat with maximally mixed nuclear initialization
+    # ------------------------------------------------------------------
+
+    electron_initial_state = tensor(
+        zero_e1,
+        zero_e2,
+    )
+
+    electron_initial_density = (
+        electron_initial_state
+        * electron_initial_state.dag()
+    )
+
+    nuclear_mixed_state = qeye(3) / 3
+
+    final_electron_density = electron_nuclear_dynamical_map(
+        density_matrix=electron_initial_density,
+        propagator=propagator,
+        nuclear_states=[
+            nuclear_mixed_state,
+            nuclear_mixed_state,
+        ],
+    )
+
+    electron_target_state = tensor(
+        one_e1,
+        zero_e2,
+    )
+
+    mixed_nuclear_target_population = np.real(
+        electron_target_state.dag()
+        * final_electron_density
+        * electron_target_state
+    )
+
+    print(
+        "NV1 target population with maximally mixed nuclei =",
+        mixed_nuclear_target_population,
+    )
+
+    print(
+        "reduced electronic purity =",
+        np.real(
+            (final_electron_density * final_electron_density).tr()
+        ),
+    )
+
+    assert final_electron_density.shape == (9, 9)
+    assert np.isclose(final_electron_density.tr(), 1.0)
+    assert mixed_nuclear_target_population > 0.90
+
 
 def test_joas_setting_2_rotating_frame_generator():
     """Construct the rotating-frame generator used for Joas setting 2."""
