@@ -7,7 +7,7 @@ from echo_spin.control.microwave import (
     control_operator,
     microwave_hamiltonian,
 )
-from echo_spin.control.pulses import sine_envelope
+from echo_spin.control.pulses import sine_envelope, centered_sine_envelope
 from echo_spin.core.basis import (
     basis_unitary,
     dressed_spin_one_basis,
@@ -26,6 +26,7 @@ from echo_spin.dynamics.propagators import (
 )
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
+from echo_spin.models.joas import xy8_gate_schedule
 
 
 def test_joas_setting_2_full_nv_hamiltonian():
@@ -1247,3 +1248,307 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
     )
 
     assert propagator.isunitary
+
+# -----------------------------------------------------------------
+
+def test_joas_full_finite_xy8_propagator():
+    """The full electron-nuclear XY8 sequence generates a unitary 81D propagator."""
+
+    # ------------------------------------------------------------------
+    # 1. Full two-NV system
+    # ------------------------------------------------------------------
+
+    system = SpinSystem([1, 1, 1, 1])
+    electron_system = SpinSystem([1])
+
+    D_1 = 2 * np.pi * 2867.27
+    D_2 = 2 * np.pi * 2865.42
+
+    Q = 2 * np.pi * (-4.945)
+
+    A = 2 * np.pi * np.diag([
+        -2.62,
+        -2.62,
+        -2.162,
+    ])
+
+    omega_e = 2 * np.pi * 295.18
+    omega_n = 2 * np.pi * 0.03241
+
+    theta_1 = np.deg2rad(74.08)
+    theta_2 = np.deg2rad(3.58)
+
+    omega_e_1 = omega_e * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_e_2 = omega_e * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    omega_n_1 = omega_n * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_n_2 = omega_n * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    # ------------------------------------------------------------------
+    # 2. Full static Hamiltonian
+    # ------------------------------------------------------------------
+
+    h_nv = nv_register_hamiltonian(
+        system=system,
+        nv_parameters=[
+            {
+                "D": D_1,
+                "omega_e": omega_e_1,
+                "Q": Q,
+                "omega_n": omega_n_1,
+                "A": A,
+            },
+            {
+                "D": D_2,
+                "omega_e": omega_e_2,
+                "Q": Q,
+                "omega_n": omega_n_2,
+                "A": A,
+            },
+        ],
+    )
+
+    # ------------------------------------------------------------------
+    # 3. Transform to the electronic eigenbasis
+    # ------------------------------------------------------------------
+
+    h_e1 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_1,
+        omega_e=omega_e_1,
+    )
+
+    h_e2 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_2,
+        omega_e=omega_e_2,
+    )
+
+    basis_e1 = dressed_spin_one_basis(h_e1)
+    basis_e2 = dressed_spin_one_basis(h_e2)
+
+    t_e1 = basis_unitary(basis_e1)
+    t_e2 = basis_unitary(basis_e2)
+
+    transformation = tensor(
+        t_e1,
+        qeye(3),
+        t_e2,
+        qeye(3),
+    )
+
+    h_nv_transformed = (
+        transformation.dag()
+        * h_nv
+        * transformation
+    )
+
+    # ------------------------------------------------------------------
+    # 4. Effective NV-NV interaction
+    # ------------------------------------------------------------------
+
+    sx, _, sz = spin_operators(1)
+
+    sz_e1_full = embed_operator(
+        sz,
+        site=0,
+        system=system,
+    )
+
+    sz_e2_full = embed_operator(
+        sz,
+        site=2,
+        system=system,
+    )
+
+    nu_dip = 0.11261
+    coupling = 2 * np.pi * nu_dip
+
+    h_free = (
+        h_nv_transformed
+        + coupling * sz_e1_full * sz_e2_full
+    )
+
+    # ------------------------------------------------------------------
+    # 5. Full microwave control operator
+    # ------------------------------------------------------------------
+
+    sx_e1_full = embed_operator(
+        sx,
+        site=0,
+        system=system,
+    )
+
+    sx_e2_full = embed_operator(
+        sx,
+        site=2,
+        system=system,
+    )
+
+    ix, _, _ = spin_operators(1)
+
+    ix_n1_full = embed_operator(
+        ix,
+        site=1,
+        system=system,
+    )
+
+    ix_n2_full = embed_operator(
+        ix,
+        site=3,
+        system=system,
+    )
+
+    gamma_ratio = 3.076272e-3 / (-28.02495)
+
+    control = control_operator(
+        electronic_x_operators=[
+            sx_e1_full,
+            sx_e2_full,
+        ],
+        nuclear_x_operators=[
+            ix_n1_full,
+            ix_n2_full,
+        ],
+        gamma_ratio=gamma_ratio,
+    )
+
+    # ------------------------------------------------------------------
+    # 6. Joas rotating frame
+    # ------------------------------------------------------------------
+
+    omega_1 = 2 * np.pi * 2990.8
+    omega_2 = 2 * np.pi * 2571.0
+
+    h_trans = (
+        omega_1 * sz_e1_full**2
+        + omega_2 * sz_e2_full**2
+    )
+
+    # ------------------------------------------------------------------
+    # 7. XY8 timing
+    # ------------------------------------------------------------------
+
+    n_pi = 8
+
+    tau_2 = 1 / (
+        4 * n_pi * nu_dip
+    )
+
+    tau_1 = 2.5 * tau_2
+
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    gate_duration = 8 * tau_1
+
+    # Keep the same 50 ns pulse used by the validated
+    # electron-only finite-pulse XY8 test.
+    pulse_duration = 0.05
+
+    peak_amplitude = (
+        np.pi**2
+        / (2 * pulse_duration)
+    )
+
+    # ------------------------------------------------------------------
+    # 8. Complete driven XY8 Hamiltonian
+    # ------------------------------------------------------------------
+
+    def hamiltonian(time):
+        drives = []
+
+        for center, nv, axis in schedule:
+            envelope = centered_sine_envelope(
+                time=time,
+                center=center,
+                duration=pulse_duration,
+                peak_amplitude=peak_amplitude,
+            )
+
+            if envelope == 0.0:
+                continue
+
+            frequency = (
+                omega_1
+                if nv == 1
+                else omega_2
+            )
+
+            phase = (
+                0.0
+                if axis == "x"
+                else np.pi / 2
+            )
+
+            drives.append({
+                "omega": frequency,
+                "phase": phase,
+                "omega_x": envelope,
+                "omega_y": 0.0,
+            })
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=control,
+            drives=drives,
+        )
+
+        return h_free + microwave
+
+    # ------------------------------------------------------------------
+    # 9. Joas rotating-frame Hamiltonian
+    # ------------------------------------------------------------------
+
+    def hamiltonian_rotating(time):
+        return rotating_frame_hamiltonian(
+            time=time,
+            driven_hamiltonian=hamiltonian,
+            generator=h_trans,
+        )
+
+    # ------------------------------------------------------------------
+    # 10. Propagate
+    # ------------------------------------------------------------------
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian_rotating,
+        t0=0.0,
+        t1=gate_duration,
+        steps=1000,
+    )
+
+    print("gate duration =", gate_duration)
+    print("number of pulses =", len(schedule))
+
+    identity = qeye(propagator.dims[0])
+
+    unitarity_error = np.linalg.norm(
+        (propagator.dag() * propagator - identity).full(),
+        "fro",
+    )
+
+    assert propagator.shape == (81, 81)
+    assert unitarity_error < 1e-9
