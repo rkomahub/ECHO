@@ -1,11 +1,12 @@
 import numpy as np
 import pytest
-from qutip import Qobj, qeye
+from qutip import Qobj, qeye, basis, tensor
 
 from echo_spin.gates.gates import (
     sqrt_zz_gate,
     conditional_phase,
     remove_local_z_phases,
+    average_gate_fidelity,
 )
 
 
@@ -78,3 +79,53 @@ def test_remove_local_z_phases_removes_local_phases():
         corrected.full(),
         np.eye(4),
     )
+
+
+def test_average_gate_fidelity_is_one_for_target_gate():
+    """Check that the average gate fidelity is 1 for the target gate."""
+    target = sqrt_zz_gate()
+
+    basis_states = [
+        tensor(basis(2, 0), basis(2, 0)),
+        tensor(basis(2, 0), basis(2, 1)),
+        tensor(basis(2, 1), basis(2, 0)),
+        tensor(basis(2, 1), basis(2, 1)),
+    ]
+
+    def dynamical_map(density_matrix):
+        return (
+            target
+            * density_matrix
+            * target.dag()
+        )
+
+    fidelity = average_gate_fidelity(
+        dynamical_map=dynamical_map,
+        target=target,
+        basis_states=basis_states,
+    )
+
+    assert fidelity == pytest.approx(1.0)
+
+
+def test_average_gate_fidelity_identity_vs_sqrt_zz():
+    """Check that the average gate fidelity is 0.6 for the identity vs sqrt(ZZ) gate."""
+    target = sqrt_zz_gate()
+
+    basis_states = [
+        tensor(basis(2, 0), basis(2, 0)),
+        tensor(basis(2, 0), basis(2, 1)),
+        tensor(basis(2, 1), basis(2, 0)),
+        tensor(basis(2, 1), basis(2, 1)),
+    ]
+
+    def dynamical_map(density_matrix):
+        return density_matrix
+
+    fidelity = average_gate_fidelity(
+        dynamical_map=dynamical_map,
+        target=target,
+        basis_states=basis_states,
+    )
+
+    assert fidelity == pytest.approx(0.6)
