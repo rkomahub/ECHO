@@ -48,6 +48,7 @@ def finite_pulse_propagator(
     duration: float,
     envelope,
     steps: int,
+    start_time: float = 0.0,
 ) -> Qobj:
     """Propagate a finite control pulse while the free Hamiltonian remains active."""
 
@@ -59,8 +60,8 @@ def finite_pulse_propagator(
 
     return time_dependent_propagator(
         hamiltonian=hamiltonian,
-        t0=0.0,
-        t1=duration,
+        t0=start_time,
+        t1=start_time + duration,
         steps=steps,
     )
 

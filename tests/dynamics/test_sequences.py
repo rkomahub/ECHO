@@ -138,3 +138,27 @@ def test_finite_pulse_sequence_reproduces_explicit_sequence():
         actual.full(),
         expected.full(),
     )
+
+
+def test_finite_pulse_propagator_preserves_absolute_time():
+    """Finite pulse propagation evaluates the envelope at absolute times."""
+    free = 0.0 * sigmaz()
+    control = 0.5 * sigmax()
+
+    sampled_times = []
+
+    def envelope(time):
+        sampled_times.append(time)
+        return 0.0
+
+    finite_pulse_propagator(
+        free_hamiltonian=free,
+        control_operator=control,
+        duration=0.2,
+        envelope=envelope,
+        steps=10,
+        start_time=0.5,
+    )
+
+    assert min(sampled_times) > 0.5
+    assert max(sampled_times) == pytest.approx(0.7)
