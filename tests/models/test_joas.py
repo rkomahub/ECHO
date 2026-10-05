@@ -3774,6 +3774,8 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
         -2.62,
         -2.162,
     ])
+    # --- Temporary diagnostic: disable hyperfine coupling ---
+    # A = np.zeros((3, 3))
 
     omega_e = 2 * np.pi * 295.18
     omega_n = 2 * np.pi * 0.03241
@@ -3957,6 +3959,37 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
         zero_e2,
         nuclear_zero,
     )   
+
+    # --- Temporary diagnostic: hyperfine-shifted transition ---
+
+    initial_energy = np.real(
+        initial_state.dag()
+        * h_free
+        * initial_state
+    )
+
+    target_energy = np.real(
+        target_state.dag()
+        * h_free
+        * target_state
+    )
+
+    hyperfine_frequency = target_energy - initial_energy
+
+    print(
+        "hyperfine-shifted NV1 frequency =",
+        hyperfine_frequency / (2 * np.pi),
+        "MHz",
+    )
+
+    print(
+        "detuning from Joas carrier =",
+        (
+            2 * np.pi * 2990.8
+            - hyperfine_frequency
+        ) / (2 * np.pi),
+        "MHz",
+    )
     # ------------------------------------------------------------------
     # 6. Define the Joas carrier frequencies
     # ------------------------------------------------------------------
@@ -4041,6 +4074,32 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
 
     final_state = propagator * initial_state
 
+    electron_target_population = 0.0
+
+    for nuclear_state in range(3):
+        state = tensor(
+            one_e1,
+            basis(3, nuclear_state),
+            zero_e2,
+            nuclear_zero,
+        )
+
+        population = abs(
+            state.overlap(final_state)
+        ) ** 2
+
+        electron_target_population += population
+
+        print(
+            f"NV1 target electron, nuclear state {nuclear_state}:",
+            population,
+        )
+
+    print(
+        "NV1 electron target population =",
+        electron_target_population,
+    )
+
     target_population = abs(
         target_state.overlap(final_state)
     ) ** 2
@@ -4049,6 +4108,10 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
         "rotating-frame NV1 target population =",
         target_population,
     )
+
+    assert propagator.isunitary
+    assert target_population > 0.95
+    assert electron_target_population > 0.98
 
 
 def test_joas_setting_2_rotating_frame_generator():
