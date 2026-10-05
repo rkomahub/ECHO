@@ -253,7 +253,7 @@ def test_joas_setting_2_two_electron_spectrum():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27,
         omega_e=omega_nv1,
     )
 
@@ -268,7 +268,7 @@ def test_joas_setting_2_two_electron_spectrum():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42,
         omega_e=omega_nv2,
     )
 
@@ -314,14 +314,12 @@ def test_joas_setting_2_two_electron_spectrum():
 
     assert np.allclose(
         nv1_transitions,
-        [2825.45481206, 2988.99810054],
-        atol=1e-6,
+        [2827.27932714, 2990.82058371],
     )
 
     assert np.allclose(
         nv2_transitions,
-        [2572.85177892, 3162.04745120],
-        atol=1e-6,
+        [2571.00190538, 3160.19756161],
     )
 
 
@@ -342,7 +340,7 @@ def test_joas_setting_2_dressed_spin_operators():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27,
         omega_e=omega_nv1,
     )
 
@@ -357,7 +355,7 @@ def test_joas_setting_2_dressed_spin_operators():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42,
         omega_e=omega_nv2,
     )
 
@@ -406,7 +404,7 @@ def test_joas_setting_2_logical_effective_interaction():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27,
         omega_e=omega_nv1,
     )
 
@@ -421,7 +419,7 @@ def test_joas_setting_2_logical_effective_interaction():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42,
         omega_e=omega_nv2,
     )
 
@@ -501,7 +499,7 @@ def test_joas_setting_2_physical_to_logical_hamiltonian():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27,
         omega_e=omega_nv1,
     )
 
@@ -516,7 +514,7 @@ def test_joas_setting_2_physical_to_logical_hamiltonian():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42,
         omega_e=omega_nv2,
     )
 
@@ -625,7 +623,7 @@ def test_joas_selective_dressed_pi_rotations():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -640,7 +638,7 @@ def test_joas_selective_dressed_pi_rotations():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -713,7 +711,7 @@ def test_joas_two_electron_ideal_xy8_gate():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -727,7 +725,7 @@ def test_joas_two_electron_ideal_xy8_gate():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 

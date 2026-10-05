@@ -328,7 +328,7 @@ def test_joas_nv1_physical_resonant_pi_pulse():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -401,7 +401,7 @@ def test_joas_nv2_physical_resonant_pi_pulse():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -472,7 +472,7 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -486,7 +486,7 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -608,7 +608,7 @@ def test_joas_nv1_conditional_transition_shift():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -622,7 +622,7 @@ def test_joas_nv1_conditional_transition_shift():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -716,7 +716,7 @@ def test_joas_two_electron_nv2_physical_pi_pulse():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -730,7 +730,7 @@ def test_joas_two_electron_nv2_physical_pi_pulse():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -859,7 +859,7 @@ def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -981,7 +981,7 @@ def test_joas_nv1_finite_microwave_carrier_phase():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -1092,7 +1092,7 @@ def test_joas_nv1_finite_sine_pi_pulse_in_interacting_pair():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D = 2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -1106,7 +1106,7 @@ def test_joas_nv1_finite_sine_pi_pulse_in_interacting_pair():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D = 2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -1259,7 +1259,7 @@ def test_joas_nv1_finite_sine_pi_pulse_with_conditional_shift():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D = 2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -1273,7 +1273,7 @@ def test_joas_nv1_finite_sine_pi_pulse_with_conditional_shift():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D = 2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -1417,7 +1417,7 @@ def test_joas_two_electron_finite_xy8_gate():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D = 2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv1,
     )
 
@@ -1429,7 +1429,7 @@ def test_joas_two_electron_finite_xy8_gate():
     h_nv2 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27,
+        D = 2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
         omega_e=omega_nv2,
     )
 
@@ -1787,7 +1787,7 @@ def test_joas_finite_pi_pulse_at_nonzero_time():
 
     omega = 2 * np.pi * 295.18
 
-    theta = np.deg2rad(74.08)
+    theta = np.deg2rad(74.08) # NV1 = misaligned target, +1-like transition ~2990.8 MHz
     omega_nv = omega * np.array([
         np.sin(theta),
         0.0,
@@ -1797,7 +1797,7 @@ def test_joas_finite_pi_pulse_at_nonzero_time():
     h_nv = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv,
     )
 
@@ -1880,7 +1880,7 @@ def test_joas_delayed_x_pulse_phase():
     system = SpinSystem([1])
 
     omega = 2 * np.pi * 295.18
-    theta = np.deg2rad(74.08)
+    theta = np.deg2rad(74.08) # NV1 = misaligned target, +1-like transition ~2990.8 MHz
 
     omega_nv = omega * np.array([
         np.sin(theta),
@@ -1891,7 +1891,7 @@ def test_joas_delayed_x_pulse_phase():
     h_nv = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
         omega_e=omega_nv,
     )
 
