@@ -27,3 +27,27 @@ def conditional_phase(operator: Qobj) -> float:
     )
 
     return np.angle(np.exp(1j * phase))
+
+
+def remove_local_z_phases(operator: Qobj) -> Qobj:
+    """Remove global and single-qubit Z phases from a two-qubit operator."""
+    diagonal = np.diag(operator.full())
+
+    if np.any(np.abs(diagonal) == 0):
+        raise ValueError("Diagonal elements must be nonzero.")
+
+    phases = np.angle(diagonal)
+
+    phi_00, phi_01, phi_10, _ = phases
+
+    correction = np.diag([
+        np.exp(-1j * phi_00),
+        np.exp(-1j * phi_01),
+        np.exp(-1j * phi_10),
+        np.exp(-1j * (phi_01 + phi_10 - phi_00)),
+    ])
+
+    return Qobj(
+        correction,
+        dims=operator.dims,
+    ) * operator
