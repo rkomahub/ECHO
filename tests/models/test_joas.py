@@ -10,6 +10,7 @@ from echo_spin.core.basis import (
     dressed_spin_operators,
     operator_in_basis,
     project_operator,
+    basis_unitary,
 )
 from echo_spin.control.rotations import selective_rotation, two_qubit_rotation
 from echo_spin.nv.registers import nv_register_hamiltonian
@@ -47,6 +48,7 @@ from echo_spin.dynamics.propagators import(
      static_propagator,
      time_dependent_propagator,
      unitary_dynamical_map,
+     rotating_frame_hamiltonian,
 )
 from echo_spin.control.pulses import sine_envelope, sine_pi_pulse_amplitude, centered_sine_envelope
 from echo_spin.control.microwave import microwave_hamiltonian, control_operator
@@ -3848,25 +3850,40 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     basis_e1 = dressed_spin_one_basis(h_e1)
     basis_e2 = dressed_spin_one_basis(h_e2)
 
-    _, _, sz_e1 = dressed_spin_operators(basis_e1, spin=1)
-    _, _, sz_e2 = dressed_spin_operators(basis_e2, spin=1)
+    t_e1 = basis_unitary(basis_e1)
+    t_e2 = basis_unitary(basis_e2)
+
+    transformation = tensor(
+        t_e1,
+        qeye(3),
+        t_e2,
+        qeye(3),
+    )
+
+    _, _, sz = spin_operators(1)
 
     sz_e1_full = embed_operator(
-        sz_e1,
+        sz,
         site=0,
         system=system,
     )
 
     sz_e2_full = embed_operator(
-        sz_e2,
+        sz,
         site=2,
         system=system,
     )
 
     coupling = 2 * np.pi * 0.11261
 
+    h_nv_transformed = (
+        transformation.dag()
+        * h_nv
+        * transformation
+    )
+
     h_free = (
-        h_nv
+        h_nv_transformed
         + coupling * sz_e1_full * sz_e2_full
     )
 
@@ -3874,17 +3891,16 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     # 4. Construct the full microwave control operator
     # ------------------------------------------------------------------
 
-    sx_e1, _, _ = dressed_spin_operators(basis_e1, spin=1)
-    sx_e2, _, _ = dressed_spin_operators(basis_e2, spin=1)
+    sx, _, _ = spin_operators(1)
 
     sx_e1_full = embed_operator(
-        sx_e1,
+        sx,
         site=0,
         system=system,
     )
 
     sx_e2_full = embed_operator(
-        sx_e2,
+        sx,
         site=2,
         system=system,
     )
@@ -3921,15 +3937,10 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     # 5. Prepare the initial and target states
     # ------------------------------------------------------------------
 
-    zero_e1, one_e1 = electron_logical_states(
-        h_e1,
-        excited_state="+1",
-    )
+    zero_e1 = basis(3, 1)
+    one_e1 = basis(3, 0)
 
-    zero_e2, _ = electron_logical_states(
-        h_e2,
-        excited_state="-1",
-    )
+    zero_e2 = basis(3, 1)
 
     nuclear_zero = basis(3, 1)
 
@@ -3945,62 +3956,36 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
         nuclear_zero,
         zero_e2,
         nuclear_zero,
+    )   
+    # ------------------------------------------------------------------
+    # 6. Define the Joas carrier frequencies
+    # ------------------------------------------------------------------
+
+    omega_1 = 2 * np.pi * 2990.8
+    omega_2 = 2 * np.pi * 2571.0
+
+    # ------------------------------------------------------------------
+    # 7. Construct the rotating-frame generator
+    # ------------------------------------------------------------------
+
+    h_trans = (
+        omega_1 * sz_e1_full**2
+        + omega_2 * sz_e2_full**2
     )
 
     # ------------------------------------------------------------------
-    # 6. Define the transition frequency
+    # 8. Define the finite sine pulse
     # ------------------------------------------------------------------
-
-    energy_initial = np.real(
-        initial_state.dag()
-        * h_free
-        * initial_state
-    )
-
-    energy_target = np.real(
-        target_state.dag()
-        * h_free
-        * target_state
-    )
-
-    model_transition_frequency = (
-        energy_target - energy_initial
-    )
-
-    print(
-        "electron-only transition frequency =",
-        model_transition_frequency / (2 * np.pi),
-        "MHz",
-    )
-
-    # Full electron-nuclear resonance identified from the spectrum
-    transition_frequency = (
-        2 * np.pi * 2988.963996586522
-    )
-
-    # ------------------------------------------------------------------
-    # 7. Define the finite sine pulse
-    # ------------------------------------------------------------------
-
-    sx, _, _ = spin_operators(1)
-
-    matrix_element = abs(one_e1.dag() * sx * zero_e1)
-    # matrix_element = np.sqrt(0.5466050844344188) 
 
     pulse_duration = 0.1
 
     peak_amplitude = (
         np.pi**2
-        / (
-            2
-            * np.sqrt(2.0)
-            * matrix_element
-            * pulse_duration
-        )
+        / (2 * pulse_duration)
     )
 
     # ------------------------------------------------------------------
-    # 8. Define the time-dependent Hamiltonian
+    # 9. Define the driven Hamiltonian
     # ------------------------------------------------------------------
 
     def hamiltonian(time):
@@ -4015,7 +4000,7 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
             control=control,
             drives=[
                 {
-                    "omega": transition_frequency,
+                    "omega": omega_1,
                     "phase": 0.0,
                     "omega_x": envelope,
                     "omega_y": 0.0,
@@ -4026,11 +4011,22 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
         return h_free + microwave
 
     # ------------------------------------------------------------------
-    # 9. Propagate the complete 81D system
+    # 10. Transform to the Joas rotating frame
+    # ------------------------------------------------------------------
+
+    def hamiltonian_rotating(time):
+        return rotating_frame_hamiltonian(
+            time=time,
+            driven_hamiltonian=hamiltonian,
+            generator=h_trans,
+        )
+
+    # ------------------------------------------------------------------
+    # 11. Propagate the complete 81D system
     # ------------------------------------------------------------------
 
     propagator = time_dependent_propagator(
-        hamiltonian=hamiltonian,
+        hamiltonian=hamiltonian_rotating,
         t0=0.0,
         t1=pulse_duration,
         steps=5000,
@@ -4040,7 +4036,7 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     assert propagator.isunitary
 
     # ------------------------------------------------------------------
-    # 10. Measure the population transferred by the finite pulse
+    # 12. Measure the population transferred by the finite pulse
     # ------------------------------------------------------------------
 
     final_state = propagator * initial_state
@@ -4050,7 +4046,7 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     ) ** 2
 
     print(
-        "full NV1 target population =",
+        "rotating-frame NV1 target population =",
         target_population,
     )
 
@@ -4141,3 +4137,359 @@ def test_joas_setting_2_rotating_frame_generator():
     assert h_trans.shape == (81, 81)
     assert h_trans.isherm
     assert (h_trans - expected).norm() < 1e-12
+
+
+def test_joas_full_electronic_basis_transformation():
+    """The electronic basis transformation diagonalizes both NV electron Hamiltonians."""
+
+    system = SpinSystem([1, 1, 1, 1])
+    electron_system = SpinSystem([1])
+
+    D_1 = 2 * np.pi * 2865.42
+    D_2 = 2 * np.pi * 2867.27
+
+    omega_e = 2 * np.pi * 295.18
+
+    theta_1 = np.deg2rad(74.08)
+    theta_2 = np.deg2rad(3.58)
+
+    omega_e_1 = omega_e * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_e_2 = omega_e * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    h_e1 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_1,
+        omega_e=omega_e_1,
+    )
+
+    h_e2 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_2,
+        omega_e=omega_e_2,
+    )
+
+    basis_e1 = dressed_spin_one_basis(h_e1)
+    basis_e2 = dressed_spin_one_basis(h_e2)
+
+    t_e1 = basis_unitary(basis_e1)
+    t_e2 = basis_unitary(basis_e2)
+
+    identity_n = qeye(3)
+
+    transformation = tensor(
+        t_e1,
+        identity_n,
+        t_e2,
+        identity_n,
+    )
+
+    # Electronic Hamiltonian embedded in the complete Hilbert space
+    h_e1_full = embed_operator(
+        h_e1,
+        site=0,
+        system=system,
+    )
+
+    h_e2_full = embed_operator(
+        h_e2,
+        site=2,
+        system=system,
+    )
+
+    h_e = h_e1_full + h_e2_full
+
+    h_e_transformed = (
+        transformation.dag()
+        * h_e
+        * transformation
+    )
+
+    matrix = h_e_transformed.full()
+
+    off_diagonal = (
+        matrix
+        - np.diag(np.diag(matrix))
+    )
+
+    assert transformation.shape == (81, 81)
+    assert transformation.isunitary
+    assert np.max(np.abs(off_diagonal)) < 1e-10
+
+
+def test_joas_nv1_isolated_finite_microwave_pi_pulse():
+    """A Joas sine pulse drives the isolated NV1 electronic qubit."""
+
+    # --------------------------------------------------------------
+    # 1. Electronic NV1
+    # --------------------------------------------------------------
+
+    system = SpinSystem([1])
+
+    # D_1 = 2 * np.pi * 2865.42
+    D_1 = 2 * np.pi * 2867.27
+    omega_e = 2 * np.pi * 295.18
+    theta_1 = np.deg2rad(74.08)
+
+    omega_e_1 = omega_e * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    h_e1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=D_1,
+        omega_e=omega_e_1,
+    )
+
+    # --------------------------------------------------------------
+    # 2. Transform to electronic eigenbasis
+    # --------------------------------------------------------------
+
+    dressed_basis = dressed_spin_one_basis(h_e1)
+    transformation = basis_unitary(dressed_basis)
+
+    h_free = (
+        transformation.dag()
+        * h_e1
+        * transformation
+    )
+
+    # In this basis:
+    # |0> = ground / m_s=0-like state
+    # |1> = addressed +1-like state
+    zero = basis(3, 1)
+    one = basis(3, 0)
+
+    # --- Temporary diagnostic ---
+
+    omega_1 = 2 * np.pi * 2990.8
+
+    energy_zero = np.real(
+        zero.dag() * h_free * zero
+    )
+
+    energy_one = np.real(
+        one.dag() * h_free * one
+    )
+
+    model_frequency = energy_one - energy_zero
+
+    # omega_1 = model_frequency
+
+    print(
+        "isolated NV1 model frequency =",
+        model_frequency / (2 * np.pi),
+        "MHz",
+    )
+
+    print(
+        "carrier detuning =",
+        (omega_1 - model_frequency) / (2 * np.pi),
+        "MHz",
+    )
+
+    # --------------------------------------------------------------
+    # 3. Joas control and carrier
+    # --------------------------------------------------------------
+
+    sx, _, sz = spin_operators(1)
+
+    h_trans = omega_1 * sz**2
+
+    pulse_duration = 0.1
+
+    peak_amplitude = (
+        np.pi**2
+        / (2 * pulse_duration)
+    )
+
+    # --------------------------------------------------------------
+    # 4. Driven Hamiltonian
+    # --------------------------------------------------------------
+
+    def hamiltonian(time):
+        envelope = sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=sx,
+            drives=[
+                {
+                    "omega": omega_1,
+                    "phase": 0.0,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }
+            ],
+        )
+
+        return h_free + microwave
+
+    # --------------------------------------------------------------
+    # 5. Joas rotating frame
+    # --------------------------------------------------------------
+
+    def hamiltonian_rotating(time):
+        return rotating_frame_hamiltonian(
+            time=time,
+            driven_hamiltonian=hamiltonian,
+            generator=h_trans,
+        )
+
+    # --------------------------------------------------------------
+    # 6. Propagation
+    # --------------------------------------------------------------
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian_rotating,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * zero
+
+    target_population = abs(
+        one.overlap(final_state)
+    ) ** 2
+
+    print(
+        "isolated NV1 target population =",
+        target_population,
+    )
+
+    assert propagator.isunitary
+
+
+def test_joas_nv2_isolated_finite_microwave_pi_pulse():
+    """A Joas sine pulse drives the isolated NV2 electronic qubit."""
+
+    system = SpinSystem([1])
+
+    D_2 = 2 * np.pi * 2865.42
+    omega_e = 2 * np.pi * 295.18
+    theta_2 = np.deg2rad(3.58)
+
+    omega_e_2 = omega_e * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    h_e2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=D_2,
+        omega_e=omega_e_2,
+    )
+
+    dressed_basis = dressed_spin_one_basis(h_e2)
+    transformation = basis_unitary(dressed_basis)
+
+    h_free = transformation.dag() * h_e2 * transformation
+
+    zero = basis(3, 1)
+    one = basis(3, 2)  # -1-like branch used for NV2
+
+    # --- Temporary diagnostic ---
+
+    omega_2 = 2 * np.pi * 2571.0
+
+    energy_zero = np.real(
+        zero.dag() * h_free * zero
+    )
+
+    energy_one = np.real(
+        one.dag() * h_free * one
+    )
+
+    model_frequency = energy_one - energy_zero
+
+    print(
+        "isolated NV2 model frequency =",
+        model_frequency / (2 * np.pi),
+        "MHz",
+    )
+
+    print(
+        "carrier detuning =",
+        (omega_2 - model_frequency) / (2 * np.pi),
+        "MHz",
+    )
+
+    sx, _, sz = spin_operators(1)
+
+    h_trans = omega_2 * sz**2
+
+    pulse_duration = 0.1
+
+    peak_amplitude = (
+        np.pi**2
+        / (2 * pulse_duration)
+    )
+
+    def hamiltonian(time):
+        envelope = sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=sx,
+            drives=[
+                {
+                    "omega": omega_2,
+                    "phase": 0.0,
+                    "omega_x": envelope,
+                    "omega_y": 0.0,
+                }
+            ],
+        )
+
+        return h_free + microwave
+
+    def hamiltonian_rotating(time):
+        return rotating_frame_hamiltonian(
+            time=time,
+            driven_hamiltonian=hamiltonian,
+            generator=h_trans,
+        )
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian_rotating,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * zero
+
+    target_population = abs(
+        one.overlap(final_state)
+    ) ** 2
+
+    print(
+        "isolated NV2 target population =",
+        target_population,
+    )
+
+    assert propagator.isunitary
