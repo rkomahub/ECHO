@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from qutip import basis, qeye, tensor
+from qutip import Qobj, basis, qeye, tensor
 
 from echo_spin.control.microwave import (
     control_operator,
@@ -19,6 +19,7 @@ from echo_spin.core.operators import (
 )
 from echo_spin.core.system import SpinSystem
 from echo_spin.dynamics.propagators import (
+    logical_electron_nuclear_dynamical_map,
     electron_nuclear_dynamical_map,
     rotating_frame_hamiltonian,
     static_propagator,
@@ -1552,3 +1553,47 @@ def test_joas_full_finite_xy8_propagator():
 
     assert propagator.shape == (81, 81)
     assert unitarity_error < 1e-9
+
+    # ------------------------------------------------------------------
+    # 11. Logical-state survival with maximally mixed nuclei
+    # ------------------------------------------------------------------
+
+    logical_electron_basis = [
+        tensor(basis(3, 1), basis(3, 1)),  # |00>
+        tensor(basis(3, 1), basis(3, 2)),  # |01>
+        tensor(basis(3, 0), basis(3, 1)),  # |10>
+        tensor(basis(3, 0), basis(3, 2)),  # |11>
+    ]
+
+    logical_states = [
+        tensor(basis(2, 0), basis(2, 0)),
+        tensor(basis(2, 0), basis(2, 1)),
+        tensor(basis(2, 1), basis(2, 0)),
+        tensor(basis(2, 1), basis(2, 1)),
+    ]
+
+    nuclear_state = qeye(3) / 3
+
+    survivals = []
+
+    for state in logical_states:
+        result = logical_electron_nuclear_dynamical_map(
+            density_matrix=state.proj(),
+            propagator=propagator,
+            logical_basis=logical_electron_basis,
+            nuclear_states=[
+                nuclear_state,
+                nuclear_state,
+            ],
+        )
+
+        survival = float(np.real(result.tr()))
+        survivals.append(survival)
+
+    print("logical survivals =", survivals)
+
+    assert all(
+        0.0 <= survival <= 1.0 + 1e-10
+        for survival in survivals
+    )
+
