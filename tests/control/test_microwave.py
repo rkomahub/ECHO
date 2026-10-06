@@ -1,6 +1,4 @@
 import numpy as np
-import pytest
-
 from qutip import qeye
 
 from echo_spin.control.microwave import (
@@ -9,6 +7,7 @@ from echo_spin.control.microwave import (
     microwave_coefficient,
     microwave_hamiltonian,
 )
+
 
 def test_constant_control_amplitude():
     """A constant control amplitude should be returned unchanged."""

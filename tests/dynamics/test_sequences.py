@@ -1,14 +1,14 @@
 import numpy as np
 import pytest
-from qutip import Qobj, sigmax, sigmay, sigmaz, qeye
+from qutip import Qobj, qeye, sigmax, sigmaz
 
+from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.dynamics.sequences import (
-    toggling_hamiltonians,
-    toggling_propagator,
     finite_pulse_propagator,
     finite_pulse_sequence_propagator,
+    toggling_hamiltonians,
+    toggling_propagator,
 )
-from echo_spin.control.rotations import single_qubit_rotation
 
 
 def test_toggling_hamiltonians():

@@ -2,6 +2,7 @@ from qutip import Qobj, qeye
 
 from echo_spin.dynamics.propagators import time_dependent_propagator
 
+
 def toggling_hamiltonians(
     free_hamiltonian: Qobj,
     pulses: list[Qobj],

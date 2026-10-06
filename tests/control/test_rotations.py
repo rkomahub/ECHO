@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 from qutip import basis, qeye, sigmax, tensor
-from echo_spin.control.rotations import selective_rotation, single_qubit_rotation, two_qubit_rotation
+
+from echo_spin.control.rotations import (
+    selective_rotation,
+    single_qubit_rotation,
+    two_qubit_rotation,
+)
+
 
 def test_pi_x_rotation():
     """Test that a pi rotation about the x-axis is implemented correctly."""

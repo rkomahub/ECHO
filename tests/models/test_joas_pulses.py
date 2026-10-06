@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from qutip import basis, qeye, sigmax, sigmay, tensor
 
 from echo_spin.control.microwave import microwave_hamiltonian
@@ -9,6 +8,7 @@ from echo_spin.control.pulses import (
     sine_envelope,
     sine_pi_pulse_amplitude,
 )
+from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.core.basis import (
     dressed_spin_one_basis,
     dressed_spin_operators,
@@ -40,7 +40,6 @@ from echo_spin.models.joas import (
     xy8_gate_schedule,
 )
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
-from echo_spin.control.rotations import two_qubit_rotation
 
 
 def test_finite_pi_pulse_on_nv1_converges_to_ideal_rotation():
@@ -455,7 +454,7 @@ def test_joas_nv2_physical_resonant_pi_pulse():
 
 
 def test_joas_two_electron_nv1_physical_pi_pulse():
-    """The physical NV1 pulse survives embedding into the interacting \(9D\) system."""
+    r"""The physical NV1 pulse survives embedding into the interacting \(9D\) system."""
     system = SpinSystem([1])
 
     omega = 2 * np.pi * 295.18
@@ -699,7 +698,7 @@ def test_joas_nv1_conditional_transition_shift():
 
 
 def test_joas_two_electron_nv2_physical_pi_pulse():
-    """The physical NV2 pulse survives embedding into the interacting \(9D\) system."""
+    r"""The physical NV2 pulse survives embedding into the interacting \(9D\) system."""
     system = SpinSystem([1])
 
     omega = 2 * np.pi * 295.18
@@ -1701,7 +1700,7 @@ def test_joas_two_electron_finite_xy8_gate():
     corrected_propagator = remove_local_z_phases(
             logical_propagator
         )
-    
+
     corrected_target = remove_local_z_phases(
         target
     )

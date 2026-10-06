@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from qutip import Qobj, basis, jmat
 
 from echo_spin.core.basis import (
@@ -8,8 +7,6 @@ from echo_spin.core.basis import (
     diagonalize_hamiltonian,
     dressed_spin_one_basis,
     dressed_spin_operators,
-    operator_from_basis,
-    operator_in_basis,
     order_states_by_reference,
     product_basis,
     project_operator,

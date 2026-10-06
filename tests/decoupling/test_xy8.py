@@ -1,6 +1,8 @@
 import numpy as np
-from echo_spin.decoupling.xy8 import xy8_pulses
+
 from echo_spin.control.rotations import two_qubit_rotation
+from echo_spin.decoupling.xy8 import xy8_pulses
+
 
 def test_xy8_contains_eight_pulses():
     pulses = xy8_pulses(qubit=0)

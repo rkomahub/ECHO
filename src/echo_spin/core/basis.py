@@ -1,6 +1,7 @@
-import numpy as np
-from qutip import Qobj, jmat, basis, tensor
 from itertools import permutations
+
+import numpy as np
+from qutip import Qobj, basis, jmat, tensor
 
 
 def diagonalize_hamiltonian(

@@ -1,13 +1,11 @@
 import numpy as np
-import pytest
-
-from qutip import Qobj, basis, qeye, tensor
+from qutip import basis, qeye, tensor
 
 from echo_spin.control.microwave import (
     control_operator,
     microwave_hamiltonian,
 )
-from echo_spin.control.pulses import sine_envelope, centered_sine_envelope
+from echo_spin.control.pulses import centered_sine_envelope, sine_envelope
 from echo_spin.core.basis import (
     basis_unitary,
     dressed_spin_one_basis,
@@ -19,15 +17,15 @@ from echo_spin.core.operators import (
 )
 from echo_spin.core.system import SpinSystem
 from echo_spin.dynamics.propagators import (
-    logical_electron_nuclear_dynamical_map,
     electron_nuclear_dynamical_map,
+    logical_electron_nuclear_dynamical_map,
     rotating_frame_hamiltonian,
     static_propagator,
     time_dependent_propagator,
 )
+from echo_spin.models.joas import xy8_gate_schedule
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
-from echo_spin.models.joas import xy8_gate_schedule
 
 
 def test_joas_setting_2_full_nv_hamiltonian():
@@ -600,7 +598,7 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
         nuclear_zero,
         zero_e2,
         nuclear_zero,
-    )   
+    )
 
     # --- Temporary diagnostic: hyperfine-shifted transition ---
 

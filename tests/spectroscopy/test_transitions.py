@@ -1,9 +1,10 @@
 import numpy as np
 
-from echo_spin.spectroscopy.transitions import electronic_spectrum, allowed_transitions
+from echo_spin.core.operators import spin_operators
 from echo_spin.core.system import SpinSystem
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
-from echo_spin.core.operators import spin_operators
+from echo_spin.spectroscopy.transitions import allowed_transitions, electronic_spectrum
+
 
 def test_joas_setting_2_ab_assignment():
     """Test the electronic transition frequencies of two NV centers in the JOAS setting 2 (misaligned and aligned)."""
@@ -56,7 +57,7 @@ def test_joas_setting_2_ab_assignment():
 def test_allowed_transitions_aligned_nv():
     """Test the allowed transitions of a single aligned NV center."""
     system = SpinSystem([1])
-    
+
     D = 2 * np.pi * 2870.0
     omega_z = 2 * np.pi * 300.0
 

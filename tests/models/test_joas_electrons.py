@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from qutip import Qobj, basis, qeye, tensor
 
 from echo_spin.control.rotations import selective_rotation
@@ -10,8 +9,8 @@ from echo_spin.core.basis import (
     operator_in_basis,
     project_operator,
 )
-from echo_spin.core.system import SpinSystem
 from echo_spin.core.operators import spin_operators
+from echo_spin.core.system import SpinSystem
 from echo_spin.dynamics.sequences import finite_pulse_sequence_propagator
 from echo_spin.gates.gates import sqrt_zz_gate
 from echo_spin.models.joas import (

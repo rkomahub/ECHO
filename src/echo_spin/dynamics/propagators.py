@@ -1,5 +1,4 @@
 import numpy as np
-
 from qutip import Qobj, qeye, tensor
 
 
@@ -126,7 +125,6 @@ def logical_electron_nuclear_dynamical_map(
     nuclear_states: list[Qobj],
 ) -> Qobj:
     """Evolve a logical two-electron state and project back to the logical subspace."""
-    import numpy as np
 
     if len(logical_basis) != density_matrix.shape[0]:
         raise ValueError(

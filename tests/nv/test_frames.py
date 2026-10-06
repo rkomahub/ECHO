@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 
 from echo_spin.nv.frames import (
-    rotate_to_local_frame, 
-    rotation_matrix, 
+    rotate_to_local_frame,
     rotate_vector,
+    rotation_matrix,
 )
 
 

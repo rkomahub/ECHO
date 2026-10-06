@@ -1,18 +1,18 @@
 import numpy as np
 import pytest
-
-from qutip import Qobj, basis, tensor, qeye
+from qutip import Qobj, basis, qeye, tensor
 
 from echo_spin.core.basis import operator_in_basis
+from echo_spin.core.operators import embed_operator, spin_operators
+from echo_spin.core.system import SpinSystem
 from echo_spin.nv.interactions import (
     dipolar_geometry,
     dipolar_interaction,
-    secular_interaction,
     extract_effective_zz_coupling,
     relative_operator_residual,
+    secular_interaction,
 )
-from echo_spin.core.system import SpinSystem
-from echo_spin.core.operators import embed_operator, spin_operators
+
 
 def test_dipolar_interaction_dimension():
     """The dipolar interaction should act on the full composite Hilbert space."""

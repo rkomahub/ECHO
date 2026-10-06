@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
-from qutip import Qobj, qeye, basis, tensor
+from qutip import Qobj, basis, qeye, tensor
 
 from echo_spin.gates.gates import (
-    sqrt_zz_gate,
+    average_gate_fidelity,
     conditional_phase,
     remove_local_z_phases,
-    average_gate_fidelity,
+    sqrt_zz_gate,
 )
 
 

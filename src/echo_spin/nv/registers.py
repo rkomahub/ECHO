@@ -1,14 +1,15 @@
-import numpy as np
-
 from collections.abc import Sequence
+
+import numpy as np
 from qutip import Qobj
 
-from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.core.system import SpinSystem
+from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import (
     dipolar_geometry,
     dipolar_interaction,
 )
+
 
 def nv_register_hamiltonian(
     system: SpinSystem,
@@ -145,7 +146,7 @@ def nv_dipolar_interaction(
     interaction = 0
 
     """Loop over all unique pairs of NV centers."""
-    for i in range(number_of_nv): 
+    for i in range(number_of_nv):
         for j in range(i + 1, number_of_nv):
             electron_i = 2 * i
             electron_j = 2 * j

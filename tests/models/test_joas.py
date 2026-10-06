@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from qutip import Qobj, qeye
 
 from echo_spin.control.rotations import two_qubit_rotation
@@ -22,6 +21,7 @@ from echo_spin.models.joas import (
     xy8_gate_schedule,
     xy8_gate_times,
 )
+
 
 def test_free_hamiltonian_sums_nv_terms_and_interaction():
     """The free Hamiltonian should sum all NV and interaction terms."""
@@ -351,7 +351,7 @@ def test_joas_sequence_timing():
     n_pi = 8
 
     assert np.isclose(
-        interaction_time(tau_2, n_pi),  
+        interaction_time(tau_2, n_pi),
         1600e-9,
     )
 

@@ -4,12 +4,12 @@ from qutip import Qobj, basis, qeye, sigmax, tensor
 
 from echo_spin.dynamics.propagators import (
     electron_nuclear_dynamical_map,
+    logical_electron_nuclear_dynamical_map,
     rotating_frame_hamiltonian,
     rotating_frame_propagator,
     static_propagator,
     time_dependent_propagator,
     unitary_dynamical_map,
-    logical_electron_nuclear_dynamical_map,
 )
 
 

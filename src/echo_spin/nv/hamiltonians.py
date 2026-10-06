@@ -1,11 +1,12 @@
-import numpy as np
 from collections.abc import Sequence
 
+import numpy as np
 from qutip import Qobj
 
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
 from echo_spin.nv.frames import rotate_to_local_frame
+
 
 def electronic_nv_hamiltonian(
     system: SpinSystem,

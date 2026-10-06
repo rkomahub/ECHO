@@ -1,11 +1,15 @@
 import numpy as np
 import pytest
-
 from qutip import sigmax, sigmaz
 
-from echo_spin.control.pulses import centered_sine_envelope, sine_envelope, sine_pi_pulse_amplitude
+from echo_spin.control.pulses import (
+    centered_sine_envelope,
+    sine_envelope,
+    sine_pi_pulse_amplitude,
+)
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.dynamics.propagators import time_dependent_propagator
+
 
 def test_sine_envelope_boundaries():
     assert np.isclose(sine_envelope(0.0, 1.0, 2.0), 0.0)

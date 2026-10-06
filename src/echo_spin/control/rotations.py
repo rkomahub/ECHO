@@ -1,4 +1,3 @@
-import numpy as np
 from qutip import Qobj, qeye, sigmax, sigmay, tensor
 
 

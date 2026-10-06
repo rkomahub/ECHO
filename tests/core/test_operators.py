@@ -1,6 +1,5 @@
 import numpy as np
 import pytest
-
 from qutip import jmat
 
 from echo_spin.core.operators import embed_operator, spin_operators
