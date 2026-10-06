@@ -1,7 +1,11 @@
 import numpy as np
 import pytest
+from qutip import basis
 
-from echo_spin.noise.dephasing import exponential_coherence
+from echo_spin.noise.dephasing import (
+    dephasing_channel,
+    exponential_coherence,
+)
 
 
 def test_exponential_coherence():
@@ -61,3 +65,78 @@ def test_joas_xy8_coherence_limit():
 
     assert np.isclose(fidelity, 0.986, atol=1e-3)
     assert np.isclose(error, 0.014, atol=1e-3)
+
+
+def test_dephasing_channel_preserves_populations():
+    """Check that pure dephasing leaves basis-state populations unchanged."""
+    zero = basis(2, 0)
+    one = basis(2, 1)
+
+    density_matrix = (
+        0.3 * zero.proj()
+        + 0.7 * one.proj()
+    )
+
+    result = dephasing_channel(
+        density_matrix=density_matrix,
+        time=10.0,
+        coherence_time=20.0,
+    )
+
+    assert np.allclose(
+        np.diag(result.full()),
+        [0.3, 0.7],
+    )
+
+
+def test_dephasing_channel_decays_coherence():
+    """Check exponential decay of the off-diagonal density-matrix elements."""
+    plus = (
+        basis(2, 0)
+        + basis(2, 1)
+    ).unit()
+
+    density_matrix = plus.proj()
+
+    time = 10.0
+    coherence_time = 20.0
+
+    result = dephasing_channel(
+        density_matrix=density_matrix,
+        time=time,
+        coherence_time=coherence_time,
+    )
+
+    expected_coherence = (
+        0.5
+        * np.exp(-time / coherence_time)
+    )
+
+    assert np.isclose(
+        result[0, 1],
+        expected_coherence,
+    )
+
+    assert np.isclose(
+        result[1, 0],
+        expected_coherence,
+    )
+
+
+def test_dephasing_channel_preserves_trace():
+    """Check that the dephasing channel preserves the density-matrix trace."""
+    plus = (
+        basis(2, 0)
+        + basis(2, 1)
+    ).unit()
+
+    result = dephasing_channel(
+        density_matrix=plus.proj(),
+        time=10.0,
+        coherence_time=20.0,
+    )
+
+    assert np.isclose(
+        result.tr(),
+        1.0,
+    )
