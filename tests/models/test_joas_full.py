@@ -1260,7 +1260,7 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
 # -----------------------------------------------------------------
 
 def test_joas_full_finite_xy8_propagator():
-    """The full electron-nuclear XY8 sequence generates a unitary 81D propagator."""
+    """Validate the full finite-pulse Joas XY8 entangling gate."""
 
     # ------------------------------------------------------------------
     # 1. Full two-NV system
@@ -1454,13 +1454,15 @@ def test_joas_full_finite_xy8_propagator():
     )
 
     # ------------------------------------------------------------------
-    # 7. XY8 timing
+    # 7. XY8 timing and microwave pulse
     # ------------------------------------------------------------------
 
     n_pi = 8
 
+    # Optimized Joas pulse spacing.
     tau_1 = 0.8  # microseconds
 
+    # Ideal interaction time for the measured dipolar coupling.
     tau_2 = 1 / (
         4 * n_pi * nu_dip
     )
@@ -1470,11 +1472,9 @@ def test_joas_full_finite_xy8_propagator():
         tau_2=tau_2,
     )
 
-    gate_duration = 8 * tau_1
+    gate_duration = n_pi * tau_1
 
-    # Keep the same 50 ns pulse used by the validated
-    # electron-only finite-pulse XY8 test.
-    # pulse_duration = 0.05 (OLD)
+    # Optimized Joas microwave Rabi frequency.
     rabi_frequency = 23.7  # MHz
     pulse_duration = 1 / (2 * rabi_frequency)
 
@@ -1490,6 +1490,8 @@ def test_joas_full_finite_xy8_propagator():
     pulse_propagators = []
     pulse_centers = []
 
+    # 5000 steps over ~21 ns gives a finer resolution than
+    # the 100 steps/ns used in the Joas numerical simulation.
     pulse_steps = 5000
 
     for center, nv, axis in schedule:
@@ -1543,7 +1545,7 @@ def test_joas_full_finite_xy8_propagator():
         pulse_centers.append(center)
 
     # ------------------------------------------------------------------
-    # 9. Exact free intervals
+    # 9. Exact free-evolution intervals
     # ------------------------------------------------------------------
 
     free_intervals = finite_pulse_intervals(
@@ -1568,8 +1570,10 @@ def test_joas_full_finite_xy8_propagator():
         time=gate_duration,
     )
 
+    assert propagator.shape == (81, 81)
+
     # ------------------------------------------------------------------
-    # 11. Logical-state survival with maximally mixed nuclei
+    # 11. Logical basis and logical-state survival
     # ------------------------------------------------------------------
 
     logical_electron_basis = [
@@ -1638,71 +1642,9 @@ def test_joas_full_finite_xy8_propagator():
 
     assert 0.0 <= fidelity <= 1.0
 
-    identity_target = qeye([2, 2])
-
-    identity_fidelity = average_gate_fidelity(
-        dynamical_map=logical_dynamical_map,
-        target=identity_target,
-        basis_states=logical_states,
-    )
-
-    sqrt_zz_fidelity = average_gate_fidelity(
-        dynamical_map=logical_dynamical_map,
-        target=sqrt_zz_gate(),
-        basis_states=logical_states,
-    )
-
-    sqrt_zz_dag_fidelity = average_gate_fidelity(
-        dynamical_map=logical_dynamical_map,
-        target=sqrt_zz_gate().dag(),
-        basis_states=logical_states,
-    )
-
-    print("identity fidelity =", identity_fidelity)
-    print("sqrtZZ fidelity =", sqrt_zz_fidelity)
-    print("sqrtZZ dagger fidelity =", sqrt_zz_dag_fidelity)
-
-    print("\nLogical coherences relative to |00>:")
-
-    for j in range(4):
-        rho_0j = logical_states[0] * logical_states[j].dag()
-
-        evolved_0j = logical_dynamical_map(rho_0j)
-
-        coherence = (
-            logical_states[0].dag()
-            * evolved_0j
-            * logical_states[j]
-        )
-
-        print(
-            f"|00><{j}| -> "
-            f"{complex(coherence):.6f}, "
-            f"phase = {np.angle(complex(coherence)):.6f}"
-        )
-
-    print("\nLogical channel matrix elements:")
-
-    channel_elements = np.zeros((4, 4), dtype=complex)
-
-    for i, state_i in enumerate(logical_states):
-        for j, state_j in enumerate(logical_states):
-            rho_ij = state_i * state_j.dag()
-            evolved = logical_dynamical_map(rho_ij)
-
-            element = (
-                state_i.dag()
-                * evolved
-                * state_j
-            )
-
-            channel_elements[i, j] = complex(element)
-
-    print(channel_elements)
-    print("\nphases:")
-    print(np.angle(channel_elements))
-    print("\nmagnitudes:")
-    print(np.abs(channel_elements))
+    # ------------------------------------------------------------------
+    # 13. Nuclear-state-resolved fidelity diagnostic
+    # ------------------------------------------------------------------
 
     nuclear_states_to_test = {
         "mI=+1": basis(3, 0).proj(),
@@ -1713,7 +1655,7 @@ def test_joas_full_finite_xy8_propagator():
 
     for label, nuclear_test_state in nuclear_states_to_test.items():
 
-        def test_map(density_matrix):
+        def nuclear_dynamical_map(density_matrix):
             return logical_electron_nuclear_dynamical_map(
                 density_matrix=density_matrix,
                 propagator=propagator,
@@ -1724,13 +1666,13 @@ def test_joas_full_finite_xy8_propagator():
                 ],
             )
 
-        test_fidelity = average_gate_fidelity(
-            dynamical_map=test_map,
-            target=sqrt_zz_gate().dag(),
+        nuclear_fidelity = average_gate_fidelity(
+            dynamical_map=nuclear_dynamical_map,
+            target=target,
             basis_states=logical_states,
         )
 
         print(
             f"{label} nuclear fidelity =",
-            test_fidelity,
+            nuclear_fidelity,
         )
