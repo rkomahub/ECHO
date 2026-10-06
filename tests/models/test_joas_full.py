@@ -1459,11 +1459,11 @@ def test_joas_full_finite_xy8_propagator():
 
     n_pi = 8
 
+    tau_1 = 0.8  # microseconds
+
     tau_2 = 1 / (
         4 * n_pi * nu_dip
     )
-
-    tau_1 = 2.5 * tau_2
 
     schedule = xy8_gate_schedule(
         tau_1=tau_1,
@@ -1474,7 +1474,9 @@ def test_joas_full_finite_xy8_propagator():
 
     # Keep the same 50 ns pulse used by the validated
     # electron-only finite-pulse XY8 test.
-    pulse_duration = 0.05
+    # pulse_duration = 0.05 (OLD)
+    rabi_frequency = 23.7  # MHz
+    pulse_duration = 1 / (2 * rabi_frequency)
 
     peak_amplitude = (
         np.pi**2
@@ -1701,3 +1703,34 @@ def test_joas_full_finite_xy8_propagator():
     print(np.angle(channel_elements))
     print("\nmagnitudes:")
     print(np.abs(channel_elements))
+
+    nuclear_states_to_test = {
+        "mI=+1": basis(3, 0).proj(),
+        "mI=0": basis(3, 1).proj(),
+        "mI=-1": basis(3, 2).proj(),
+        "mixed": qeye(3) / 3,
+    }
+
+    for label, nuclear_test_state in nuclear_states_to_test.items():
+
+        def test_map(density_matrix):
+            return logical_electron_nuclear_dynamical_map(
+                density_matrix=density_matrix,
+                propagator=propagator,
+                logical_basis=logical_electron_basis,
+                nuclear_states=[
+                    nuclear_test_state,
+                    nuclear_test_state,
+                ],
+            )
+
+        test_fidelity = average_gate_fidelity(
+            dynamical_map=test_map,
+            target=sqrt_zz_gate().dag(),
+            basis_states=logical_states,
+        )
+
+        print(
+            f"{label} nuclear fidelity =",
+            test_fidelity,
+        )
