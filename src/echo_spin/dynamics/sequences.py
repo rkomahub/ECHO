@@ -91,3 +91,42 @@ def finite_pulse_sequence_propagator(
             propagator = pulse_propagators[index] * propagator
 
     return propagator
+
+
+def finite_pulse_intervals(
+    pulse_centers: list[float],
+    pulse_duration: float,
+    total_duration: float,
+) -> list[float]:
+    """Return free-evolution intervals between finite pulses."""
+    if pulse_duration <= 0:
+        raise ValueError("pulse_duration must be positive.")
+
+    if total_duration <= 0:
+        raise ValueError("total_duration must be positive.")
+
+    if not pulse_centers:
+        return [total_duration]
+
+    centers = list(pulse_centers)
+    half_duration = pulse_duration / 2
+
+    intervals = [
+        centers[0] - half_duration,
+    ]
+
+    for previous, current in zip(centers[:-1], centers[1:]):
+        intervals.append(
+            current - previous - pulse_duration
+        )
+
+    intervals.append(
+        total_duration - centers[-1] - half_duration
+    )
+
+    if any(interval < 0 for interval in intervals):
+        raise ValueError(
+            "Pulses overlap or extend outside the sequence."
+        )
+
+    return intervals

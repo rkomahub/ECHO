@@ -4,6 +4,7 @@ from qutip import Qobj, qeye, sigmax, sigmaz
 
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.dynamics.sequences import (
+    finite_pulse_intervals,
     finite_pulse_propagator,
     finite_pulse_sequence_propagator,
     toggling_hamiltonians,
@@ -218,3 +219,50 @@ def test_piecewise_finite_pulse_sequence_matches_explicit_propagation():
         actual.full(),
         expected.full(),
     )
+
+
+def test_finite_pulse_intervals():
+    """Test correct free intervals between finite pulses."""
+    intervals = finite_pulse_intervals(
+        pulse_centers=[1.0, 3.0],
+        pulse_duration=0.4,
+        total_duration=5.0,
+    )
+
+    assert np.allclose(
+        intervals,
+        [0.8, 1.6, 1.8],
+    )
+
+
+def test_finite_pulse_intervals_preserve_total_duration():
+    """Test that free and pulse durations reconstruct the total sequence time."""
+    pulse_centers = [1.0, 3.0]
+    pulse_duration = 0.4
+    total_duration = 5.0
+
+    intervals = finite_pulse_intervals(
+        pulse_centers=pulse_centers,
+        pulse_duration=pulse_duration,
+        total_duration=total_duration,
+    )
+
+    reconstructed_duration = (
+        sum(intervals)
+        + len(pulse_centers) * pulse_duration
+    )
+
+    assert np.isclose(
+        reconstructed_duration,
+        total_duration,
+    )
+
+
+def test_finite_pulse_intervals_reject_overlap():
+    """Test that overlapping finite pulses are rejected."""
+    with pytest.raises(ValueError):
+        finite_pulse_intervals(
+            pulse_centers=[1.0, 1.2],
+            pulse_duration=0.4,
+            total_duration=3.0,
+        )
