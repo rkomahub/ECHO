@@ -20,8 +20,17 @@ from echo_spin.dynamics.propagators import (
     electron_nuclear_dynamical_map,
     logical_electron_nuclear_dynamical_map,
     rotating_frame_hamiltonian,
+    rotating_frame_propagator,
     static_propagator,
     time_dependent_propagator,
+)
+from echo_spin.dynamics.sequences import (
+    finite_pulse_intervals,
+    finite_pulse_sequence_propagator,
+)
+from echo_spin.gates.gates import (
+    average_gate_fidelity,
+    sqrt_zz_gate,
 )
 from echo_spin.models.joas import xy8_gate_schedule
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
@@ -1473,13 +1482,30 @@ def test_joas_full_finite_xy8_propagator():
     )
 
     # ------------------------------------------------------------------
-    # 8. Complete driven XY8 Hamiltonian
+    # 8. Finite pulse propagators
     # ------------------------------------------------------------------
 
-    def hamiltonian(time):
-        drives = []
+    pulse_propagators = []
+    pulse_centers = []
 
-        for center, nv, axis in schedule:
+    pulse_steps = 5000
+
+    for center, nv, axis in schedule:
+        frequency = (
+            omega_1
+            if nv == 1
+            else omega_2
+        )
+
+        phase = (
+            0.0
+            if axis == "x"
+            else np.pi / 2
+        )
+
+        start_time = center - pulse_duration / 2
+
+        def pulse_hamiltonian(time):
             envelope = centered_sine_envelope(
                 time=time,
                 center=center,
@@ -1487,70 +1513,58 @@ def test_joas_full_finite_xy8_propagator():
                 peak_amplitude=peak_amplitude,
             )
 
-            if envelope == 0.0:
-                continue
-
-            frequency = (
-                omega_1
-                if nv == 1
-                else omega_2
-            )
-
-            phase = (
-                0.0
-                if axis == "x"
-                else np.pi / 2
-            )
-
-            drives.append({
+            drives = [{
                 "omega": frequency,
                 "phase": phase,
                 "omega_x": envelope,
                 "omega_y": 0.0,
-            })
+            }]
 
-        microwave = microwave_hamiltonian(
-            time=time,
-            control=control,
-            drives=drives,
+            microwave = microwave_hamiltonian(
+                time=time,
+                control=control,
+                drives=drives,
+            )
+
+            return h_free + microwave
+
+        pulse_propagator = time_dependent_propagator(
+            hamiltonian=pulse_hamiltonian,
+            t0=start_time,
+            t1=start_time + pulse_duration,
+            steps=pulse_steps,
         )
 
-        return h_free + microwave
-
-    # ------------------------------------------------------------------
-    # 9. Joas rotating-frame Hamiltonian
-    # ------------------------------------------------------------------
-
-    def hamiltonian_rotating(time):
-        return rotating_frame_hamiltonian(
-            time=time,
-            driven_hamiltonian=hamiltonian,
-            generator=h_trans,
+        pulse_propagators.append(
+            pulse_propagator
         )
+        pulse_centers.append(center)
 
     # ------------------------------------------------------------------
-    # 10. Propagate
+    # 9. Exact free intervals
     # ------------------------------------------------------------------
 
-    propagator = time_dependent_propagator(
-        hamiltonian=hamiltonian_rotating,
-        t0=0.0,
-        t1=gate_duration,
-        steps=1000,
+    free_intervals = finite_pulse_intervals(
+        pulse_centers=pulse_centers,
+        pulse_duration=pulse_duration,
+        total_duration=gate_duration,
     )
 
-    print("gate duration =", gate_duration)
-    print("number of pulses =", len(schedule))
+    # ------------------------------------------------------------------
+    # 10. Complete laboratory-frame sequence
+    # ------------------------------------------------------------------
 
-    identity = qeye(propagator.dims[0])
-
-    unitarity_error = np.linalg.norm(
-        (propagator.dag() * propagator - identity).full(),
-        "fro",
+    propagator_lab = finite_pulse_sequence_propagator(
+        free_hamiltonian=h_free,
+        durations=free_intervals,
+        pulse_propagators=pulse_propagators,
     )
 
-    assert propagator.shape == (81, 81)
-    assert unitarity_error < 1e-9
+    propagator = rotating_frame_propagator(
+        propagator=propagator_lab,
+        generator=h_trans,
+        time=gate_duration,
+    )
 
     # ------------------------------------------------------------------
     # 11. Logical-state survival with maximally mixed nuclei
@@ -1595,3 +1609,95 @@ def test_joas_full_finite_xy8_propagator():
         for survival in survivals
     )
 
+    # ------------------------------------------------------------------
+    # 12. Average logical gate fidelity
+    # ------------------------------------------------------------------
+
+    def logical_dynamical_map(density_matrix):
+        return logical_electron_nuclear_dynamical_map(
+            density_matrix=density_matrix,
+            propagator=propagator,
+            logical_basis=logical_electron_basis,
+            nuclear_states=[
+                nuclear_state,
+                nuclear_state,
+            ],
+        )
+
+    target = sqrt_zz_gate().dag()
+
+    fidelity = average_gate_fidelity(
+        dynamical_map=logical_dynamical_map,
+        target=target,
+        basis_states=logical_states,
+    )
+
+    print("full Joas average gate fidelity =", fidelity)
+
+    assert 0.0 <= fidelity <= 1.0
+
+    identity_target = qeye([2, 2])
+
+    identity_fidelity = average_gate_fidelity(
+        dynamical_map=logical_dynamical_map,
+        target=identity_target,
+        basis_states=logical_states,
+    )
+
+    sqrt_zz_fidelity = average_gate_fidelity(
+        dynamical_map=logical_dynamical_map,
+        target=sqrt_zz_gate(),
+        basis_states=logical_states,
+    )
+
+    sqrt_zz_dag_fidelity = average_gate_fidelity(
+        dynamical_map=logical_dynamical_map,
+        target=sqrt_zz_gate().dag(),
+        basis_states=logical_states,
+    )
+
+    print("identity fidelity =", identity_fidelity)
+    print("sqrtZZ fidelity =", sqrt_zz_fidelity)
+    print("sqrtZZ dagger fidelity =", sqrt_zz_dag_fidelity)
+
+    print("\nLogical coherences relative to |00>:")
+
+    for j in range(4):
+        rho_0j = logical_states[0] * logical_states[j].dag()
+
+        evolved_0j = logical_dynamical_map(rho_0j)
+
+        coherence = (
+            logical_states[0].dag()
+            * evolved_0j
+            * logical_states[j]
+        )
+
+        print(
+            f"|00><{j}| -> "
+            f"{complex(coherence):.6f}, "
+            f"phase = {np.angle(complex(coherence)):.6f}"
+        )
+
+    print("\nLogical channel matrix elements:")
+
+    channel_elements = np.zeros((4, 4), dtype=complex)
+
+    for i, state_i in enumerate(logical_states):
+        for j, state_j in enumerate(logical_states):
+            rho_ij = state_i * state_j.dag()
+            evolved = logical_dynamical_map(rho_ij)
+
+            element = (
+                state_i.dag()
+                * evolved
+                * state_j
+            )
+
+            channel_elements[i, j] = complex(element)
+
+    print(channel_elements)
+    print("\nphases:")
+    print(np.angle(channel_elements))
+    print("\nmagnitudes:")
+    print(np.abs(channel_elements))
