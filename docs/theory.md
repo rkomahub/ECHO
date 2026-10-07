@@ -624,3 +624,30 @@ $$
 where $\sigma$ determines the noise amplitude and $\tau_c$ its correlation
 time. Since the noise couples longitudinally through $\sigma_z$, it produces
 random phase accumulation without directly changing the qubit populations.
+
+### OU free-induction coherence
+
+For stationary zero-mean OU noise, the accumulated phase
+\[
+\phi(t)=\int_0^t\delta\omega(s)\,ds
+\]
+is Gaussian. The normalized ensemble coherence is therefore
+\[
+W(t)=\left\langle e^{-i\phi(t)}\right\rangle
+=e^{-\langle\phi(t)^2\rangle/2}.
+\]
+
+Using the OU correlation function gives
+\[
+W(t)=
+\exp\left[
+-\sigma^2\tau_c^2
+\left(
+\frac{t}{\tau_c}-1+e^{-t/\tau_c}
+\right)
+\right].
+\]
+
+Here \(\sigma\) is the stationary standard deviation in angular-frequency
+units. The numerical test accounts separately for time discretization
+and finite-ensemble sampling uncertainty.
