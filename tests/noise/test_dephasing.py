@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
-from qutip import basis
+from qutip import basis, tensor
 
 from echo_spin.noise.dephasing import (
     dephasing_channel,
     exponential_coherence,
+    two_qubit_dephasing_channel,
 )
 
 
@@ -139,4 +140,47 @@ def test_dephasing_channel_preserves_trace():
     assert np.isclose(
         result.tr(),
         1.0,
+    )
+
+
+def test_two_qubit_dephasing_channel():
+    """Check independent exponential dephasing of two qubits."""
+    zero = basis(2, 0)
+    one = basis(2, 1)
+
+    zero_zero = tensor(zero, zero)
+    one_zero = tensor(one, zero)
+    zero_one = tensor(zero, one)
+
+    time = 10.0
+    coherence_times = (20.0, 40.0)
+
+    state_1 = (
+        zero_zero + one_zero
+    ).unit()
+
+    result_1 = two_qubit_dephasing_channel(
+        density_matrix=state_1.proj(),
+        time=time,
+        coherence_times=coherence_times,
+    )
+
+    assert np.isclose(
+        result_1[0, 2],
+        0.5 * np.exp(-time / coherence_times[0]),
+    )
+
+    state_2 = (
+        zero_zero + zero_one
+    ).unit()
+
+    result_2 = two_qubit_dephasing_channel(
+        density_matrix=state_2.proj(),
+        time=time,
+        coherence_times=coherence_times,
+    )
+
+    assert np.isclose(
+        result_2[0, 1],
+        0.5 * np.exp(-time / coherence_times[1]),
     )

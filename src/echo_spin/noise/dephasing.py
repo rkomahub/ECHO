@@ -1,5 +1,5 @@
 import numpy as np
-from qutip import Qobj, qeye, sigmaz
+from qutip import Qobj, qeye, sigmaz, tensor
 
 
 def exponential_coherence(
@@ -49,3 +49,48 @@ def dephasing_channel(
         k0 * density_matrix * k0.dag()
         + k1 * density_matrix * k1.dag()
     )
+
+
+def two_qubit_dephasing_channel(
+    density_matrix: Qobj,
+    time: float,
+    coherence_times: tuple[float, float],
+) -> Qobj:
+    """Apply independent pure dephasing to two qubits."""
+    if density_matrix.shape != (4, 4):
+        raise ValueError(
+            "two_qubit_dephasing_channel requires a two-qubit density matrix."
+        )
+
+    t2_1, t2_2 = coherence_times
+
+    coherence_1 = exponential_coherence(
+        time=time,
+        coherence_time=t2_1,
+    )
+    coherence_2 = exponential_coherence(
+        time=time,
+        coherence_time=t2_2,
+    )
+
+    identity = qeye(2)
+    sigma_z = sigmaz()
+
+    kraus_1 = [
+        np.sqrt((1 + coherence_1) / 2) * identity,
+        np.sqrt((1 - coherence_1) / 2) * sigma_z,
+    ]
+
+    kraus_2 = [
+        np.sqrt((1 + coherence_2) / 2) * identity,
+        np.sqrt((1 - coherence_2) / 2) * sigma_z,
+    ]
+
+    result = 0 * density_matrix
+
+    for k1 in kraus_1:
+        for k2 in kraus_2:
+            kraus = tensor(k1, k2)
+            result += kraus * density_matrix * kraus.dag()
+
+    return result
