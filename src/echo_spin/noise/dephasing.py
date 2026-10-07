@@ -94,3 +94,45 @@ def two_qubit_dephasing_channel(
             result += kraus * density_matrix * kraus.dag()
 
     return result
+
+
+def ornstein_uhlenbeck_noise(
+    times: np.ndarray,
+    sigma: float,
+    correlation_time: float,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """Generate a stationary Ornstein-Uhlenbeck noise trajectory."""
+    if sigma < 0:
+        raise ValueError("sigma must be non-negative.")
+
+    if correlation_time <= 0:
+        raise ValueError("correlation_time must be positive.")
+
+    if len(times) < 2:
+        raise ValueError("times must contain at least two points.")
+
+    dt = np.diff(times)
+
+    if np.any(dt <= 0):
+        raise ValueError("times must be strictly increasing.")
+
+    noise = np.empty(len(times))
+
+    noise[0] = rng.normal(
+        scale=sigma
+    )
+
+    for index, step in enumerate(dt, start=1):
+        decay = np.exp(
+            -step / correlation_time
+        )
+
+        noise[index] = (
+            decay * noise[index - 1]
+            + sigma
+            * np.sqrt(1 - decay**2)
+            * rng.normal()
+        )
+
+    return noise

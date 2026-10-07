@@ -5,6 +5,7 @@ from qutip import basis, tensor
 from echo_spin.noise.dephasing import (
     dephasing_channel,
     exponential_coherence,
+    ornstein_uhlenbeck_noise,
     two_qubit_dephasing_channel,
 )
 
@@ -183,4 +184,78 @@ def test_two_qubit_dephasing_channel():
     assert np.isclose(
         result_2[0, 1],
         0.5 * np.exp(-time / coherence_times[1]),
+    )
+
+
+def test_ornstein_uhlenbeck_zero_noise():
+    """Check that zero noise amplitude produces an identically zero trajectory."""
+    times = np.linspace(
+        0.0,
+        10.0,
+        101,
+    )
+
+    noise = ornstein_uhlenbeck_noise(
+        times=times,
+        sigma=0.0,
+        correlation_time=2.0,
+        rng=np.random.default_rng(42),
+    )
+
+    assert np.allclose(
+        noise,
+        0.0,
+    )
+
+
+def test_ornstein_uhlenbeck_rejects_invalid_parameters():
+    """Check that invalid OU-process parameters are rejected."""
+    rng = np.random.default_rng(42)
+
+    with pytest.raises(ValueError):
+        ornstein_uhlenbeck_noise(
+            times=np.array([0.0, 1.0]),
+            sigma=-1.0,
+            correlation_time=2.0,
+            rng=rng,
+        )
+
+    with pytest.raises(ValueError):
+        ornstein_uhlenbeck_noise(
+            times=np.array([0.0, 1.0]),
+            sigma=1.0,
+            correlation_time=0.0,
+            rng=rng,
+        )
+
+    with pytest.raises(ValueError):
+        ornstein_uhlenbeck_noise(
+            times=np.array([0.0, 1.0, 0.5]),
+            sigma=1.0,
+            correlation_time=2.0,
+            rng=rng,
+        )
+
+
+def test_ornstein_uhlenbeck_stationary_variance():
+    """Check that a long OU trajectory approaches the stationary variance."""
+    sigma = 2.0
+
+    times = np.linspace(
+        0.0,
+        1000.0,
+        100001,
+    )
+
+    noise = ornstein_uhlenbeck_noise(
+        times=times,
+        sigma=sigma,
+        correlation_time=1.0,
+        rng=np.random.default_rng(42),
+    )
+
+    assert np.isclose(
+        np.var(noise),
+        sigma**2,
+        rtol=0.1,
     )
