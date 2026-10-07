@@ -571,6 +571,34 @@ the tensor products of the individual Kraus operators,
     (K_i^{(1)}\otimes K_j^{(2)})^\dagger.
 \]
 
+### Coherence, pseudo-error and average gate fidelity
+
+The coherence factor \(p(t)=e^{-t/T_2}\) describes off-diagonal
+density-matrix decay. Joas estimates the coherence-limited pseudo-error
+per gate using
+\[
+\mathrm{pEPG}_{T_2}
+=
+1-e^{-t_{\mathrm{gate}}/\overline T_{2,\mathrm{XY8}}},
+\]
+where \(\overline T_{2,\mathrm{XY8}}\) is the arithmetic mean of the
+two measured XY8 coherence times.
+
+This experimental estimate is distinct from the average gate fidelity
+of the independent two-qubit dephasing channel implemented here.
+For an ideal \(\sqrt{ZZ}\) gate followed by that channel,
+\[
+F_{\mathrm{avg}}
+=
+\frac{(1+p_1)(1+p_2)+1}{5},
+\qquad
+p_i=e^{-t/T_{2,i}}.
+\]
+For \(t=6.4\,\mu\mathrm{s}\) and
+\(T_{2,i}=(454,476)\,\mu\mathrm{s}\), the channel predicts
+\(F_{\mathrm{avg}}\approx0.9891\), while the Joas pseudo-error
+estimate is approximately \(0.014\).
+
 ### Stochastic Dephasing Noise
 
 A fluctuating longitudinal field can be modeled as a stochastic frequency

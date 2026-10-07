@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from qutip import basis, tensor
 
+from echo_spin.gates.gates import average_gate_fidelity, sqrt_zz_gate
 from echo_spin.noise.dephasing import (
     dephasing_channel,
     dephasing_hamiltonian,
@@ -47,29 +48,19 @@ def test_exponential_coherence_rejects_invalid_parameters():
         )
 
 
-def test_joas_xy8_coherence_limit():
-    """Reproduce the Joas XY8 coherence-limited gate error of approximately 1.4%."""
-    t2_nv1 = 454.0
-    t2_nv2 = 476.0
-
-    average_t2 = (
-        t2_nv1 + t2_nv2
-    ) / 2
-
+def test_joas_xy8_coherence_limited_pseudo_error():
+    """Reproduce the Joas coherence-limited pseudo-error of about 1.4%."""
+    average_t2 = (454.0 + 476.0) / 2
     gate_duration = 6.4
 
-    fidelity = exponential_coherence(
+    coherence = exponential_coherence(
         time=gate_duration,
         coherence_time=average_t2,
     )
+    pseudo_error = 1 - coherence
 
-    error = 1 - fidelity
-
-    print("Joas XY8 coherence fidelity =", fidelity)
-    print("Joas XY8 coherence error =", error)
-
-    assert np.isclose(fidelity, 0.986, atol=1e-3)
-    assert np.isclose(error, 0.014, atol=1e-3)
+    assert np.isclose(coherence, 0.986, atol=1e-3)
+    assert np.isclose(pseudo_error, 0.014, atol=1e-3)
 
 
 def test_dephasing_channel_preserves_populations():
@@ -433,3 +424,46 @@ def test_ensemble_dephasing_map_reduces_coherence():
         result.tr(),
         1.0,
     )
+
+
+@pytest.mark.parametrize(
+    "time, coherence_times",
+    [
+        (0.0, (20.0, 40.0)),
+        (10.0, (20.0, 40.0)),
+        (6.4, (454.0, 476.0)),
+        (1000.0, (1.0, 2.0)),
+    ],
+)
+def test_two_qubit_dephasing_average_gate_fidelity(
+    time,
+    coherence_times,
+):
+    """Check noisy sqrt(ZZ) fidelity against the analytic channel result."""
+    target = sqrt_zz_gate()
+    basis_states = [
+        tensor(basis(2, i), basis(2, j))
+        for i in range(2)
+        for j in range(2)
+    ]
+
+    def dynamical_map(density_matrix):
+        ideal_output = target * density_matrix * target.dag()
+
+        return two_qubit_dephasing_channel(
+            density_matrix=ideal_output,
+            time=time,
+            coherence_times=coherence_times,
+        )
+
+    actual = average_gate_fidelity(
+        dynamical_map=dynamical_map,
+        target=target,
+        basis_states=basis_states,
+    )
+
+    p1 = np.exp(-time / coherence_times[0])
+    p2 = np.exp(-time / coherence_times[1])
+    expected = ((1 + p1) * (1 + p2) + 1) / 5
+
+    assert actual == pytest.approx(expected, abs=1e-12)
