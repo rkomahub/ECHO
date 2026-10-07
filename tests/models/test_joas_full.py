@@ -33,6 +33,7 @@ from echo_spin.gates.gates import (
     sqrt_zz_gate,
 )
 from echo_spin.models.joas import xy8_gate_schedule
+from echo_spin.noise.dephasing import two_qubit_dephasing_channel
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
 
@@ -1641,6 +1642,35 @@ def test_joas_full_finite_xy8_propagator():
     print("full Joas average gate fidelity =", fidelity)
 
     assert 0.0 <= fidelity <= 1.0
+
+    t2_nv1 = 454.0  # microseconds
+    t2_nv2 = 476.0  # microseconds
+
+    def dynamical_map_with_dephasing(density_matrix):
+        """Apply logical gate evolution followed by pure dephasing."""
+        evolved_density = logical_dynamical_map(
+            density_matrix
+        )
+
+        return two_qubit_dephasing_channel(
+            density_matrix=evolved_density,
+            time=gate_duration,
+            coherence_times=(t2_nv1, t2_nv2),
+        )
+
+    fidelity_with_dephasing = average_gate_fidelity(
+        dynamical_map=dynamical_map_with_dephasing,
+        target=target,
+        basis_states=logical_states,
+    )
+
+    print(
+        "full Joas average gate fidelity with dephasing =",
+        fidelity_with_dephasing,
+    )
+
+    assert 0.0 <= fidelity_with_dephasing <= 1.0
+    assert fidelity_with_dephasing < fidelity
 
     # ------------------------------------------------------------------
     # 13. Nuclear-state-resolved fidelity diagnostic
