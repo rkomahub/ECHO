@@ -7,6 +7,7 @@ from echo_spin.noise.dephasing import (
     dephasing_hamiltonian,
     exponential_coherence,
     ornstein_uhlenbeck_noise,
+    stochastic_dephasing_propagator,
     two_qubit_dephasing_channel,
 )
 
@@ -313,3 +314,65 @@ def test_dephasing_hamiltonian_preserves_populations():
         final_density[0, 1],
         0.5,
     )
+
+
+def test_stochastic_dephasing_propagator_constant_noise():
+    """Check phase accumulation for a constant longitudinal noise trajectory."""
+    times = np.linspace(
+        0.0,
+        2.0,
+        201,
+    )
+
+    noise_value = 3.0
+    noise = np.full(
+        len(times),
+        noise_value,
+    )
+
+    propagator = stochastic_dephasing_propagator(
+        times=times,
+        noise=noise,
+    )
+
+    total_time = times[-1] - times[0]
+
+    expected = (
+        -1j
+        * dephasing_hamiltonian(noise_value)
+        * total_time
+    ).expm()
+
+    assert np.allclose(
+        propagator.full(),
+        expected.full(),
+    )
+
+
+def test_stochastic_dephasing_propagator_preserves_norm():
+    """Check that stochastic longitudinal evolution remains unitary."""
+    times = np.linspace(
+        0.0,
+        10.0,
+        1001,
+    )
+
+    noise = ornstein_uhlenbeck_noise(
+        times=times,
+        sigma=2.0,
+        correlation_time=1.0,
+        rng=np.random.default_rng(42),
+    )
+
+    propagator = stochastic_dephasing_propagator(
+        times=times,
+        noise=noise,
+    )
+
+    identity = np.eye(2)
+
+    assert np.allclose(
+        (propagator.dag() * propagator).full(),
+        identity,
+    )
+

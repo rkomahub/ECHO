@@ -147,3 +147,39 @@ def dephasing_hamiltonian(
         / 2
         * sigmaz()
     )
+
+
+def stochastic_dephasing_propagator(
+    times: np.ndarray,
+    noise: np.ndarray,
+) -> Qobj:
+    """Propagate a qubit under a sampled longitudinal noise trajectory."""
+    if len(times) != len(noise):
+        raise ValueError(
+            "times and noise must have the same length."
+        )
+
+    if len(times) < 2:
+        raise ValueError(
+            "times must contain at least two points."
+        )
+
+    dt = np.diff(times)
+
+    if np.any(dt <= 0):
+        raise ValueError(
+            "times must be strictly increasing."
+        )
+
+    propagator = qeye(2)
+
+    for index, step in enumerate(dt):
+        hamiltonian = dephasing_hamiltonian(
+            noise_value=noise[index],
+        )
+
+        propagator = (
+            -1j * hamiltonian * step
+        ).expm() * propagator
+
+    return propagator
