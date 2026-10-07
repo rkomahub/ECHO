@@ -136,3 +136,14 @@ def ornstein_uhlenbeck_noise(
         )
 
     return noise
+
+
+def dephasing_hamiltonian(
+    noise_value: float,
+) -> Qobj:
+    """Construct a single-qubit longitudinal dephasing Hamiltonian."""
+    return (
+        noise_value
+        / 2
+        * sigmaz()
+    )
