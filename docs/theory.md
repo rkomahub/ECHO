@@ -436,12 +436,16 @@ If \(P_k\) denotes the \(k\)-th pulse, the cumulative transformation after \(k\)
 U_k=P_kP_{k-1}\cdots P_1
 \]
 
-The corresponding toggling-frame Hamiltonian is
-
+Using the convention
 \[
-H_k=U_kH_{\mathrm{free}}U_k^\dagger
+|\psi_{\mathrm{togg}}\rangle=U_k^\dagger|\psi_{\mathrm{lab}}\rangle,
+\]
+the corresponding toggling-frame Hamiltonian is
+\[
+H_k=U_k^\dagger H_{\mathrm{free}}U_k.
 \]
 
+The laboratory-frame propagator is recovered by multiplying the toggling-frame propagator on the left by the final cumulative pulse operator.
 The complete evolution is obtained by chronologically composing the propagators generated
 during the individual free-evolution intervals. This representation allows refocusing of
 single-qubit detunings and, later, selective retention of desired spin-spin interactions.

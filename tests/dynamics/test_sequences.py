@@ -266,3 +266,49 @@ def test_finite_pulse_intervals_reject_overlap():
             pulse_duration=0.4,
             total_duration=3.0,
         )
+
+
+def test_toggling_frame_matches_explicit_pulse_evolution():
+    """Reconstruct laboratory evolution from the toggling frame."""
+    free = 0.3 * sigmaz() + 0.2 * sigmax()
+    durations = [0.2, 0.4, 0.3]
+
+    pulse_1 = single_qubit_rotation(
+        angle=np.pi / 3,
+        axis="x",
+    )
+    pulse_2 = single_qubit_rotation(
+        angle=np.pi / 5,
+        axis="y",
+    )
+
+    hamiltonians = toggling_hamiltonians(
+        free_hamiltonian=free,
+        pulses=[pulse_1, pulse_2],
+    )
+    toggling_evolution = toggling_propagator(
+        hamiltonians=hamiltonians,
+        durations=durations,
+    )
+
+    cumulative = pulse_2 * pulse_1
+    reconstructed = cumulative * toggling_evolution
+
+    free_intervals = [
+        (-1j * free * duration).expm()
+        for duration in durations
+    ]
+    expected = (
+        free_intervals[2]
+        * pulse_2
+        * free_intervals[1]
+        * pulse_1
+        * free_intervals[0]
+    )
+
+    assert np.allclose(
+        reconstructed.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )

@@ -15,7 +15,7 @@ def toggling_hamiltonians(
     for pulse in pulses:
         cumulative = pulse * cumulative
         hamiltonians.append(
-            cumulative * free_hamiltonian * cumulative.dag()
+            cumulative.dag() * free_hamiltonian * cumulative
         )
 
     return hamiltonians
