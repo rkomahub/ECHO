@@ -534,35 +534,61 @@ at the microscopic dipolar-Hamiltonian level, before dressing and secularization
 ## dephasing.py
 
 Pure dephasing is modeled through an exponential coherence decay
-\begin{equation}
+\[
     p(t)=e^{-t/T_2}.
-\end{equation}
+\]
 For a single qubit, the corresponding quantum channel is written in Kraus form as
-\begin{equation}
+\[
     \mathcal{E}_{T_2}(\rho)
     =
     K_0 \rho K_0^\dagger
     +
     K_1 \rho K_1^\dagger,
-\end{equation}
+\]
 with
-\begin{equation}
+\[
     K_0=\sqrt{\frac{1+p}{2}}\,I,
     \qquad
     K_1=\sqrt{\frac{1-p}{2}}\,\sigma_z.
-\end{equation}
+\]
 The populations are unchanged, while the coherences decay as
-\begin{equation}
+\[
     \rho_{01}(t)=e^{-t/T_2}\rho_{01}(0).
-\end{equation}
+\]
 
 For two qubits with independent dephasing, the channel is constructed from
 the tensor products of the individual Kraus operators,
-\begin{equation}
+\[
     \mathcal{E}_{12}(\rho)
     =
     \sum_{i,j}
     (K_i^{(1)}\otimes K_j^{(2)})
     \rho
     (K_i^{(1)}\otimes K_j^{(2)})^\dagger.
-\end{equation}
+\]
+
+### Stochastic Dephasing Noise
+
+A fluctuating longitudinal field can be modeled as a stochastic frequency
+shift $\delta\omega(t)$ coupled to the qubit through
+
+$$
+H_{\mathrm{noise}}(t)
+=
+\frac{\delta\omega(t)}{2}\sigma_z
+$$
+
+The noise is modeled using an Ornstein--Uhlenbeck process with stationary
+correlation function
+
+$$
+\left\langle
+\delta\omega(t)\delta\omega(0)
+\right\rangle
+=
+\sigma^2 e^{-|t|/\tau_c}
+$$
+
+where $\sigma$ determines the noise amplitude and $\tau_c$ its correlation
+time. Since the noise couples longitudinally through $\sigma_z$, it produces
+random phase accumulation without directly changing the qubit populations.
