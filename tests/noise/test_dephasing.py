@@ -5,6 +5,7 @@ from qutip import basis, tensor
 from echo_spin.noise.dephasing import (
     dephasing_channel,
     dephasing_hamiltonian,
+    ensemble_dephasing_map,
     exponential_coherence,
     ornstein_uhlenbeck_noise,
     stochastic_dephasing_propagator,
@@ -376,3 +377,59 @@ def test_stochastic_dephasing_propagator_preserves_norm():
         identity,
     )
 
+
+def test_ensemble_dephasing_map_preserves_populations():
+    """Check that ensemble-averaged longitudinal noise preserves populations."""
+    plus = (
+        basis(2, 0)
+        + basis(2, 1)
+    ).unit()
+
+    times = np.linspace(
+        0.0,
+        10.0,
+        1001,
+    )
+
+    result = ensemble_dephasing_map(
+        density_matrix=plus.proj(),
+        times=times,
+        sigma=1.0,
+        correlation_time=1.0,
+        realizations=200,
+        rng=np.random.default_rng(42),
+    )
+
+    assert np.allclose(
+        np.diag(result.full()),
+        [0.5, 0.5],
+    )
+
+
+def test_ensemble_dephasing_map_reduces_coherence():
+    """Check that averaging OU realizations suppresses qubit coherence."""
+    plus = (
+        basis(2, 0)
+        + basis(2, 1)
+    ).unit()
+
+    times = np.linspace(
+        0.0,
+        10.0,
+        1001,
+    )
+
+    result = ensemble_dephasing_map(
+        density_matrix=plus.proj(),
+        times=times,
+        sigma=1.0,
+        correlation_time=1.0,
+        realizations=500,
+        rng=np.random.default_rng(42),
+    )
+
+    assert abs(result[0, 1]) < 0.5
+    assert np.isclose(
+        result.tr(),
+        1.0,
+    )

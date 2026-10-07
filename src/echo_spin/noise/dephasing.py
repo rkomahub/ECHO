@@ -183,3 +183,41 @@ def stochastic_dephasing_propagator(
         ).expm() * propagator
 
     return propagator
+
+
+def ensemble_dephasing_map(
+    density_matrix: Qobj,
+    times: np.ndarray,
+    sigma: float,
+    correlation_time: float,
+    realizations: int,
+    rng: np.random.Generator,
+) -> Qobj:
+    """Average qubit evolution over Ornstein-Uhlenbeck noise realizations."""
+    if realizations <= 0:
+        raise ValueError(
+            "realizations must be positive."
+        )
+
+    average_density = 0 * density_matrix
+
+    for _ in range(realizations):
+        noise = ornstein_uhlenbeck_noise(
+            times=times,
+            sigma=sigma,
+            correlation_time=correlation_time,
+            rng=rng,
+        )
+
+        propagator = stochastic_dephasing_propagator(
+            times=times,
+            noise=noise,
+        )
+
+        average_density += (
+            propagator
+            * density_matrix
+            * propagator.dag()
+        )
+
+    return average_density / realizations
