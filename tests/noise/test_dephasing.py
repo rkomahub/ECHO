@@ -467,3 +467,71 @@ def test_two_qubit_dephasing_average_gate_fidelity(
     expected = ((1 + p1) * (1 + p2) + 1) / 5
 
     assert actual == pytest.approx(expected, abs=1e-12)
+
+
+def test_ensemble_ou_dephasing_matches_analytic_coherence():
+    """Validate stationary OU free induction, including sampling errors."""
+    sigma = 0.9
+    correlation_time = 0.8
+    total_time = 2.0
+    realizations = 1000
+    times = np.linspace(0.0, total_time, 41)
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+
+    result = ensemble_dephasing_map(
+        density_matrix=plus.proj(),
+        times=times,
+        sigma=sigma,
+        correlation_time=correlation_time,
+        realizations=realizations,
+        rng=np.random.default_rng(42),
+    )
+
+    # The propagator uses noise at each interval's left endpoint.
+    sample_times = times[:-1]
+    durations = np.diff(times)
+    covariance = sigma**2 * np.exp(
+        -np.abs(sample_times[:, None] - sample_times[None, :])
+        / correlation_time
+    )
+    sampled_phase_variance = float(
+        durations @ covariance @ durations
+    )
+    sampled_coherence = np.exp(-sampled_phase_variance / 2)
+
+    # Exact continuous-time OU free-induction coherence.
+    ratio = total_time / correlation_time
+    analytic_coherence = np.exp(
+        -sigma**2
+        * correlation_time**2
+        * (ratio + np.expm1(-ratio))
+    )
+
+    # Check that the chosen time grid resolves the continuous prediction.
+    assert sampled_coherence == pytest.approx(
+        analytic_coherence,
+        rel=1e-3,
+    )
+
+    # Gaussian phase statistics give the Monte Carlo standard errors.
+    real_variance = (
+        (1 + np.exp(-2 * sampled_phase_variance)) / 2
+        - sampled_coherence**2
+    )
+    imag_variance = (
+        1 - np.exp(-2 * sampled_phase_variance)
+    ) / 2
+
+    real_standard_error = np.sqrt(real_variance / realizations)
+    imag_standard_error = np.sqrt(imag_variance / realizations)
+
+    normalized_coherence = complex(result[0, 1] / plus.proj()[0, 1])
+
+    assert abs(
+        normalized_coherence.real - sampled_coherence
+    ) < 5 * real_standard_error
+
+    assert abs(
+        normalized_coherence.imag
+    ) < 5 * imag_standard_error
