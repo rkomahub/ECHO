@@ -1,5 +1,5 @@
 import numpy as np
-from qutip import Qobj
+from qutip import Qobj, sigmax, sigmay, sigmaz
 
 
 def control_operator(
@@ -112,3 +112,65 @@ def control_hamiltonian(
         result += coefficient * operator
 
     return result
+
+
+def linear_drive_qubit_hamiltonian(
+    time: float,
+    omega_0: float,
+    carrier: float,
+    rabi_frequency: float,
+    phase: float = 0.0,
+    frame: str = "lab",
+    rwa: bool = False,
+) -> Qobj:
+    """Construct a linearly driven qubit in a specified modelling frame.
+
+    H_lab = omega_0 Z/2 + rabi_frequency cos(carrier*t + phase) X.
+
+    All frequencies are angular frequencies. The rotating frame uses
+    R(t) = exp(-i carrier*t Z/2). RWA is available only in that frame.
+    """
+    parameters = [time, omega_0, carrier, rabi_frequency, phase]
+
+    if any(
+        np.iscomplexobj(value) or not np.isfinite(value)
+        for value in parameters
+    ):
+        raise ValueError("Parameters must be finite and real.")
+
+    if carrier <= 0:
+        raise ValueError("carrier must be positive.")
+
+    if frame not in ("lab", "rotating"):
+        raise ValueError("frame must be 'lab' or 'rotating'.")
+
+    if frame == "lab":
+        if rwa:
+            raise ValueError("RWA requires frame='rotating'.")
+
+        return control_hamiltonian(
+            time,
+            operators=[sigmaz() / 2, sigmax()],
+            amplitudes=[
+                omega_0,
+                rabi_frequency * np.cos(carrier * time + phase),
+            ],
+        )
+
+    x_coefficient = rabi_frequency * np.cos(phase)
+    y_coefficient = rabi_frequency * np.sin(phase)
+
+    if not rwa:
+        counter_phase = 2 * carrier * time + phase
+        x_coefficient += rabi_frequency * np.cos(counter_phase)
+        y_coefficient -= rabi_frequency * np.sin(counter_phase)
+
+    return control_hamiltonian(
+        time,
+        operators=[sigmaz() / 2, sigmax() / 2, sigmay() / 2],
+        amplitudes=[
+            omega_0 - carrier,
+            x_coefficient,
+            y_coefficient,
+        ],
+    )

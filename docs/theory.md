@@ -321,6 +321,12 @@ coefficients. The caller specifies operator normalization and the frame.
 For qubits, \(A_\alpha=\sigma_\alpha/2\) makes the coefficients angular
 rotation rates; physical spin-1 control can instead use \(S_\alpha\).
 
+The linearly driven qubit reference model explicitly selects laboratory
+or rotating-frame dynamics. In the rotating frame, the exact model
+retains counter-rotating terms at twice the carrier frequency; selecting
+RWA drops those terms. This approximation is specific to the stated
+qubit model and is not automatically applied to the full NV Hamiltonian.
+
 ## joas.py
 
 The noiseless model is assembled as

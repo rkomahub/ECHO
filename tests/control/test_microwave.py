@@ -6,11 +6,15 @@ from echo_spin.control.microwave import (
     control_amplitude,
     control_hamiltonian,
     control_operator,
+    linear_drive_qubit_hamiltonian,
     microwave_coefficient,
     microwave_hamiltonian,
 )
 from echo_spin.control.rotations import single_qubit_rotation
-from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.dynamics.propagators import (
+    rotating_frame_hamiltonian,
+    time_dependent_propagator,
+)
 
 
 def test_constant_control_amplitude():
@@ -175,3 +179,81 @@ def test_generic_control_rejects_invalid_terms(operators, amplitudes):
     """Generic control Hamiltonian rejects invalid terms."""
     with pytest.raises(ValueError):
         control_hamiltonian(0.0, operators, amplitudes)
+
+
+@pytest.mark.parametrize("phase", [0.0, 0.7, np.pi / 2])
+@pytest.mark.parametrize("time", [0.0, 0.137])
+def test_linear_drive_exact_frame_selection(time, phase):
+    """Test linear drive Hamiltonian selects exact frame."""
+    parameters = dict(
+        omega_0=5.3,
+        carrier=5.0,
+        rabi_frequency=0.8,
+        phase=phase,
+    )
+
+    def lab_hamiltonian(t):
+        return linear_drive_qubit_hamiltonian(
+            time=t, frame="lab", **parameters
+        )
+
+    transformed = rotating_frame_hamiltonian(
+        time=time,
+        driven_hamiltonian=lab_hamiltonian,
+        generator=5.0 * sigmaz() / 2,
+    )
+    selected = linear_drive_qubit_hamiltonian(
+        time=time,
+        frame="rotating",
+        rwa=False,
+        **parameters,
+    )
+
+    assert (transformed - selected).norm() < 1e-12
+
+
+@pytest.mark.parametrize("phase", [0.0, 0.7, np.pi / 2])
+def test_linear_drive_rwa_preserves_detuning_and_phase(phase):
+    """Test linear drive Hamiltonian preserves detuning and phase after RWA."""
+    expected = (
+        0.3 * sigmaz() / 2
+        + 0.8
+        * (np.cos(phase) * sigmax() + np.sin(phase) * sigmay())
+        / 2
+    )
+
+    for time in [0.0, 0.137]:
+        actual = linear_drive_qubit_hamiltonian(
+            time=time,
+            omega_0=5.3,
+            carrier=5.0,
+            rabi_frequency=0.8,
+            phase=phase,
+            frame="rotating",
+            rwa=True,
+        )
+
+        assert (actual - expected).norm() < 1e-12
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"frame": "unknown"},
+        {"frame": "lab", "rwa": True},
+        {"carrier": 0.0},
+        {"phase": np.nan},
+    ],
+)
+def test_linear_drive_rejects_invalid_options(options):
+    """Test linear drive Hamiltonian rejects invalid options."""
+    parameters = dict(
+        time=0.0,
+        omega_0=5.3,
+        carrier=5.0,
+        rabi_frequency=0.8,
+    )
+    parameters.update(options)
+
+    with pytest.raises(ValueError):
+        linear_drive_qubit_hamiltonian(**parameters)
