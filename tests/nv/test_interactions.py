@@ -421,3 +421,47 @@ def test_dipolar_interaction_is_invariant_under_direction_reversal():
 
     assert (forward - reversed_direction).norm() < 1e-12
     assert (forward - exchanged_sites).norm() < 1e-12
+
+
+@pytest.mark.parametrize(
+    "direction",
+    [
+        [0.0, 0.0, 1.0],
+        [1.0, 0.0, 0.0],
+        [1.0, -2.0, 3.0],
+    ],
+)
+def test_full_spin_one_dipolar_spectrum(direction):
+    """Check the exact full interaction spectrum for two spin-1 particles."""
+    coupling = 0.37
+
+    interaction = dipolar_interaction(
+        system=SpinSystem([1, 1]),
+        site_i=0,
+        site_j=1,
+        coupling=coupling,
+        direction=direction,
+    )
+
+    # Exact eigenvalues of Sx Sx + Sy Sy - 2 Sz Sz.
+    # A common spatial rotation changes eigenvectors, not eigenvalues.
+    expected = coupling * np.sort([
+        -2.0,
+        -2.0,
+        -1.0,
+        -1.0,
+        1.0,
+        1.0,
+        2.0,
+        1.0 - np.sqrt(3.0),
+        1.0 + np.sqrt(3.0),
+    ])
+
+    assert interaction.isherm
+    assert interaction.tr() == pytest.approx(0.0, abs=1e-12)
+    assert np.allclose(
+        interaction.eigenenergies(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
