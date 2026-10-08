@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 from echo_spin.nv.frames import (
+    crystallographic_nv_axes,
     rotate_to_local_frame,
     rotate_vector,
     rotation_matrix,
@@ -83,4 +84,38 @@ def test_rotate_to_local_frame():
     assert np.allclose(
         local,
         [-1.0, 0.0, 0.0],
+    )
+
+
+def test_crystallographic_axes_have_tetrahedral_geometry():
+    """Four unit representatives have pairwise dot products -1/3."""
+    axes = crystallographic_nv_axes()
+
+    assert axes.shape == (4, 3)
+
+    expected = np.full((4, 4), -1 / 3)
+    np.fill_diagonal(expected, 1.0)
+
+    assert np.allclose(
+        axes @ axes.T,
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_crystal_field_projections():
+    """Check characteristic [001] and [111] field projections."""
+    axes = crystallographic_nv_axes()
+
+    field_001 = np.array([0.0, 0.0, 1.0])
+    assert np.allclose(
+        np.abs(axes @ field_001),
+        np.full(4, 1 / np.sqrt(3)),
+    )
+
+    field_111 = np.array([1.0, 1.0, 1.0]) / np.sqrt(3)
+    assert np.allclose(
+        axes @ field_111,
+        [1.0, -1 / 3, -1 / 3, -1 / 3],
     )

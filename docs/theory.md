@@ -203,6 +203,17 @@ For an NV whose local crystal frame is rotated by an angle \(\beta\), laboratory
 
 The standard NV Hamiltonian can then be evaluated directly using the rotated magnetic-field vector.
 
+### Crystallographic axis arientation
+
+The four NV-axis classes are represented in cubic crystal coordinates by
+\[
+\frac{1}{\sqrt3}
+\{(1,1,1),(1,-1,-1),(-1,1,-1),(-1,-1,1)\}.
+\]
+The coordinate axes are \([100],[010],[001]\). These representatives
+do not specify the crystal's laboratory alignment or distinguish
+opposite defect polarities.
+
 ## basis.py
 
 The electronic Hamiltonian is diagonalized to obtain its energy eigenstates.

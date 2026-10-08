@@ -69,3 +69,18 @@ def rotate_to_local_frame(
     rotation = rotation_matrix(axis, -angle)
 
     return rotate_vector(vector, rotation)
+
+
+def crystallographic_nv_axes() -> np.ndarray:
+    """Return four unit NV-axis representatives in cubic crystal coordinates.
+
+    Coordinate axes are [100], [010], [001].
+    Rows represent [111], [1,-1,-1], [-1,1,-1], [-1,-1,1].
+    These identify axis classes; defect polarity is not modeled separately.
+    """
+    return np.array([
+        [1.0, 1.0, 1.0],
+        [1.0, -1.0, -1.0],
+        [-1.0, 1.0, -1.0],
+        [-1.0, -1.0, 1.0],
+    ]) / np.sqrt(3.0)
