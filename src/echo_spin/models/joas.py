@@ -111,21 +111,28 @@ def xy8_gate_times(
     tau_2: float,
     n_pi: int = 8,
 ):
-    """Pulse-center times for the two staggered NV pulse trains."""
-    if tau_1 <= 0:
-        raise ValueError("tau_1 must be positive")
+    """Return pulse centers for two staggered trains within the gate duration."""
+    if not np.isfinite(tau_1) or tau_1 <= 0:
+        raise ValueError("tau_1 must be finite and positive.")
 
-    if abs(tau_2) > tau_1 / 2:
-        raise ValueError("tau_2 must satisfy |tau_2| <= tau_1 / 2")
+    if (
+        not np.isfinite(tau_2)
+        or tau_2 < 0
+        or tau_2 > tau_1 / 2
+    ):
+        raise ValueError("tau_2 must satisfy 0 <= tau_2 <= tau_1 / 2.")
 
-    if n_pi <= 0:
-        raise ValueError("n_pi must be positive")
+    if (
+        isinstance(n_pi, (bool, np.bool_))
+        or not isinstance(n_pi, (int, np.integer))
+        or n_pi <= 0
+    ):
+        raise ValueError("n_pi must be a positive integer.")
 
     nv1_times = [
         (k + 0.5) * tau_1
         for k in range(n_pi)
     ]
-
     nv2_times = [
         (k + 1.0) * tau_1 - tau_2
         for k in range(n_pi)

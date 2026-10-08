@@ -653,3 +653,35 @@ def test_joas_xy8_matches_generic_zz_recoupling(tau_2):
         abs=1e-12,
     )
     assert np.allclose(actual, expected, atol=1e-12, rtol=0.0)
+
+
+@pytest.mark.parametrize(
+    "tau_1, tau_2, n_pi",
+    [
+        (1.0, -0.1, 8),
+        (1.0, 0.6, 8),
+        (0.0, 0.0, 8),
+        (np.nan, 0.2, 8),
+        (np.inf, 0.2, 8),
+        (1.0, np.nan, 8),
+        (1.0, 0.2, 0),
+        (1.0, 0.2, 8.5),
+        (1.0, 0.2, True),
+    ],
+)
+def test_xy8_gate_times_rejects_invalid_parameters(tau_1, tau_2, n_pi):
+    with pytest.raises(ValueError):
+        xy8_gate_times(tau_1, tau_2, n_pi)
+
+
+@pytest.mark.parametrize("tau_2", [0.0, 0.2, 0.5])
+@pytest.mark.parametrize("n_pi", [8, 16])
+def test_xy8_pulse_trains_stay_within_gate(tau_2, n_pi):
+    tau_1 = 1.0
+    total_duration = sequence_duration(tau_1, n_pi)
+    trains = xy8_gate_times(tau_1, tau_2, n_pi)
+
+    for train in trains:
+        assert len(train) == n_pi
+        assert all(0 <= time <= total_duration for time in train)
+        assert np.all(np.diff(train) > 0)
