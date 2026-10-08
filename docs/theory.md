@@ -424,6 +424,24 @@ R_\alpha(\theta)
 
 A refocusing pulse corresponds to \(\theta=\pi\).
 
+### Arbitrary-axis qubit rotations
+
+For a real nonzero axis vector \(\mathbf n\), ECHO normalizes
+\(\hat{\mathbf n}=\mathbf n/\|\mathbf n\|\) and constructs
+\[
+R_{\hat{\mathbf n}}(\theta)
+=
+\exp\left[
+-\frac{i\theta}{2}
+\left(
+\hat n_x\sigma_x+\hat n_y\sigma_y+\hat n_z\sigma_z
+\right)
+\right].
+\]
+The angle is in radians. Cartesian labels \(x,y,z\) are also accepted.
+An equatorial rotation with phase \(\phi\) uses
+\(\hat{\mathbf n}=(\cos\phi,\sin\phi,0)\).
+
 ## dynamics/sequences.py
 
 Ideal dynamical-decoupling sequences can be described in the toggling frame. After a

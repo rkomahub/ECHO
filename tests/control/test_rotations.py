@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, qeye, sigmax, tensor
+from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.control.rotations import (
     selective_rotation,
@@ -8,6 +8,88 @@ from echo_spin.control.rotations import (
     two_qubit_rotation,
 )
 
+
+@pytest.mark.parametrize(
+    "axis, pauli",
+    [
+        ("x", sigmax()),
+        ("y", sigmay()),
+        ("z", sigmaz()),
+    ],
+)
+def test_cartesian_rotation_matches_closed_form(axis, pauli):
+    """Check Cartesian rotations at a non-pi angle."""
+    angle = 0.7
+    expected = (
+        np.cos(angle / 2) * qeye(2)
+        - 1j * np.sin(angle / 2) * pauli
+    )
+
+    actual = single_qubit_rotation(angle, axis)
+
+    assert np.allclose(actual.full(), expected.full())
+
+
+def test_arbitrary_axis_rotation_matches_closed_form():
+    """Check an oblique rotation and automatic axis normalization."""
+    angle = 0.7
+    generator = (sigmax() + 2 * sigmay() + 3 * sigmaz()) / np.sqrt(14)
+    expected = (
+        np.cos(angle / 2) * qeye(2)
+        - 1j * np.sin(angle / 2) * generator
+    )
+
+    actual = single_qubit_rotation(angle, [1.0, 2.0, 3.0])
+    scaled = single_qubit_rotation(angle, [5.0, 10.0, 15.0])
+
+    assert np.allclose(actual.full(), expected.full())
+    assert np.allclose(scaled.full(), expected.full())
+
+
+def test_arbitrary_axis_rotation_inverse():
+    """Opposite angles about the same axis undo each other."""
+    axis = [1.0, -2.0, 3.0]
+    forward = single_qubit_rotation(0.7, axis)
+    backward = single_qubit_rotation(-0.7, axis)
+
+    assert np.allclose(
+        (backward * forward).full(),
+        qeye(2).full(),
+    )
+
+
+def test_two_qubit_arbitrary_axis_rotation():
+    """Check that vector axes pass through the embedding wrapper."""
+    axis = [1.0, 2.0, 3.0]
+    local = single_qubit_rotation(0.7, axis)
+    actual = two_qubit_rotation(1, 0.7, axis)
+
+    assert np.allclose(
+        actual.full(),
+        tensor(qeye(2), local).full(),
+    )
+
+
+@pytest.mark.parametrize(
+    "axis",
+    [
+        "invalid",
+        [0.0, 0.0, 0.0],
+        [1.0, 2.0],
+        [np.nan, 0.0, 1.0],
+        [np.inf, 0.0, 1.0],
+        [1j, 0.0, 1.0],
+    ],
+)
+def test_single_qubit_rotation_rejects_invalid_axis(axis):
+    with pytest.raises(ValueError):
+        single_qubit_rotation(0.7, axis)
+
+
+@pytest.mark.parametrize("angle", [np.nan, np.inf])
+def test_single_qubit_rotation_rejects_nonfinite_angle(angle):
+    with pytest.raises(ValueError):
+        single_qubit_rotation(angle, "x")
 
 def test_pi_x_rotation():
     """Test that a pi rotation about the x-axis is implemented correctly."""
