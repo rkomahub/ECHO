@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from echo_spin.core.operators import spin_operators
 from echo_spin.core.system import SpinSystem
@@ -84,3 +85,67 @@ def test_allowed_transitions_aligned_nv():
         frequencies,
         [2570.0, 3170.0],
     )
+
+
+@pytest.mark.parametrize("axis_index", [0, 1])
+@pytest.mark.parametrize("amplitude", [1.0, 2.0])
+def test_aligned_nv_transition_strengths(axis_index, amplitude):
+    """Check transverse selection rules and squared-amplitude scaling."""
+    D = 2.87
+    omega_z = 0.3
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=D,
+        omega_e=(0.0, 0.0, omega_z),
+    )
+    control = amplitude * spin_operators(1)[axis_index]
+
+    transitions = allowed_transitions(hamiltonian, control)
+    transitions = sorted(transitions, key=lambda item: item[0])
+
+    assert len(transitions) == 2
+    assert np.allclose(
+        [item[0] for item in transitions],
+        [D - omega_z, D + omega_z],
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert np.allclose(
+        [item[1] for item in transitions],
+        [amplitude**2 / 2, amplitude**2 / 2],
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_aligned_nv_longitudinal_drive_has_no_transitions():
+    """Sz is diagonal in the aligned NV energy basis."""
+    hamiltonian = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=2.87,
+        omega_e=(0.0, 0.0, 0.3),
+    )
+    _, _, sz = spin_operators(1)
+
+    assert allowed_transitions(hamiltonian, sz) == []
+
+
+def test_transition_threshold_filters_by_strength():
+    """The threshold applies to squared matrix elements."""
+    hamiltonian = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=2.87,
+        omega_e=(0.0, 0.0, 0.3),
+    )
+    sx, _, _ = spin_operators(1)
+
+    assert len(
+        allowed_transitions(hamiltonian, sx, threshold=0.4)
+    ) == 2
+    assert allowed_transitions(
+        hamiltonian, sx, threshold=0.6
+    ) == []
