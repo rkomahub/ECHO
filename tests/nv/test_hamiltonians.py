@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+from qutip import basis
 
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
@@ -111,6 +112,7 @@ def test_omega_e_requires_three_components():
             omega_e=(0.0, 0.0),
         )
 
+
 def test_nuclear_nv_hamiltonian_dimension():
     system = SpinSystem([1])
 
@@ -202,6 +204,7 @@ def test_omega_n_requires_three_components():
             Q=1.0,
             omega_n=(0.0, 0.0),
         )
+
 
 def test_hyperfine_hamiltonian_dimension():
     """Electron-nuclear hyperfine interaction should act on the full space."""
@@ -298,6 +301,7 @@ def test_same_site_hyperfine_interaction_raises_error():
             nuclear_site=0,
             A=np.eye(3),
         )
+
 
 def test_complete_nv_hamiltonian_dimension():
     """A complete electron+nucleus NV Hamiltonian should act on a 9D space."""
@@ -416,3 +420,44 @@ def test_misaligned_nv_rotates_magnetic_field():
         hamiltonian.full(),
         expected.full(),
     )
+
+
+@pytest.mark.parametrize("phase", [0.0, np.pi / 2, 0.7])
+def test_transverse_zeeman_spectrum_and_dark_state(phase):
+    """Check exact transverse-field energies and the uncoupled eigenstate."""
+    system = SpinSystem([1])
+    D = 2.87
+    omega_perp = 0.4
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=D,
+        omega_e=(
+            omega_perp * np.cos(phase),
+            omega_perp * np.sin(phase),
+            0.0,
+        ),
+    )
+
+    splitting = np.sqrt(D**2 + 4 * omega_perp**2)
+    expected_energies = np.sort([
+        D,
+        (D - splitting) / 2,
+        (D + splitting) / 2,
+    ])
+
+    assert hamiltonian.isherm
+    assert np.allclose(
+        hamiltonian.eigenenergies(),
+        expected_energies,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    dark_state = (
+        np.exp(-1j * phase) * basis(3, 0)
+        - np.exp(1j * phase) * basis(3, 2)
+    ).unit()
+
+    assert (hamiltonian * dark_state - D * dark_state).norm() < 1e-12
