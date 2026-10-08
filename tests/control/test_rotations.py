@@ -219,3 +219,60 @@ def test_selective_rotation_rejects_invalid_states(state_0, state_1):
     """Reject inputs that do not define an orthonormal two-level basis."""
     with pytest.raises(ValueError):
         selective_rotation(state_0, state_1, 0.7, "x")
+
+
+@pytest.mark.parametrize(
+    "axis, expected_state",
+    [
+        ("x", (basis(2, 0) - 1j * basis(2, 1)).unit()),
+        ("y", (basis(2, 0) + basis(2, 1)).unit()),
+    ],
+)
+def test_pi_over_two_rotation_preserves_expected_relative_phase(
+    axis, expected_state
+):
+    """Check the state vector, including its relative phase."""
+    rotation = single_qubit_rotation(np.pi / 2, axis)
+    actual = rotation * basis(2, 0)
+
+    assert np.allclose(
+        actual.full(),
+        expected_state.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("axis", ["x", "y"])
+def test_two_pi_pulses_give_minus_identity(axis):
+    """Two identical pi pulses give the spin-half 2pi rotation."""
+    pulse = single_qubit_rotation(np.pi, axis)
+
+    assert np.allclose(
+        (pulse * pulse).full(),
+        (-qeye(2)).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_xy_pi_pulses_have_correct_order_and_phase():
+    """Noncommuting pulse order changes the signed Z rotation."""
+    x_pi = single_qubit_rotation(np.pi, "x")
+    y_pi = single_qubit_rotation(np.pi, "y")
+
+    # X first, then Y: YX = +i Z.
+    assert np.allclose(
+        (y_pi * x_pi).full(),
+        (1j * sigmaz()).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    # Y first, then X: XY = -i Z.
+    assert np.allclose(
+        (x_pi * y_pi).full(),
+        (-1j * sigmaz()).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
