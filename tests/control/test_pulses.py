@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import qeye, sigmax, sigmaz
+from qutip import basis, jmat, qeye, sigmax, sigmaz
 
 from echo_spin.control.pulses import (
     centered_sine_envelope,
@@ -8,6 +8,7 @@ from echo_spin.control.pulses import (
     sine_pi_pulse_amplitude,
 )
 from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.core.basis import project_operator
 from echo_spin.dynamics.propagators import time_dependent_propagator
 from echo_spin.dynamics.sequences import finite_pulse_propagator
 
@@ -261,4 +262,66 @@ def test_detuned_rectangular_pulse_matches_exact_solution(detuning):
         expected.full(),
         atol=1e-12,
         rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("angle", [0.0, 0.7, np.pi / 2, np.pi])
+def test_physical_spin_one_control_exposes_logical_leakage(angle):
+    """Validate spin-1 populations and leakage from the selected logical space."""
+    sx = jmat(1, "x")
+    sz = jmat(1, "z")
+
+    # QuTiP spin-1 ordering: |+1>, |0>, |-1>.
+    spectator = basis(3, 0)
+    logical_zero = basis(3, 1)
+    logical_one = basis(3, 2)
+
+    duration = 1.0
+    propagator = finite_pulse_propagator(
+        free_hamiltonian=0 * sz,
+        control_operator=sx,
+        duration=duration,
+        envelope=lambda time: angle / duration,
+        steps=20,
+    )
+
+    final_state = propagator * logical_zero
+
+    assert propagator.isunitary
+    assert abs(logical_zero.overlap(final_state))**2 == pytest.approx(
+        np.cos(angle)**2,
+        abs=1e-12,
+    )
+    assert abs(logical_one.overlap(final_state))**2 == pytest.approx(
+        np.sin(angle)**2 / 2,
+        abs=1e-12,
+    )
+    assert abs(spectator.overlap(final_state))**2 == pytest.approx(
+        np.sin(angle)**2 / 2,
+        abs=1e-12,
+    )
+
+    projected = project_operator(
+        propagator,
+        [logical_zero, logical_one],
+    )
+    expected = np.array([
+        [np.cos(angle), -1j * np.sin(angle) / np.sqrt(2)],
+        [-1j * np.sin(angle) / np.sqrt(2), (1 + np.cos(angle)) / 2],
+    ])
+
+    assert np.allclose(
+        projected.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    retained_probability = np.linalg.norm(
+        projected.full()[:, 0]
+    )**2
+
+    assert retained_probability == pytest.approx(
+        1 - np.sin(angle)**2 / 2,
+        abs=1e-12,
     )
