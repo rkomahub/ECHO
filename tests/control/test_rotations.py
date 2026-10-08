@@ -163,5 +163,59 @@ def test_selective_rotation_invalid_axis():
             state_0=state_0,
             state_1=state_1,
             angle=np.pi,
-            axis="z",
+            axis="invalid",
         )
+
+
+@pytest.mark.parametrize(
+    "axis",
+    ["x", "y", "z", [1.0, -2.0, 3.0]],
+)
+def test_selective_rotation_in_nontrivial_basis(axis):
+    """Check logical rotation and exact spectator preservation."""
+    state_0 = (basis(3, 0) + 1j * basis(3, 2)).unit()
+    state_1 = basis(3, 1)
+    spectator = (basis(3, 0) - 1j * basis(3, 2)).unit()
+    states = [state_0, state_1]
+
+    actual = selective_rotation(
+        state_0=state_0,
+        state_1=state_1,
+        angle=0.7,
+        axis=axis,
+    )
+    logical = single_qubit_rotation(0.7, axis)
+
+    for j, state in enumerate(states):
+        expected = (
+            logical[0, j] * state_0
+            + logical[1, j] * state_1
+        )
+        assert np.allclose(
+            (actual * state).full(),
+            expected.full(),
+        )
+
+    assert np.allclose(
+        (actual * spectator).full(),
+        spectator.full(),
+    )
+    assert np.allclose(
+        (actual.dag() * actual).full(),
+        qeye(3).full(),
+    )
+
+
+@pytest.mark.parametrize(
+    "state_0, state_1",
+    [
+        (2 * basis(3, 0), basis(3, 1)),
+        (basis(3, 0), (basis(3, 0) + basis(3, 1)).unit()),
+        (basis(3, 0), basis(2, 1)),
+        (basis(3, 0).proj(), basis(3, 1)),
+    ],
+)
+def test_selective_rotation_rejects_invalid_states(state_0, state_1):
+    """Reject inputs that do not define an orthonormal two-level basis."""
+    with pytest.raises(ValueError):
+        selective_rotation(state_0, state_1, 0.7, "x")

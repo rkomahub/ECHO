@@ -66,34 +66,34 @@ def selective_rotation(
     state_0: Qobj,
     state_1: Qobj,
     angle: float,
-    axis: str,
+    axis: Union[str, Sequence[float], np.ndarray],
 ) -> Qobj:
-    """Rotate a selected two-level subspace while leaving its complement unchanged."""
+    """Rotate two orthonormal states, leaving their complement unchanged."""
+    if (
+        not state_0.isket
+        or not state_1.isket
+        or state_0.dims != state_1.dims
+    ):
+        raise ValueError("States must be kets with matching dimensions.")
 
-    projector_0 = state_0 * state_0.dag()
-    projector_1 = state_1 * state_1.dag()
+    if (
+        not np.isclose(state_0.norm(), 1.0, atol=1e-12, rtol=0.0)
+        or not np.isclose(state_1.norm(), 1.0, atol=1e-12, rtol=0.0)
+        or abs(state_0.overlap(state_1)) > 1e-12
+    ):
+        raise ValueError("States must be normalized and orthogonal.")
 
-    if axis == "x":
-        generator = (
-            state_0 * state_1.dag()
-            + state_1 * state_0.dag()
-        )
-    elif axis == "y":
-        generator = (
-            -1j * state_0 * state_1.dag()
-            + 1j * state_1 * state_0.dag()
-        )
-    else:
-        raise ValueError("axis must be 'x' or 'y'.")
+    rotation = single_qubit_rotation(angle=angle, axis=axis)
+    states = [state_0, state_1]
 
-    identity = qeye(state_0.dims[0])
-
-    return (
-        identity
-        - projector_0
-        - projector_1
-        + (
-            -1j * angle * generator / 2
-        ).expm()
-        * (projector_0 + projector_1)
+    result = (
+        qeye(state_0.dims[0])
+        - state_0.proj()
+        - state_1.proj()
     )
+
+    for i in range(2):
+        for j in range(2):
+            result += rotation[i, j] * states[i] * states[j].dag()
+
+    return result
