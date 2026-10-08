@@ -7,14 +7,12 @@ from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.spectroscopy.transitions import allowed_transitions, electronic_spectrum
 
 
-def test_joas_setting_2_ab_assignment():
-    """Test the electronic transition frequencies of two NV centers in the JOAS setting 2 (misaligned and aligned)."""
+def test_joas_setting_2_electronic_transitions():
+    """Check Setting 2 using the gate labels NV1=target, NV2=control."""
     omega = 2 * np.pi * 295.18
 
-    # Hypothesis:
-    # A = NV1 (misaligned)
+    # NV1: physical center B, strongly misaligned target.
     theta_nv1 = np.deg2rad(74.08)
-
     omega_nv1 = omega * np.array([
         np.sin(theta_nv1),
         0.0,
@@ -22,13 +20,12 @@ def test_joas_setting_2_ab_assignment():
     ])
 
     nv1 = electronic_spectrum(
-        D=2 * np.pi * 2865.42,
+        D=2 * np.pi * 2867.27,
         omega_e=omega_nv1,
     ) / (2 * np.pi)
 
-    # B = NV2 (aligned)
+    # NV2: physical center A, approximately aligned control.
     theta_nv2 = np.deg2rad(3.58)
-
     omega_nv2 = omega * np.array([
         np.sin(theta_nv2),
         0.0,
@@ -36,23 +33,26 @@ def test_joas_setting_2_ab_assignment():
     ])
 
     nv2 = electronic_spectrum(
-        D=2 * np.pi * 2867.27,
+        D=2 * np.pi * 2865.42,
         omega_e=omega_nv2,
     ) / (2 * np.pi)
 
     assert np.allclose(
-    nv1,
-    [2825.45481206, 2988.99810054],
-    atol=1e-6,
+        nv1,
+        [2827.27932714, 2990.82058371],
+        atol=1e-6,
+        rtol=0.0,
     )
-
     assert np.allclose(
         nv2,
-        [2572.85177892, 3162.04745120],
+        [2571.00190538, 3160.19756161],
         atol=1e-6,
+        rtol=0.0,
     )
-    # The electronic-only model differs slightly from the experimental
-    # ODMR frequencies because 14N hyperfine structure is not included yet.
+
+    # Compare addressed electronic transitions with reported rounded values.
+    assert nv1[1] == pytest.approx(2990.8, abs=0.05)
+    assert nv2[0] == pytest.approx(2571.0, abs=0.05)
 
 
 def test_allowed_transitions_aligned_nv():

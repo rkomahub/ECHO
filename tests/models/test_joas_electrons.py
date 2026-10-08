@@ -242,7 +242,7 @@ def test_joas_setting_2_two_electron_spectrum():
 
     omega = 2 * np.pi * 295.18
 
-    # NV1 = center A = target, strongly misaligned
+    # NV1 = center B = target, strongly misaligned
     theta_nv1 = np.deg2rad(74.08)
     omega_nv1 = omega * np.array([
         np.sin(theta_nv1),
@@ -257,7 +257,7 @@ def test_joas_setting_2_two_electron_spectrum():
         omega_e=omega_nv1,
     )
 
-    # NV2 = center B = control, approximately aligned
+    # NV2 = center A = control, approximately aligned
     theta_nv2 = np.deg2rad(3.58)
     omega_nv2 = omega * np.array([
         np.sin(theta_nv2),
@@ -329,7 +329,7 @@ def test_joas_setting_2_dressed_spin_operators():
 
     omega = 2 * np.pi * 295.18
 
-    # NV1 = A = target, misaligned
+    # NV1 = center B = target, strongly misaligned
     theta_nv1 = np.deg2rad(74.08)
     omega_nv1 = omega * np.array([
         np.sin(theta_nv1),
@@ -344,7 +344,7 @@ def test_joas_setting_2_dressed_spin_operators():
         omega_e=omega_nv1,
     )
 
-    # NV2 = B = control, aligned
+    # NV2 = center A = control, approximately aligned
     theta_nv2 = np.deg2rad(3.58)
     omega_nv2 = omega * np.array([
         np.sin(theta_nv2),
@@ -393,7 +393,7 @@ def test_joas_setting_2_logical_effective_interaction():
 
     omega = 2 * np.pi * 295.18
 
-    # NV1 = A = target, misaligned
+    # NV1 = center B = target, misaligned
     theta_nv1 = np.deg2rad(74.08)
     omega_nv1 = omega * np.array([
         np.sin(theta_nv1),
@@ -408,7 +408,7 @@ def test_joas_setting_2_logical_effective_interaction():
         omega_e=omega_nv1,
     )
 
-    # NV2 = B = control, aligned
+    # NV2 = center A = control, aligned
     theta_nv2 = np.deg2rad(3.58)
     omega_nv2 = omega * np.array([
         np.sin(theta_nv2),
@@ -488,7 +488,7 @@ def test_joas_setting_2_physical_to_logical_hamiltonian():
 
     omega = 2 * np.pi * 295.18
 
-    # NV1 = A = target, misaligned
+    # NV1 = center B = target, misaligned
     theta_nv1 = np.deg2rad(74.08)
     omega_nv1 = omega * np.array([
         np.sin(theta_nv1),
@@ -503,7 +503,7 @@ def test_joas_setting_2_physical_to_logical_hamiltonian():
         omega_e=omega_nv1,
     )
 
-    # NV2 = B = control, aligned
+    # NV2 = center A = control, aligned
     theta_nv2 = np.deg2rad(3.58)
     omega_nv2 = omega * np.array([
         np.sin(theta_nv2),
