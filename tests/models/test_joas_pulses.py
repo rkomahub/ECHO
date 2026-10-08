@@ -402,6 +402,12 @@ def test_joas_nv1_physical_resonant_pi_pulse():
 
     assert population_one > 0.99
 
+    _assert_logical_subspace_survival(
+        propagator,
+        logical_zero,
+        logical_one,
+    )
+
 
 def test_joas_nv2_physical_resonant_pi_pulse():
     """A physical resonant pi pulse on NV2 rotates the logical states."""
@@ -470,6 +476,12 @@ def test_joas_nv2_physical_resonant_pi_pulse():
     ) ** 2
 
     assert population_one > 0.99
+
+    _assert_logical_subspace_survival(
+        propagator,
+        logical_zero,
+        logical_one,
+    )
 
 
 def test_joas_two_electron_nv1_physical_pi_pulse():
@@ -1990,3 +2002,60 @@ def test_joas_delayed_x_pulse_phase():
     print("ratio_0 =", ratio_0)
     print("ratio_delayed =", ratio_delayed)
     print("relative =", ratio_delayed / ratio_0)
+
+
+def _assert_logical_subspace_survival(
+    propagator,
+    logical_zero,
+    logical_one,
+    maximum_leakage=0.01,
+):
+    """Check logical-input leakage and unnormalized projected survival."""
+    logical_states = [logical_zero, logical_one]
+
+    logical_projector = (
+        logical_zero.proj() + logical_one.proj()
+    )
+    leakage_projector = (
+        qeye(propagator.dims[0]) - logical_projector
+    )
+
+    leakages = []
+
+    for initial_state in logical_states:
+        final_state = propagator * initial_state
+
+        logical_population = sum(
+            abs(state.overlap(final_state)) ** 2
+            for state in logical_states
+        )
+        leakage = float(
+            (leakage_projector * final_state).norm() ** 2
+        )
+        leakages.append(leakage)
+
+        assert logical_population + leakage == pytest.approx(
+            1.0, abs=1e-10
+        )
+        assert leakage < maximum_leakage, (
+            f"Logical-input leakage {leakage:.6g} exceeds "
+            f"{maximum_leakage:.6g}"
+        )
+
+    projected_propagator = project_operator(
+        propagator,
+        logical_states,
+    )
+
+    average_survival = float(
+        np.linalg.norm(
+            projected_propagator.full(),
+            ord="fro",
+        ) ** 2 / len(logical_states)
+    )
+
+    assert average_survival == pytest.approx(
+        1.0 - np.mean(leakages),
+        abs=1e-10,
+    )
+    assert average_survival > 1.0 - maximum_leakage
