@@ -290,7 +290,7 @@ transitions.
 The full spin-1 description is retained separately so that leakage into off-resonant
 levels can later be studied explicitly.
 
-## controls.py
+## microwave.py
 
 The driven Hamiltonian is written as
 
@@ -311,6 +311,15 @@ The control operator includes both dressed electronic-spin operators and the wea
 =
 \frac{\gamma_n}{\gamma_e}
 \]
+
+Generic control is represented by
+\[
+H_c(t)=\sum_\alpha f_\alpha(t)A_\alpha,
+\]
+with Hermitian operators \(A_\alpha\) and real, constant or callable
+coefficients. The caller specifies operator normalization and the frame.
+For qubits, \(A_\alpha=\sigma_\alpha/2\) makes the coefficients angular
+rotation rates; physical spin-1 control can instead use \(S_\alpha\).
 
 ## joas.py
 

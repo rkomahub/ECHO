@@ -1,12 +1,16 @@
 import numpy as np
-from qutip import qeye
+import pytest
+from qutip import jmat, qeye, sigmax, sigmay, sigmaz
 
 from echo_spin.control.microwave import (
     control_amplitude,
+    control_hamiltonian,
     control_operator,
     microwave_coefficient,
     microwave_hamiltonian,
 )
+from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.dynamics.propagators import time_dependent_propagator
 
 
 def test_constant_control_amplitude():
@@ -93,3 +97,81 @@ def test_microwave_hamiltonian_sums_multiple_drives():
         hamiltonian.full(),
         expected.full(),
     )
+
+
+def test_generic_control_evaluates_independent_channels():
+    """Generic control Hamiltonian evaluates independent channels."""
+    sampled_times = []
+
+    def y_amplitude(time):
+        sampled_times.append(time)
+        return 2 * time
+
+    actual = control_hamiltonian(
+        time=0.7,
+        operators=[sigmax() / 2, sigmay() / 2, sigmaz() / 2],
+        amplitudes=[0.3, y_amplitude, -0.2],
+    )
+    expected = (
+        0.3 * sigmax() + 1.4 * sigmay() - 0.2 * sigmaz()
+    ) / 2
+
+    assert sampled_times == [0.7]
+    assert (actual - expected).norm() < 1e-12
+
+
+def test_generic_control_generates_arbitrary_axis_rotation():
+    """Generic control Hamiltonian generating arbitrary axis rotation."""
+    amplitudes = np.array([0.3, -0.4, 0.2])
+    duration = 0.7
+
+    def hamiltonian(time):
+        return control_hamiltonian(
+            time=time,
+            operators=[sigmax() / 2, sigmay() / 2, sigmaz() / 2],
+            amplitudes=amplitudes,
+        )
+
+    actual = time_dependent_propagator(
+        hamiltonian,
+        t0=0.0,
+        t1=duration,
+        steps=20,
+    )
+    expected = single_qubit_rotation(
+        angle=np.linalg.norm(amplitudes) * duration,
+        axis=amplitudes,
+    )
+
+    assert np.allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_generic_control_supports_spin_one():
+    """Generic control Hamiltonian supports spin 1 operator."""
+    sy = jmat(1, "y")
+    actual = control_hamiltonian(0.4, [sy], [0.7])
+
+    assert actual.dims == sy.dims
+    assert (actual - 0.7 * sy).norm() < 1e-12
+
+
+@pytest.mark.parametrize(
+    "operators, amplitudes",
+    [
+        ([], []),
+        ([sigmax()], []),
+        ([sigmax(), qeye(3)], [1.0, 1.0]),
+        ([sigmax() + 1j * sigmay()], [1.0]),
+        ([sigmax()], [np.nan]),
+        ([sigmax()], [lambda time: 1j]),
+    ],
+)
+def test_generic_control_rejects_invalid_terms(operators, amplitudes):
+    """Generic control Hamiltonian rejects invalid terms."""
+    with pytest.raises(ValueError):
+        control_hamiltonian(0.0, operators, amplitudes)

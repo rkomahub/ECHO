@@ -75,3 +75,40 @@ def microwave_hamiltonian(
         )
 
     return coefficient * control
+
+
+def control_hamiltonian(
+    time: float,
+    operators: list[Qobj],
+    amplitudes,
+) -> Qobj:
+    """Return Hc(t) = sum_a f_a(t) A_a.
+
+    Operators must be Hermitian with matching dimensions.
+    Amplitudes are real constants or callables of absolute time.
+    Operator normalization and coefficient units are supplied by the caller.
+    No rotating-frame or RWA approximation is applied.
+    """
+    if not np.isfinite(time):
+        raise ValueError("time must be finite.")
+
+    if not operators or len(operators) != len(amplitudes):
+        raise ValueError("Provide one amplitude per operator and at least one term.")
+
+    dimensions = operators[0].dims
+    result = 0 * operators[0]
+
+    for operator, amplitude in zip(operators, amplitudes):
+        if operator.dims != dimensions or not operator.isherm:
+            raise ValueError(
+                "Control operators must be Hermitian with matching dimensions."
+            )
+
+        coefficient = control_amplitude(amplitude, time)
+
+        if np.iscomplexobj(coefficient) or not np.isfinite(coefficient):
+            raise ValueError("Control amplitudes must be finite and real.")
+
+        result += coefficient * operator
+
+    return result
