@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, qeye, tensor
+from qutip import basis, qeye, sigmaz, tensor
 
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.decoupling.modulation import modulation_function
@@ -161,3 +161,69 @@ def test_ideal_xy8_under_ou_noise():
         )
     )
     assert analytic_coherence > hahn_coherence
+
+
+@pytest.mark.parametrize("qubit", [0, 1])
+def test_xy8_cycle_closes(qubit):
+    """A complete ideal XY8 cycle returns the control propagator to identity."""
+    cumulative = qeye([2, 2])
+
+    for pulse in xy8_pulses(qubit):
+        cumulative = pulse * cumulative
+
+    assert np.allclose(
+        cumulative.full(),
+        qeye([2, 2]).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("qubit", [0, 1])
+def test_xy8_refocuses_only_driven_qubit(qubit):
+    """Check full laboratory evolution, including unaffected spectator phase."""
+    z = [
+        tensor(sigmaz(), qeye(2)),
+        tensor(qeye(2), sigmaz()),
+    ]
+    spectator = 1 - qubit
+
+    total_duration = 2.0
+    target_detuning = 0.31
+    spectator_detuning = -0.17
+
+    free = (
+        target_detuning * z[qubit]
+        + spectator_detuning * z[spectator]
+    )
+    pulses = xy8_pulses(qubit)
+
+    # Symmetric cycle: half intervals at the two ends.
+    durations = (
+        [total_duration / 16]
+        + [total_duration / 8] * 7
+        + [total_duration / 16]
+    )
+
+    actual = qeye([2, 2])
+
+    for index, duration in enumerate(durations):
+        free_evolution = (-1j * free * duration).expm()
+        actual = free_evolution * actual
+
+        if index < len(pulses):
+            actual = pulses[index] * actual
+
+    expected = (
+        -1j
+        * spectator_detuning
+        * z[spectator]
+        * total_duration
+    ).expm()
+
+    assert np.allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
