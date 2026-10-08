@@ -13,12 +13,13 @@ def electronic_nv_hamiltonian(
     electron_site: int,
     D: float,
     omega_e: Sequence[float],
+    E: float = 0.0,
 ) -> Qobj:
     """Construct the electronic Hamiltonian of an NV center.
 
     The Hamiltonian is
 
-        H_e = D Sz^2 + omega_e · S
+        H_e = D Sz^2 + E (Sx^2 - Sy^2) + omega_e · S
 
     where D is the zero-field splitting and omega_e is the
     electronic Larmor-frequency vector.
@@ -33,6 +34,9 @@ def electronic_nv_hamiltonian(
         Zero-field splitting.
     omega_e : sequence of float
         Cartesian components (omega_x, omega_y, omega_z).
+    E : float, optional
+        Transverse strain splitting parameter in the local NV frame.
+        Uses the same angular-frequency units as D; defaults to zero.
 
     Returns
     -------
@@ -45,6 +49,9 @@ def electronic_nv_hamiltonian(
     if len(omega_e) != 3:
         raise ValueError("omega_e must contain three Cartesian components.")
 
+    if not np.isfinite(E):
+        raise ValueError("E must be finite.")
+
     sx, sy, sz = spin_operators(1)
 
     sx = embed_operator(sx, electron_site, system)
@@ -55,6 +62,7 @@ def electronic_nv_hamiltonian(
 
     return (
         D * sz**2
+        + E * (sx**2 - sy**2)
         + omega_x * sx
         + omega_y * sy
         + omega_z * sz

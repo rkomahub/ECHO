@@ -461,3 +461,45 @@ def test_transverse_zeeman_spectrum_and_dark_state(phase):
     ).unit()
 
     assert (hamiltonian * dark_state - D * dark_state).norm() < 1e-12
+
+
+@pytest.mark.parametrize("E", [-0.2, 0.0, 0.2])
+@pytest.mark.parametrize("omega_z", [0.0, 0.3])
+def test_nv_strain_and_axial_field_spectrum(E, omega_z):
+    """Check the exact strain-plus-axial-Zeeman spectrum."""
+    D = 2.87
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=D,
+        omega_e=(0.0, 0.0, omega_z),
+        E=E,
+    )
+
+    splitting = np.sqrt(omega_z**2 + E**2)
+    expected = np.sort([0.0, D - splitting, D + splitting])
+
+    assert hamiltonian.isherm
+    assert np.allclose(
+        hamiltonian.eigenenergies(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    # In the |+1>, |0>, |-1> basis, strain couples |+1> to |-1>.
+    assert hamiltonian[0, 2] == pytest.approx(E)
+    assert hamiltonian[2, 0] == pytest.approx(E)
+
+
+@pytest.mark.parametrize("E", [np.nan, np.inf])
+def test_nv_hamiltonian_rejects_nonfinite_strain(E):
+    with pytest.raises(ValueError):
+        electronic_nv_hamiltonian(
+            system=SpinSystem([1]),
+            electron_site=0,
+            D=2.87,
+            omega_e=(0.0, 0.0, 0.0),
+            E=E,
+        )
