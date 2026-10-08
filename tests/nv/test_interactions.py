@@ -352,3 +352,72 @@ def test_dipolar_geometry_rejects_coincident_positions():
             ],
             coupling_prefactor=1.0,
         )
+
+
+@pytest.mark.parametrize(
+    "direction, expected_factor",
+    [
+        ([0.0, 0.0, 1.0], -2.0),
+        ([1.0, 0.0, 0.0], 1.0),
+        ([0.0, 1.0, 0.0], 1.0),
+        ([np.sqrt(2.0), 0.0, 1.0], 0.0),
+    ],
+)
+def test_dipolar_diagonal_angular_dependence(direction, expected_factor):
+    """Check axial, transverse and magic-angle diagonal couplings."""
+    system = SpinSystem([1, 1])
+    coupling = 0.37
+
+    interaction = dipolar_interaction(
+        system=system,
+        site_i=0,
+        site_j=1,
+        coupling=coupling,
+        direction=direction,
+    )
+
+    product_states = [
+        tensor(basis(3, i), basis(3, j))
+        for i in range(3)
+        for j in range(3)
+    ]
+    diagonal_interaction = secular_interaction(
+        interaction=interaction,
+        dressed_basis=product_states,
+    )
+
+    _, _, sz = spin_operators(1)
+    sz_0 = embed_operator(sz, 0, system)
+    sz_1 = embed_operator(sz, 1, system)
+
+    expected_coupling = coupling * expected_factor
+    expected = expected_coupling * sz_0 * sz_1
+
+    assert interaction.isherm
+    assert (diagonal_interaction - expected).norm() < 1e-12
+
+    extracted, residual = extract_effective_zz_coupling(
+        secular_hamiltonian=diagonal_interaction,
+        sz_i=sz_0,
+        sz_j=sz_1,
+    )
+
+    assert extracted == pytest.approx(expected_coupling, abs=1e-12)
+    assert residual.norm() < 1e-12
+
+
+def test_dipolar_interaction_is_invariant_under_direction_reversal():
+    """Reversing the displacement leaves the physical interaction unchanged."""
+    system = SpinSystem([1, 1])
+    direction = np.array([1.0, -2.0, 3.0])
+
+    forward = dipolar_interaction(system, 0, 1, 0.37, direction)
+    reversed_direction = dipolar_interaction(
+        system, 0, 1, 0.37, -direction
+    )
+    exchanged_sites = dipolar_interaction(
+        system, 1, 0, 0.37, -direction
+    )
+
+    assert (forward - reversed_direction).norm() < 1e-12
+    assert (forward - exchanged_sites).norm() < 1e-12
