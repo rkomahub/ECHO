@@ -3,6 +3,8 @@ import pytest
 from qutip import qeye, sigmaz
 
 from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.core.operators import embed_operator
+from echo_spin.core.system import SpinSystem
 from echo_spin.decoupling.modulation import (
     effective_zz_coupling,
     modulation_function,
@@ -131,3 +133,70 @@ def test_effective_zz_coupling_rejects_invalid_parameters(
         effective_zz_coupling(
             coupling, duration, pulses_i, pulses_j
         )
+
+
+def test_three_qubit_recoupling_suppresses_spectator():
+    """Retain the target ZZ interaction and cancel both spectator terms."""
+    system = SpinSystem([0.5, 0.5, 0.5])
+    total_duration = 2.0
+
+    j01 = 0.3
+    j02 = -0.2
+    j12 = 0.17
+
+    z = [
+        embed_operator(sigmaz(), site, system)
+        for site in range(3)
+    ]
+
+    target_hamiltonian = j01 * z[0] * z[1]
+    free_hamiltonian = (
+        target_hamiltonian
+        + j02 * z[0] * z[2]
+        + j12 * z[1] * z[2]
+    )
+
+    schedules = [[], [], [total_duration / 2]]
+
+    for i, j, coupling, expected in [
+        (0, 1, j01, j01),
+        (0, 2, j02, 0.0),
+        (1, 2, j12, 0.0),
+    ]:
+        effective = effective_zz_coupling(
+            coupling=coupling,
+            total_duration=total_duration,
+            pulse_times_i=schedules[i],
+            pulse_times_j=schedules[j],
+        )
+        assert effective == pytest.approx(expected, abs=1e-12)
+
+    spectator_pulse = embed_operator(
+        single_qubit_rotation(np.pi, "x"),
+        site=2,
+        system=system,
+    )
+
+    half_evolution = (
+        -1j * free_hamiltonian * total_duration / 2
+    ).expm()
+
+    lab_evolution = (
+        half_evolution
+        * spectator_pulse
+        * half_evolution
+    )
+
+    # Remove the known final spectator rotation.
+    echo_evolution = spectator_pulse.dag() * lab_evolution
+
+    expected_evolution = (
+        -1j * target_hamiltonian * total_duration
+    ).expm()
+
+    assert np.allclose(
+        echo_evolution.full(),
+        expected_evolution.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )

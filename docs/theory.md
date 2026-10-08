@@ -805,3 +805,26 @@ the phase
 2J_{\mathrm{eff}}T=gN_\pi\tau_2,
 \]
 consistent with the existing Joas interaction-time convention.
+
+### Three-qubit spectator suppression
+
+Consider the ideal commuting Hamiltonian
+\[
+H=J_{01}Z_0Z_1+J_{02}Z_0Z_2+J_{12}Z_1Z_2.
+\]
+A midpoint transverse \(\pi\) pulse on spectator qubit 2 gives
+\(y_0=y_1=1\), while \(y_2\) changes sign halfway through.
+Consequently,
+\[
+J_{01}^{\mathrm{eff}}=J_{01},
+\qquad
+J_{02}^{\mathrm{eff}}=J_{12}^{\mathrm{eff}}=0.
+\]
+
+Because all toggled ZZ terms commute, cancellation is exact.
+After removing the final spectator control rotation, the propagator is
+\[
+U_{\mathrm{togg}}(T)=e^{-iTJ_{01}Z_0Z_1}.
+\]
+This validates ideal interaction engineering, without finite-pulse,
+noise, geometry or NV calibration effects.
