@@ -21,6 +21,7 @@ from echo_spin.dynamics.propagators import (
     unitary_dynamical_map,
 )
 from echo_spin.dynamics.sequences import (
+    finite_pulse_intervals,
     finite_pulse_propagator,
     finite_pulse_sequence_propagator,
 )
@@ -36,7 +37,6 @@ from echo_spin.models.joas import (
     two_electron_hamiltonian,
     two_electron_logical_basis,
     two_pulse_gate_durations,
-    xy8_gate_intervals,
     xy8_gate_schedule,
 )
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
@@ -156,9 +156,22 @@ def test_finite_joas_sequence_converges_to_sqrt_zz():
         coupling=g,
     )
 
-    durations = two_pulse_gate_durations(
+    ideal_intervals = two_pulse_gate_durations(
         tau_1=tau_1,
         tau_2=tau_2,
+    )
+    pulse_centers = np.cumsum(ideal_intervals[:-1]).tolist()
+    total_duration = sum(ideal_intervals)
+
+    durations = finite_pulse_intervals(
+        pulse_centers=pulse_centers,
+        pulse_duration=pulse_duration,
+        total_duration=total_duration,
+    )
+
+    assert sum(durations) + 4 * pulse_duration == pytest.approx(
+        total_duration,
+        abs=1e-12,
     )
 
     # Joas reduced-basis convention.
@@ -241,15 +254,21 @@ def test_finite_xy8_joas_gate_converges_to_sqrt_zz():
         coupling=coupling,
     )
 
-    intervals = xy8_gate_intervals(
-        tau_1=tau_1,
-        tau_2=tau_2,
-    )
-
     schedule = xy8_gate_schedule(
         tau_1=tau_1,
         tau_2=tau_2,
     )
+
+    total_duration = n_pi * tau_1
+    intervals = finite_pulse_intervals(
+        pulse_centers=[time for time, _, _ in schedule],
+        pulse_duration=pulse_duration,
+        total_duration=total_duration,
+    )
+
+    assert (
+        sum(intervals) + len(schedule) * pulse_duration
+    ) == pytest.approx(total_duration, abs=1e-12)
 
     peak_amplitude = sine_pi_pulse_amplitude(
         pulse_duration
