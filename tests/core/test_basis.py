@@ -7,6 +7,8 @@ from echo_spin.core.basis import (
     diagonalize_hamiltonian,
     dressed_spin_one_basis,
     dressed_spin_operators,
+    operator_from_basis,
+    operator_in_basis,
     order_states_by_reference,
     product_basis,
     project_operator,
@@ -237,3 +239,47 @@ def test_project_operator_preserves_couplings():
     ])
 
     assert np.allclose(projected.full(), expected)
+
+
+def test_operator_in_complex_basis_has_correct_orientation():
+    """The sigma_y eigenbasis should diagonalize sigma_y."""
+    states = [
+        (basis(2, 0) + 1j * basis(2, 1)).unit(),
+        (basis(2, 0) - 1j * basis(2, 1)).unit(),
+    ]
+    sigma_y = Qobj([
+        [0.0, -1j],
+        [1j, 0.0],
+    ])
+
+    actual = operator_in_basis(sigma_y, states)
+
+    assert np.allclose(
+        actual.full(),
+        np.diag([1.0, -1.0]),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_operator_basis_round_trip_with_complex_states():
+    """Changing basis and transforming back preserves a complex operator."""
+    states = [
+        (basis(2, 0) + 1j * basis(2, 1)).unit(),
+        (basis(2, 0) - 1j * basis(2, 1)).unit(),
+    ]
+    operator = Qobj([
+        [0.3, 1.0 + 0.2j],
+        [1.0 - 0.2j, -0.4],
+    ])
+
+    transformed = operator_in_basis(operator, states)
+    recovered = operator_from_basis(transformed, states)
+
+    assert recovered.dims == operator.dims
+    assert np.allclose(
+        recovered.full(),
+        operator.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
