@@ -322,6 +322,101 @@ def test_joas_setting_2_two_electron_spectrum():
         [2571.00190538, 3160.19756161],
     )
 
+    # Validate local Sx control strengths in the noninteracting register.
+    sx, _, _ = spin_operators(1)
+    local_hamiltonians = [h_nv1, h_nv2]
+    register_controls = [
+        tensor(sx, qeye(3)),
+        tensor(qeye(3), sx),
+    ]
+    local_lines = []
+
+    for h_local, control in zip(
+        local_hamiltonians,
+        register_controls,
+    ):
+        lines = allowed_transitions(h_local, sx)
+        local_lines.append(lines)
+
+        register_lines = allowed_transitions(h_two, control)
+
+        # Each single-NV transition repeats for three spectator states.
+        expected_lines = sorted(
+            (float(frequency), float(strength))
+            for frequency, strength, _, _ in lines
+            for _ in range(3)
+        )
+        actual_lines = sorted(
+            (float(frequency), float(strength))
+            for frequency, strength, _, _ in register_lines
+        )
+
+        assert len(actual_lines) == len(expected_lines)
+        assert np.allclose(
+            np.asarray(actual_lines)[:, 0],
+            np.asarray(expected_lines)[:, 0],
+            atol=1e-8,
+            rtol=0.0,
+        )
+        assert np.allclose(
+            np.asarray(actual_lines)[:, 1],
+            np.asarray(expected_lines)[:, 1],
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+        # Independent sum rule for transitions out of the ground state:
+        # sum_j |<j|Sx|0>|^2 = <Sx^2> - |<Sx>|^2.
+        _, states = h_local.eigenstates()
+        ground_state = states[0]
+        expected_strength_sum = (
+            ground_state.overlap(sx**2 * ground_state).real
+            - abs(ground_state.overlap(sx * ground_state))**2
+        )
+        actual_strength_sum = sum(
+            strength
+            for _, strength, i, _ in lines
+            if i == 0
+        )
+
+        assert actual_strength_sum == pytest.approx(
+            expected_strength_sum,
+            abs=1e-9,
+        )
+
+    # Include all Sx-allowed single-NV lines as possible unwanted lines.
+    # This is a spectral check, without population weighting.
+    addressed_pairs = [(0, 2), (0, 1)]
+    expected_separations_mhz = [163.54125657, 256.27742176]
+
+    for nv, (pair, expected_separation) in enumerate(
+        zip(addressed_pairs, expected_separations_mhz)
+    ):
+        addressed = [
+            frequency
+            for frequency, _, i, j in local_lines[nv]
+            if (i, j) == pair
+        ]
+        assert len(addressed) == 1
+        target_frequency = addressed[0]
+
+        unwanted = [
+            frequency
+            for other_nv, lines in enumerate(local_lines)
+            for frequency, _, i, j in lines
+            if other_nv != nv or (i, j) != pair
+        ]
+
+        separation_mhz = min(
+            abs(frequency - target_frequency)
+            for frequency in unwanted
+        ) / (2 * np.pi)
+
+        assert separation_mhz == pytest.approx(
+            expected_separation,
+            abs=1e-6,
+        )
+
 
 def test_joas_setting_2_dressed_spin_operators():
     """The dressed spin operators are consistent with the spin-one operators."""
