@@ -560,3 +560,76 @@ def test_circular_drive_matches_exact_rotating_frame_solution():
 
     assert errors[1] < 0.005
     assert errors[0] / errors[1] == pytest.approx(2.0, rel=0.05)
+
+
+def test_linear_drive_rwa_improves_with_carrier_frequency():
+    """Separate integration error from the counter-rotating approximation."""
+    rabi_frequency = 1.0
+    duration = np.pi / rabi_frequency
+    rwa_hamiltonian = rabi_frequency * sigmax() / 2
+    rwa_propagator = (-1j * rwa_hamiltonian * duration).expm()
+
+    approximation_errors = []
+
+    for carrier in [10.0, 40.0]:
+        generator = carrier * sigmaz() / 2
+
+        def lab_hamiltonian(time):
+            return (
+                generator
+                + rabi_frequency * np.cos(carrier * time) * sigmax()
+            )
+
+        def exact_rotating_hamiltonian(time):
+            return (
+                rabi_frequency / 2
+                * (
+                    (1 + np.cos(2 * carrier * time)) * sigmax()
+                    - np.sin(2 * carrier * time) * sigmay()
+                )
+            )
+
+        # Check the exact transformed Hamiltonian before propagating it.
+        for time in [0.0, 0.137, duration]:
+            transformed = rotating_frame_hamiltonian(
+                time=time,
+                driven_hamiltonian=lab_hamiltonian,
+                generator=generator,
+            )
+            assert (
+                transformed - exact_rotating_hamiltonian(time)
+            ).norm() < 1e-12
+
+        # Resolve the counter-rotating frequency 2 * carrier:
+        # 40 steps per oscillation, followed by a doubled-resolution check.
+        steps = int(np.ceil(
+            40 * (2 * carrier) * duration / (2 * np.pi)
+        ))
+
+        coarse = time_dependent_propagator(
+            exact_rotating_hamiltonian,
+            t0=0.0,
+            t1=duration,
+            steps=steps,
+        )
+        fine = time_dependent_propagator(
+            exact_rotating_hamiltonian,
+            t0=0.0,
+            t1=duration,
+            steps=2 * steps,
+        )
+
+        numerical_difference = np.linalg.norm(
+            fine.full() - coarse.full()
+        )
+        approximation_error = np.linalg.norm(
+            fine.full() - rwa_propagator.full()
+        )
+
+        assert numerical_difference < 0.002
+        assert numerical_difference < approximation_error / 5
+
+        approximation_errors.append(approximation_error)
+
+    assert approximation_errors[1] < 0.02
+    assert approximation_errors[1] < approximation_errors[0] / 2
