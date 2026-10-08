@@ -3,6 +3,7 @@ import pytest
 from qutip import basis, qeye, tensor
 
 from echo_spin.control.rotations import two_qubit_rotation
+from echo_spin.decoupling.modulation import modulation_function
 from echo_spin.decoupling.xy8 import xy8_pulses
 from echo_spin.noise.dephasing import (
     ornstein_uhlenbeck_noise,
@@ -14,6 +15,7 @@ def test_xy8_contains_eight_pulses():
     pulses = xy8_pulses(qubit=0)
 
     assert len(pulses) == 8
+
 
 def test_xy8_phase_pattern():
     expected = [
@@ -92,7 +94,11 @@ def test_ideal_xy8_under_ou_noise():
 
     # Exact Gaussian prediction for the left-endpoint sampled noise.
     signs = (-1.0) ** np.arange(len(boundaries) - 1)
-    modulation = np.repeat(signs, np.diff(boundaries))
+    interval_midpoints = (times[:-1] + times[1:]) / 2
+    modulation = modulation_function(
+        times=interval_midpoints,
+        pulse_times=times[pulse_indices],
+    )
     weights = modulation * np.diff(times)
     sample_times = times[:-1]
 

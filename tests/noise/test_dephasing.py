@@ -3,6 +3,7 @@ import pytest
 from qutip import basis, tensor
 
 from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.decoupling.modulation import modulation_function
 from echo_spin.gates.gates import average_gate_fidelity, sqrt_zz_gate
 from echo_spin.noise.dephasing import (
     dephasing_channel,
@@ -577,8 +578,12 @@ def test_ou_hahn_echo_matches_analytic_coherence():
     average_density /= realizations
 
     sample_times = times[:-1]
-    weights = np.diff(times)
-    weights[midpoint:] *= -1
+    interval_midpoints = (times[:-1] + times[1:]) / 2
+    modulation = modulation_function(
+        times=interval_midpoints,
+        pulse_times=[times[midpoint]],
+    )
+    weights = modulation * np.diff(times)
 
     covariance = sigma**2 * np.exp(
         -np.abs(sample_times[:, None] - sample_times[None, :])
