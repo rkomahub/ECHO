@@ -22,6 +22,7 @@ from echo_spin.models.joas import (
 )
 from echo_spin.nv.frames import rotate_to_local_frame
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
+from echo_spin.spectroscopy.transitions import allowed_transitions
 
 
 def test_two_electron_hamiltonian_has_dimension_nine():
@@ -212,7 +213,7 @@ def test_electron_logical_states_invalid_excited_branch():
             excited_state="banana",
         )
 
-# ------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 
 def test_joas_nv1_local_frame_rotation():
     """The Joas NV1 local frame rotation is consistent with the rotation matrix."""
@@ -603,7 +604,7 @@ def test_joas_setting_2_physical_to_logical_hamiltonian():
         atol=1e-10,
     )
 
-# ------------------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 
 def test_joas_selective_dressed_pi_rotations():
     """The selective dressed pi rotations swap the addressed logical states."""
@@ -862,3 +863,81 @@ def test_joas_two_electron_ideal_xy8_gate():
             target.full(),
             atol=1e-8,
         )
+
+# ----------------------------------------------------------------------------------
+
+def test_noninteracting_nv_local_control_and_spectral_separation():
+    """Local drives retain their own lines across all spectator states."""
+    system = SpinSystem([1])
+
+    h1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e=(0.0, 0.0, 0.3),
+    )
+    h2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=3.11,
+        omega_e=(0.0, 0.0, 0.17),
+    )
+
+    zero_interaction = 0 * tensor(qeye(3), qeye(3))
+    register = two_electron_hamiltonian(h1, h2, zero_interaction)
+
+    sx, _, _ = spin_operators(1)
+    control_1 = tensor(sx, qeye(3))
+    control_2 = tensor(qeye(3), sx)
+
+    expected_lines = [
+        np.array([2.57, 3.17]),
+        np.array([2.94, 3.28]),
+    ]
+
+    for control, lines in zip(
+        [control_1, control_2],
+        expected_lines,
+    ):
+        transitions = allowed_transitions(register, control)
+
+        # Two local lines, each repeated for three spectator states.
+        assert len(transitions) == 6
+        assert np.allclose(
+            sorted(item[0] for item in transitions),
+            np.repeat(lines, 3),
+            atol=1e-12,
+            rtol=0.0,
+        )
+        assert np.allclose(
+            [item[1] for item in transitions],
+            np.full(6, 0.5),
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+    global_transitions = allowed_transitions(
+        register, control_1 + control_2
+    )
+    expected_global = np.sort(
+        np.concatenate([
+            np.repeat(expected_lines[0], 3),
+            np.repeat(expected_lines[1], 3),
+        ])
+    )
+
+    assert len(global_transitions) == 12
+    assert np.allclose(
+        sorted(item[0] for item in global_transitions),
+        expected_global,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    cross_nv_separation = np.min(
+        np.abs(
+            expected_lines[0][:, None]
+            - expected_lines[1][None, :]
+        )
+    )
+    assert cross_nv_separation == pytest.approx(0.11)
