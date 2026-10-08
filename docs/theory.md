@@ -680,3 +680,32 @@ W_{\mathrm H}(t)
 
 The numerical validation preserves noise correlations across the pulse
 and compares coherence in the toggling frame.
+
+## xy8.py
+
+### Ideal XY8 under OU noise
+
+For one symmetric XY8 cycle, eight instantaneous pulses occur at
+\[
+t_k=\left(k-\frac12\right)\frac{T}{8},
+\qquad k=1,\ldots,8,
+\]
+with axes \(X,Y,X,Y,Y,X,Y,X\).
+
+Each pulse reverses the longitudinal noise coupling, giving
+\(y(t)=(-1)^{n(t)}\), where \(n(t)\) counts preceding pulses.
+For stationary Gaussian OU noise, the normalized coherence is
+\[
+W_{\mathrm{XY8}}(T)=
+\exp\left[
+-\frac12
+\int_0^T\int_0^T
+y(s)y(s')\sigma^2e^{-|s-s'|/\tau_c}\,ds\,ds'
+\right].
+\]
+
+The test compares explicit XY8 pulse propagation with this prediction,
+accounting separately for time discretization and ensemble sampling.
+For ideal pulses and purely longitudinal noise, the coherence depends
+on pulse timings and sign reversals; this check does not establish
+XY8 robustness against pulse imperfections.
