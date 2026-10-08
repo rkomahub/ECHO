@@ -312,3 +312,28 @@ def test_toggling_frame_matches_explicit_pulse_evolution():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize("duration", [-0.1, 0.0, np.nan, np.inf])
+def test_finite_pulse_rejects_invalid_duration(duration):
+    with pytest.raises(ValueError):
+        finite_pulse_propagator(
+            free_hamiltonian=0 * sigmaz(),
+            control_operator=0.5 * sigmax(),
+            duration=duration,
+            envelope=lambda time: 1.0,
+            steps=10,
+        )
+
+
+@pytest.mark.parametrize("start_time", [np.nan, np.inf])
+def test_finite_pulse_rejects_nonfinite_start_time(start_time):
+    with pytest.raises(ValueError):
+        finite_pulse_propagator(
+            free_hamiltonian=0 * sigmaz(),
+            control_operator=0.5 * sigmax(),
+            duration=0.1,
+            envelope=lambda time: 1.0,
+            steps=10,
+            start_time=start_time,
+        )

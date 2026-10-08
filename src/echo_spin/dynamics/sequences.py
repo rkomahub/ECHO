@@ -1,3 +1,4 @@
+import numpy as np
 from qutip import Qobj, qeye
 
 from echo_spin.dynamics.propagators import time_dependent_propagator
@@ -51,13 +52,15 @@ def finite_pulse_propagator(
     steps: int,
     start_time: float = 0.0,
 ) -> Qobj:
-    """Propagate a finite control pulse while the free Hamiltonian remains active."""
+    """Propagate a finite pulse with the free Hamiltonian active."""
+    if not np.isfinite(duration) or duration <= 0:
+        raise ValueError("duration must be finite and positive.")
+
+    if not np.isfinite(start_time):
+        raise ValueError("start_time must be finite.")
 
     def hamiltonian(time):
-        return (
-            free_hamiltonian
-            + envelope(time) * control_operator
-        )
+        return free_hamiltonian + envelope(time) * control_operator
 
     return time_dependent_propagator(
         hamiltonian=hamiltonian,
