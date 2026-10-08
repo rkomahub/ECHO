@@ -27,7 +27,7 @@ def dipolar_interaction(
     coupling : float
         Dipolar coupling strength.
     direction : sequence of float
-        Unit vector joining the two spins.
+        Nonzero vector joining the spins, normalized internally.
     """
     if site_i == site_j:
         raise ValueError("Dipolar interaction requires two different sites.")
@@ -39,7 +39,7 @@ def dipolar_interaction(
 
     norm = np.linalg.norm(direction)
 
-    if np.isclose(norm, 0.0):
+    if norm == 0.0:
         raise ValueError("direction must be non-zero.")
 
     r_hat = direction / norm
@@ -51,7 +51,6 @@ def dipolar_interaction(
         embed_operator(op, site_i, system)
         for op in spin_operators(spin_i)
     ]
-
     ops_j = [
         embed_operator(op, site_j, system)
         for op in spin_operators(spin_j)
@@ -61,12 +60,10 @@ def dipolar_interaction(
         op_i * op_j
         for op_i, op_j in zip(ops_i, ops_j)
     )
-
     projection_i = sum(
         component * operator
         for component, operator in zip(r_hat, ops_i)
     )
-
     projection_j = sum(
         component * operator
         for component, operator in zip(r_hat, ops_j)
