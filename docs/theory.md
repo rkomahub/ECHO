@@ -743,3 +743,27 @@ accounting separately for time discretization and ensemble sampling.
 For ideal pulses and purely longitudinal noise, the coherence depends
 on pulse timings and sign reversals; this check does not establish
 XY8 robustness against pulse imperfections.
+
+## decoupling/modulation.py
+
+For ideal instantaneous transverse \(\pi\) pulses, longitudinal
+coupling transforms as
+\[
+U_c^\dagger(t)\sigma_zU_c(t)=y(t)\sigma_z,
+\qquad
+y(t)=(-1)^{n(t)}.
+\]
+Here \(n(t)\) counts pulses applied at or before time \(t\);
+the modulation is right-continuous and starts at \(+1\) before
+any pulses.
+
+The accumulated noise phase is
+\[
+\phi(T)=\int_0^T y(t)\xi(t)\,dt.
+\]
+For an ideal Hahn pulse at \(T/2\), the integral of \(y(t)\)
+vanishes, refocusing static longitudinal detuning.
+
+This scalar description applies to instantaneous transverse
+\(\pi\) pulses. Arbitrary rotations and finite pulses require
+a more general control matrix.
