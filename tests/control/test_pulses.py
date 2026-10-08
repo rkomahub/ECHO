@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import sigmax, sigmaz
+from qutip import qeye, sigmax, sigmaz
 
 from echo_spin.control.pulses import (
     centered_sine_envelope,
@@ -9,6 +9,7 @@ from echo_spin.control.pulses import (
 )
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.dynamics.sequences import finite_pulse_propagator
 
 
 def test_sine_envelope_boundaries():
@@ -190,3 +191,74 @@ def test_centered_sine_envelope():
     assert centered_sine_envelope(
         0.8, center, duration, amplitude
     ) == pytest.approx(0.0)
+
+
+@pytest.mark.parametrize("duration", [0.05, 0.2])
+@pytest.mark.parametrize("start_time", [0.0, 0.7])
+def test_finite_sine_pulse_calibration_converges(duration, start_time):
+    """Check calibrated sine pulses at different durations and absolute times."""
+    center = start_time + duration / 2
+    amplitude = sine_pi_pulse_amplitude(duration)
+    ideal = single_qubit_rotation(np.pi, "x")
+
+    def envelope(time):
+        return centered_sine_envelope(
+            time=time,
+            center=center,
+            duration=duration,
+            peak_amplitude=amplitude,
+        )
+
+    errors = []
+
+    for steps in [100, 200]:
+        actual = finite_pulse_propagator(
+            free_hamiltonian=0 * sigmaz(),
+            control_operator=0.5 * sigmax(),
+            duration=duration,
+            envelope=envelope,
+            steps=steps,
+            start_time=start_time,
+        )
+
+        errors.append(
+            np.linalg.norm(actual.full() - ideal.full())
+        )
+
+    assert errors[1] < 1e-4
+
+    # For this commuting sine pulse with zero endpoint amplitudes,
+    # the integrated pulse-area error decreases quadratically.
+    assert errors[0] / errors[1] == pytest.approx(4.0, rel=0.02)
+
+
+@pytest.mark.parametrize("detuning", [0.0, 0.5, 2.0])
+def test_detuned_rectangular_pulse_matches_exact_solution(detuning):
+    """Validate finite evolution with both drive and detuning active."""
+    duration = 0.4
+    omega = np.pi / duration
+    effective_frequency = np.sqrt(omega**2 + detuning**2)
+
+    actual = finite_pulse_propagator(
+        free_hamiltonian=0.5 * detuning * sigmaz(),
+        control_operator=0.5 * sigmax(),
+        duration=duration,
+        envelope=lambda time: omega,
+        steps=10,
+        start_time=0.7,
+    )
+
+    expected = (
+        np.cos(effective_frequency * duration / 2) * qeye(2)
+        - 1j
+        * np.sin(effective_frequency * duration / 2)
+        * (omega * sigmax() + detuning * sigmaz())
+        / effective_frequency
+    )
+
+    assert np.allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
