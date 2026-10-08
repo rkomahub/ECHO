@@ -178,6 +178,7 @@ def nv_hamiltonian(
     Q: float,
     omega_n: Sequence[float],
     A: Sequence[Sequence[float]],
+    E: float = 0.0,
 ) -> Qobj:
     """Construct the complete single-NV Hamiltonian.
 
@@ -187,7 +188,7 @@ def nv_hamiltonian(
 
     with
 
-        H_e  = D Sz^2 + omega_e · S
+        H_e = D Sz^2 + E (Sx^2 - Sy^2) + omega_e · S
         H_n  = Q Iz^2 + omega_n · I
         H_hf = S · A · I
     """
@@ -197,6 +198,7 @@ def nv_hamiltonian(
             electron_site=electron_site,
             D=D,
             omega_e=omega_e,
+            E=E,
         )
         + nuclear_nv_hamiltonian(
             system=system,
@@ -219,6 +221,7 @@ def rotated_electronic_nv_hamiltonian(
     omega_e_lab: Sequence[float],
     axis: str,
     angle: float,
+    E: float = 0.0,
 ) -> Qobj:
     """Construct the NV electronic Hamiltonian in its local crystal frame.
 
@@ -236,4 +239,5 @@ def rotated_electronic_nv_hamiltonian(
         electron_site=electron_site,
         D=D,
         omega_e=omega_e_local,
+        E=E,
     )

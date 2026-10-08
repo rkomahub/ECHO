@@ -67,6 +67,7 @@ def nv_register_hamiltonian(
             Q=parameters["Q"],
             omega_n=parameters["omega_n"],
             A=parameters["A"],
+            E=parameters.get("E", 0.0),
         )
 
     if positions is not None:

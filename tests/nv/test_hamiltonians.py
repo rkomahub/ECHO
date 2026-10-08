@@ -503,3 +503,55 @@ def test_nv_hamiltonian_rejects_nonfinite_strain(E):
             omega_e=(0.0, 0.0, 0.0),
             E=E,
         )
+
+
+def test_complete_nv_strain_acts_only_on_electron():
+    """Strain couples electronic levels while preserving nuclear states."""
+    system = SpinSystem([1, 1])
+
+    parameters = dict(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        D=2.87,
+        omega_e=(0.1, 0.2, 0.3),
+        Q=-4.95,
+        omega_n=(0.0, 0.0, 0.01),
+        A=np.diag([0.2, 0.2, 0.3]),
+    )
+
+    unstrained = nv_hamiltonian(**parameters)
+    strained = nv_hamiltonian(**parameters, E=0.15)
+
+    sx, sy, _ = spin_operators(1)
+    expected = embed_operator(
+        0.15 * (sx**2 - sy**2),
+        site=0,
+        system=system,
+    )
+
+    assert (strained - unstrained - expected).norm() < 1e-12
+
+
+def test_rotated_nv_preserves_local_strain_term():
+    """Field misalignment must not drop the local-frame strain parameter."""
+    system = SpinSystem([1])
+
+    hamiltonian = rotated_electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2.87,
+        omega_e_lab=(0.0, 0.0, 0.3),
+        axis="y",
+        angle=np.pi / 2,
+        E=0.15,
+    )
+
+    sx, sy, sz = spin_operators(1)
+    expected = (
+        2.87 * sz**2
+        + 0.15 * (sx**2 - sy**2)
+        - 0.3 * sx
+    )
+
+    assert (hamiltonian - expected).norm() < 1e-12

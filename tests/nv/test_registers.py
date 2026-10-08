@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
 from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import dipolar_interaction
@@ -340,3 +341,38 @@ def test_positions_and_explicit_geometry_cannot_be_mixed():
             dipolar_couplings=np.zeros((1, 1)),
             dipolar_directions=np.zeros((1, 1, 3)),
         )
+
+
+def test_register_preserves_nv_specific_strain():
+    """Each E value acts on its own electron; omitted E defaults to zero."""
+    system = SpinSystem([1, 1, 1, 1])
+    base = dict(
+        D=2.87,
+        omega_e=(0.0, 0.0, 0.1),
+        Q=-4.95,
+        omega_n=(0.0, 0.0, 0.01),
+        A=np.diag([0.2, 0.2, 0.3]),
+    )
+
+    unstrained = nv_register_hamiltonian(
+        system, [dict(base), dict(base)]
+    )
+
+    sx, sy, _ = spin_operators(1)
+    strain_operator = sx**2 - sy**2
+
+    for e0, e1 in [(0.15, None), (0.15, -0.08)]:
+        parameters = [dict(base, E=e0), dict(base)]
+        if e1 is not None:
+            parameters[1]["E"] = e1
+
+        actual = nv_register_hamiltonian(system, parameters)
+        expected_change = (
+            e0 * embed_operator(strain_operator, 0, system)
+            + (0.0 if e1 is None else e1)
+            * embed_operator(strain_operator, 2, system)
+        )
+
+        assert (
+            actual - unstrained - expected_change
+        ).norm() < 1e-12
