@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from qutip import Qobj, basis, qeye, sigmax, sigmaz, tensor
+from qutip import Qobj, basis, qeye, sigmax, sigmay, sigmaz, tensor
 
+from echo_spin.control.microwave import control_hamiltonian
 from echo_spin.dynamics.propagators import (
     electron_nuclear_dynamical_map,
     logical_electron_nuclear_dynamical_map,
@@ -487,3 +488,75 @@ def test_reduced_dynamical_map_matches_exact_entangling_evolution(phase):
     )
     assert actual.tr() == pytest.approx(1.0)
     assert np.min(actual.eigenenergies()) >= -1e-12
+
+
+def test_circular_drive_matches_exact_rotating_frame_solution():
+    """Validate frame conventions and numerical lab-frame propagation."""
+    carrier = 5.0
+    detuning = 0.3
+    omega_0 = carrier + detuning
+    rabi_frequency = 0.8
+    duration = 0.7
+
+    generator = carrier * sigmaz() / 2
+    expected_rotating_hamiltonian = (
+        detuning * sigmaz() / 2
+        + rabi_frequency * sigmax() / 2
+    )
+
+    def lab_hamiltonian(time):
+        return control_hamiltonian(
+            time=time,
+            operators=[sigmax() / 2, sigmay() / 2, sigmaz() / 2],
+            amplitudes=[
+                lambda t: rabi_frequency * np.cos(carrier * t),
+                lambda t: rabi_frequency * np.sin(carrier * t),
+                omega_0,
+            ],
+        )
+
+    for time in [0.0, 0.13, duration]:
+        transformed = rotating_frame_hamiltonian(
+            time=time,
+            driven_hamiltonian=lab_hamiltonian,
+            generator=generator,
+        )
+
+        assert (
+            transformed - expected_rotating_hamiltonian
+        ).norm() < 1e-12
+
+    exact_rotating = (
+        -1j * expected_rotating_hamiltonian * duration
+    ).expm()
+    frame = (-1j * generator * duration).expm()
+    exact_lab = frame * exact_rotating
+
+    errors = []
+
+    for steps in [200, 400]:
+        numerical_lab = time_dependent_propagator(
+            hamiltonian=lab_hamiltonian,
+            t0=0.0,
+            t1=duration,
+            steps=steps,
+        )
+        numerical_rotating = rotating_frame_propagator(
+            propagator=numerical_lab,
+            generator=generator,
+            time=duration,
+        )
+
+        lab_error = np.linalg.norm(
+            numerical_lab.full() - exact_lab.full()
+        )
+        rotating_error = np.linalg.norm(
+            numerical_rotating.full() - exact_rotating.full()
+        )
+
+        # A unitary frame change preserves the Frobenius error.
+        assert rotating_error == pytest.approx(lab_error, abs=1e-12)
+        errors.append(rotating_error)
+
+    assert errors[1] < 0.005
+    assert errors[0] / errors[1] == pytest.approx(2.0, rel=0.05)
