@@ -2,7 +2,10 @@ import numpy as np
 import pytest
 from qutip import Qobj, basis, qeye, sigmax, sigmay, sigmaz, tensor
 
-from echo_spin.control.microwave import control_hamiltonian
+from echo_spin.control.microwave import (
+    control_hamiltonian,
+    linear_drive_qubit_hamiltonian,
+)
 from echo_spin.dynamics.propagators import (
     electron_nuclear_dynamical_map,
     logical_electron_nuclear_dynamical_map,
@@ -563,45 +566,63 @@ def test_circular_drive_matches_exact_rotating_frame_solution():
 
 
 def test_linear_drive_rwa_improves_with_carrier_frequency():
-    """Separate integration error from the counter-rotating approximation."""
+    """Validate public exact/RWA models while separating integration error."""
     rabi_frequency = 1.0
     duration = np.pi / rabi_frequency
-    rwa_hamiltonian = rabi_frequency * sigmax() / 2
-    rwa_propagator = (-1j * rwa_hamiltonian * duration).expm()
-
     approximation_errors = []
 
     for carrier in [10.0, 40.0]:
-        generator = carrier * sigmaz() / 2
+        parameters = dict(
+            omega_0=carrier,
+            carrier=carrier,
+            rabi_frequency=rabi_frequency,
+            phase=0.0,
+        )
 
         def lab_hamiltonian(time):
-            return (
-                generator
-                + rabi_frequency * np.cos(carrier * time) * sigmax()
+            """Evaluate the exact laboratory-frame reference model."""
+            return linear_drive_qubit_hamiltonian(
+                time=time,
+                frame="lab",
+                **parameters,
             )
 
         def exact_rotating_hamiltonian(time):
-            return (
-                rabi_frequency / 2
-                * (
-                    (1 + np.cos(2 * carrier * time)) * sigmax()
-                    - np.sin(2 * carrier * time) * sigmay()
-                )
+            """Evaluate the rotating-frame model with counter-rotating terms."""
+            return linear_drive_qubit_hamiltonian(
+                time=time,
+                frame="rotating",
+                rwa=False,
+                **parameters,
             )
 
-        # Check the exact transformed Hamiltonian before propagating it.
+        rwa_hamiltonian = linear_drive_qubit_hamiltonian(
+            time=0.0,
+            frame="rotating",
+            rwa=True,
+            **parameters,
+        )
+        rwa_propagator = (-1j * rwa_hamiltonian * duration).expm()
+
+        # A resonant RWA pi pulse must equal -i sigma_x.
+        assert np.allclose(
+            rwa_propagator.full(),
+            (-1j * sigmax()).full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+
         for time in [0.0, 0.137, duration]:
             transformed = rotating_frame_hamiltonian(
                 time=time,
                 driven_hamiltonian=lab_hamiltonian,
-                generator=generator,
+                generator=carrier * sigmaz() / 2,
             )
             assert (
                 transformed - exact_rotating_hamiltonian(time)
             ).norm() < 1e-12
 
-        # Resolve the counter-rotating frequency 2 * carrier:
-        # 40 steps per oscillation, followed by a doubled-resolution check.
+        # Resolve the counter-rotating period, then double the resolution.
         steps = int(np.ceil(
             40 * (2 * carrier) * duration / (2 * np.pi)
         ))
@@ -628,7 +649,6 @@ def test_linear_drive_rwa_improves_with_carrier_frequency():
 
         assert numerical_difference < 0.002
         assert numerical_difference < approximation_error / 5
-
         approximation_errors.append(approximation_error)
 
     assert approximation_errors[1] < 0.02
