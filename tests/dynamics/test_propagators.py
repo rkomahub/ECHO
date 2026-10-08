@@ -5,6 +5,7 @@ from qutip import Qobj, basis, qeye, sigmax, sigmaz, tensor
 from echo_spin.dynamics.propagators import (
     electron_nuclear_dynamical_map,
     logical_electron_nuclear_dynamical_map,
+    reduced_dynamical_map,
     rotating_frame_hamiltonian,
     rotating_frame_propagator,
     static_propagator,
@@ -451,3 +452,38 @@ def test_time_dependent_propagator_orders_noncommuting_intervals():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize("phase", [0.0, 0.3, np.pi / 4, np.pi / 2])
+def test_reduced_dynamical_map_matches_exact_entangling_evolution(phase):
+    """Check partial tracing against an exact system-environment solution."""
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    environment_state = basis(2, 0).proj()
+
+    # phase = g * t, with H = g Z_system X_environment.
+    propagator = (
+        -1j * phase * tensor(sigmaz(), sigmax())
+    ).expm()
+
+    actual = reduced_dynamical_map(
+        density_matrix=plus.proj(),
+        propagator=propagator,
+        environment_state=environment_state,
+        keep=[0],
+    )
+
+    coherence = np.cos(2 * phase)
+    expected = np.array([
+        [0.5, 0.5 * coherence],
+        [0.5 * coherence, 0.5],
+    ])
+
+    assert actual.dims == [[2], [2]]
+    assert np.allclose(
+        actual.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert actual.tr() == pytest.approx(1.0)
+    assert np.min(actual.eigenenergies()) >= -1e-12
