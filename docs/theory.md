@@ -767,3 +767,26 @@ vanishes, refocusing static longitudinal detuning.
 This scalar description applies to instantaneous transverse
 \(\pi\) pulses. Arbitrary rotations and finite pulses require
 a more general control matrix.
+
+### Ideal ZZ recoupling
+
+For a static interaction \(H_{ij}=J_{ij}Z_iZ_j\), ideal transverse
+\(\pi\) pulses produce
+\[
+\widetilde H_{ij}(t)=J_{ij}y_i(t)y_j(t)Z_iZ_j.
+\]
+The effective coefficient is
+\[
+J_{ij}^{\mathrm{eff}}
+=
+\frac{J_{ij}}{T}\int_0^T y_i(t)y_j(t)\,dt.
+\]
+
+The integral is evaluated exactly on the intervals formed by the
+merged pulse schedules. Identical schedules retain the coupling;
+a Hahn pulse on only one qubit cancels it.
+
+For this isolated commuting ZZ interaction, the coefficient reproduces
+the exact toggling-frame propagator. Additional noncommuting terms or
+finite pulses require further analysis. Any normalization prefactor
+in the original interaction is preserved.

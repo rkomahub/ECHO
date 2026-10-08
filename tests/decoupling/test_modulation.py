@@ -3,7 +3,10 @@ import pytest
 from qutip import qeye, sigmaz
 
 from echo_spin.control.rotations import single_qubit_rotation
-from echo_spin.decoupling.modulation import modulation_function
+from echo_spin.decoupling.modulation import (
+    effective_zz_coupling,
+    modulation_function,
+)
 
 
 def test_no_pulses_gives_constant_modulation():
@@ -71,3 +74,60 @@ def test_hahn_modulation_cancels_static_phase():
 def test_modulation_rejects_invalid_times(times, pulse_times):
     with pytest.raises(ValueError):
         modulation_function(times, pulse_times)
+
+
+@pytest.mark.parametrize(
+    "pulses_i, pulses_j, expected_factor",
+    [
+        ([], [], 1.0),
+        ([0.5], [0.5], 1.0),
+        ([0.5], [], 0.0),
+        ([], [0.5], 0.0),
+        ([0.25], [], -0.5),
+        ([0.2, 0.6], [0.4, 0.8], 0.2),
+    ],
+)
+def test_effective_zz_coupling(pulses_i, pulses_j, expected_factor):
+    """Check retention, cancellation and signed partial recoupling."""
+    coupling = -0.3
+
+    actual = effective_zz_coupling(
+        coupling=coupling,
+        total_duration=1.0,
+        pulse_times_i=pulses_i,
+        pulse_times_j=pulses_j,
+    )
+
+    assert actual == pytest.approx(coupling * expected_factor)
+
+
+def test_effective_zz_coupling_is_invariant_under_time_rescaling():
+    original = effective_zz_coupling(
+        0.3, 1.0, [0.2, 0.6], [0.4, 0.8]
+    )
+    rescaled = effective_zz_coupling(
+        0.3, 10.0, [2.0, 6.0], [4.0, 8.0]
+    )
+
+    assert rescaled == pytest.approx(original)
+
+
+@pytest.mark.parametrize(
+    "coupling, duration, pulses_i, pulses_j",
+    [
+        (np.nan, 1.0, [], []),
+        (0.3, 0.0, [], []),
+        (0.3, np.inf, [], []),
+        (0.3, 1.0, [1.1], []),
+        (0.3, 1.0, [], [1.1]),
+        (0.3, 1.0, [0.5, 0.5], []),
+        (0.3, 1.0, [], [0.8, 0.2]),
+    ],
+)
+def test_effective_zz_coupling_rejects_invalid_parameters(
+    coupling, duration, pulses_i, pulses_j
+):
+    with pytest.raises(ValueError):
+        effective_zz_coupling(
+            coupling, duration, pulses_i, pulses_j
+        )
