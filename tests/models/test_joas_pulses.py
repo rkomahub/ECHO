@@ -330,6 +330,62 @@ def test_finite_xy8_joas_gate_converges_to_sqrt_zz():
 
 # -----------------------------------------------------------------------
 
+def _assert_logical_subspace_survival(
+    propagator,
+    logical_states,
+    maximum_leakage=0.01,
+):
+    """Check leakage from each logical input and average projected survival."""
+    logical_projector = logical_states[0].proj()
+
+    for state in logical_states[1:]:
+        logical_projector += state.proj()
+
+    leakage_projector = (
+        qeye(propagator.dims[0]) - logical_projector
+    )
+
+    leakages = []
+
+    for initial_state in logical_states:
+        final_state = propagator * initial_state
+
+        logical_population = sum(
+            abs(state.overlap(final_state)) ** 2
+            for state in logical_states
+        )
+        leakage = float(
+            (leakage_projector * final_state).norm() ** 2
+        )
+        leakages.append(leakage)
+
+        assert logical_population + leakage == pytest.approx(
+            1.0, abs=1e-10
+        )
+        assert leakage < maximum_leakage, (
+            f"Logical-input leakage {leakage:.6g} exceeds "
+            f"{maximum_leakage:.6g}"
+        )
+
+    projected_propagator = project_operator(
+        propagator,
+        logical_states,
+    )
+
+    average_survival = float(
+        np.linalg.norm(
+            projected_propagator.full(),
+            ord="fro",
+        ) ** 2 / len(logical_states)
+    )
+
+    assert average_survival == pytest.approx(
+        1.0 - np.mean(leakages),
+        abs=1e-10,
+    )
+    assert average_survival > 1.0 - maximum_leakage
+
+
 def test_joas_nv1_physical_resonant_pi_pulse():
     """A physical resonant pi pulse on NV1 rotates the logical states."""
     system = SpinSystem([1])
@@ -403,9 +459,8 @@ def test_joas_nv1_physical_resonant_pi_pulse():
     assert population_one > 0.99
 
     _assert_logical_subspace_survival(
-        propagator,
-        logical_zero,
-        logical_one,
+    propagator,
+    [logical_zero, logical_one],
     )
 
 
@@ -479,8 +534,7 @@ def test_joas_nv2_physical_resonant_pi_pulse():
 
     _assert_logical_subspace_survival(
         propagator,
-        logical_zero,
-        logical_one,
+        [logical_zero, logical_one],
     )
 
 
@@ -555,7 +609,7 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
         excited_state="+1",
     )
 
-    zero_nv2, _ = electron_logical_states(
+    zero_nv2, one_nv2 = electron_logical_states(
         h_nv2,
         excited_state="-1",
     )
@@ -618,6 +672,166 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
     ) ** 2
 
     assert target_population > 0.99
+
+    logical_states = [
+        tensor(zero_nv1, zero_nv2),
+        tensor(zero_nv1, one_nv2),
+        tensor(one_nv1, zero_nv2),
+        tensor(one_nv1, one_nv2),
+    ]
+
+    _assert_logical_subspace_survival(
+        propagator,
+        logical_states,
+    )
+
+
+def test_joas_two_electron_nv2_physical_pi_pulse():
+    r"""The physical NV2 pulse survives embedding into the interacting \(9D\) system."""
+    system = SpinSystem([1])
+
+    omega = 2 * np.pi * 295.18
+
+    # --- Single-NV Hamiltonians ---
+
+    theta_nv1 = np.deg2rad(74.08)
+    omega_nv1 = omega * np.array([
+        np.sin(theta_nv1),
+        0.0,
+        np.cos(theta_nv1),
+    ])
+
+    h_nv1 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
+        omega_e=omega_nv1,
+    )
+
+    theta_nv2 = np.deg2rad(3.58)
+    omega_nv2 = omega * np.array([
+        np.sin(theta_nv2),
+        0.0,
+        np.cos(theta_nv2),
+    ])
+
+    h_nv2 = electronic_nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
+        omega_e=omega_nv2,
+    )
+
+    # --- Dressed interaction ---
+
+    basis_nv1 = dressed_spin_one_basis(h_nv1)
+    basis_nv2 = dressed_spin_one_basis(h_nv2)
+
+    _, _, sz_nv1 = dressed_spin_operators(
+        basis_states=basis_nv1,
+        spin=1,
+    )
+
+    _, _, sz_nv2 = dressed_spin_operators(
+        basis_states=basis_nv2,
+        spin=1,
+    )
+
+    coupling = 2 * np.pi * 0.11261
+
+    interaction = coupling * tensor(
+        sz_nv1,
+        sz_nv2,
+    )
+
+    h_two = two_electron_hamiltonian(
+        h_nv1=h_nv1,
+        h_nv2=h_nv2,
+        interaction=interaction,
+    )
+
+    # --- Logical states ---
+
+    zero_nv1, one_nv1 = electron_logical_states(
+        h_nv1,
+        excited_state="+1",
+    )
+
+    zero_nv2, one_nv2 = electron_logical_states(
+        h_nv2,
+        excited_state="-1",
+    )
+
+    initial_state = tensor(
+        zero_nv1,
+        zero_nv2,
+    )
+
+    target_state = tensor(
+        zero_nv1,
+        one_nv2,
+    )
+
+    # --- Physical NV2 microwave drive ---
+
+    sx, _, _ = spin_operators(1)
+
+    sx_nv2 = tensor(
+        qeye(3),
+        sx,
+    )
+
+    e0_nv2 = zero_nv2.dag() * h_nv2 * zero_nv2
+    e1_nv2 = one_nv2.dag() * h_nv2 * one_nv2
+
+    drive_frequency = float(
+        np.real(e1_nv2 - e0_nv2)
+    )
+
+    matrix_element = abs(
+        one_nv2.dag() * sx * zero_nv2
+    )
+
+    pulse_duration = 0.1
+
+    amplitude = np.pi / (
+        matrix_element * pulse_duration
+    )
+
+    def hamiltonian(time):
+        return (
+            h_two
+            + amplitude
+            * np.cos(drive_frequency * time)
+            * sx_nv2
+        )
+
+    propagator = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=pulse_duration,
+        steps=5000,
+    )
+
+    final_state = propagator * initial_state
+
+    target_population = abs(
+        target_state.overlap(final_state)
+    ) ** 2
+
+    assert target_population > 0.99
+
+    logical_states = [
+        tensor(zero_nv1, zero_nv2),
+        tensor(zero_nv1, one_nv2),
+        tensor(one_nv1, zero_nv2),
+        tensor(one_nv1, one_nv2),
+    ]
+
+    _assert_logical_subspace_survival(
+        propagator,
+        logical_states,
+    )
 
 
 def test_joas_nv1_conditional_transition_shift():
@@ -726,142 +940,6 @@ def test_joas_nv1_conditional_transition_shift():
         bare_frequency - coupling,
         abs=1e-10,
     )
-
-
-def test_joas_two_electron_nv2_physical_pi_pulse():
-    r"""The physical NV2 pulse survives embedding into the interacting \(9D\) system."""
-    system = SpinSystem([1])
-
-    omega = 2 * np.pi * 295.18
-
-    # --- Single-NV Hamiltonians ---
-
-    theta_nv1 = np.deg2rad(74.08)
-    omega_nv1 = omega * np.array([
-        np.sin(theta_nv1),
-        0.0,
-        np.cos(theta_nv1),
-    ])
-
-    h_nv1 = electronic_nv_hamiltonian(
-        system=system,
-        electron_site=0,
-        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
-        omega_e=omega_nv1,
-    )
-
-    theta_nv2 = np.deg2rad(3.58)
-    omega_nv2 = omega * np.array([
-        np.sin(theta_nv2),
-        0.0,
-        np.cos(theta_nv2),
-    ])
-
-    h_nv2 = electronic_nv_hamiltonian(
-        system=system,
-        electron_site=0,
-        D=2 * np.pi * 2865.42, # NV2 = nearly aligned control, -1-like transition ~2571.0 MHz
-        omega_e=omega_nv2,
-    )
-
-    # --- Dressed interaction ---
-
-    basis_nv1 = dressed_spin_one_basis(h_nv1)
-    basis_nv2 = dressed_spin_one_basis(h_nv2)
-
-    _, _, sz_nv1 = dressed_spin_operators(
-        basis_states=basis_nv1,
-        spin=1,
-    )
-
-    _, _, sz_nv2 = dressed_spin_operators(
-        basis_states=basis_nv2,
-        spin=1,
-    )
-
-    coupling = 2 * np.pi * 0.11261
-
-    interaction = coupling * tensor(
-        sz_nv1,
-        sz_nv2,
-    )
-
-    h_two = two_electron_hamiltonian(
-        h_nv1=h_nv1,
-        h_nv2=h_nv2,
-        interaction=interaction,
-    )
-
-    # --- Logical states ---
-
-    zero_nv1, _ = electron_logical_states(
-        h_nv1,
-        excited_state="+1",
-    )
-
-    zero_nv2, one_nv2 = electron_logical_states(
-        h_nv2,
-        excited_state="-1",
-    )
-
-    initial_state = tensor(
-        zero_nv1,
-        zero_nv2,
-    )
-
-    target_state = tensor(
-        zero_nv1,
-        one_nv2,
-    )
-
-    # --- Physical NV2 microwave drive ---
-
-    sx, _, _ = spin_operators(1)
-
-    sx_nv2 = tensor(
-        qeye(3),
-        sx,
-    )
-
-    e0_nv2 = zero_nv2.dag() * h_nv2 * zero_nv2
-    e1_nv2 = one_nv2.dag() * h_nv2 * one_nv2
-
-    drive_frequency = float(
-        np.real(e1_nv2 - e0_nv2)
-    )
-
-    matrix_element = abs(
-        one_nv2.dag() * sx * zero_nv2
-    )
-
-    pulse_duration = 0.1
-
-    amplitude = np.pi / (
-        matrix_element * pulse_duration
-    )
-
-    def hamiltonian(time):
-        return (
-            h_two
-            + amplitude
-            * np.cos(drive_frequency * time)
-            * sx_nv2
-        )
-
-    propagator = time_dependent_propagator(
-        hamiltonian=hamiltonian,
-        t0=0.0,
-        t1=pulse_duration,
-        steps=5000,
-    )
-
-    final_state = propagator * initial_state
-
-    target_population = abs(
-        target_state.overlap(final_state)
-    ) ** 2
-
-    assert target_population > 0.99
 
 # -----------------------------------------------------------
 
@@ -2003,59 +2081,3 @@ def test_joas_delayed_x_pulse_phase():
     print("ratio_delayed =", ratio_delayed)
     print("relative =", ratio_delayed / ratio_0)
 
-
-def _assert_logical_subspace_survival(
-    propagator,
-    logical_zero,
-    logical_one,
-    maximum_leakage=0.01,
-):
-    """Check logical-input leakage and unnormalized projected survival."""
-    logical_states = [logical_zero, logical_one]
-
-    logical_projector = (
-        logical_zero.proj() + logical_one.proj()
-    )
-    leakage_projector = (
-        qeye(propagator.dims[0]) - logical_projector
-    )
-
-    leakages = []
-
-    for initial_state in logical_states:
-        final_state = propagator * initial_state
-
-        logical_population = sum(
-            abs(state.overlap(final_state)) ** 2
-            for state in logical_states
-        )
-        leakage = float(
-            (leakage_projector * final_state).norm() ** 2
-        )
-        leakages.append(leakage)
-
-        assert logical_population + leakage == pytest.approx(
-            1.0, abs=1e-10
-        )
-        assert leakage < maximum_leakage, (
-            f"Logical-input leakage {leakage:.6g} exceeds "
-            f"{maximum_leakage:.6g}"
-        )
-
-    projected_propagator = project_operator(
-        propagator,
-        logical_states,
-    )
-
-    average_survival = float(
-        np.linalg.norm(
-            projected_propagator.full(),
-            ord="fro",
-        ) ** 2 / len(logical_states)
-    )
-
-    assert average_survival == pytest.approx(
-        1.0 - np.mean(leakages),
-        abs=1e-10,
-    )
-    assert average_survival > 1.0 - maximum_leakage
