@@ -300,7 +300,7 @@ def test_joas_setting_2_two_electron_spectrum():
     assert np.allclose(actual, expected)
 
     # Ground-state energy of the two-electron system
-    ground = actual[0]
+    # ground = actual[0]
 
     # Excite NV1 while NV2 remains in its ground state
     nv1_transitions = (
