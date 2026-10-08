@@ -685,3 +685,58 @@ def test_xy8_pulse_trains_stay_within_gate(tau_2, n_pi):
         assert len(train) == n_pi
         assert all(0 <= time <= total_duration for time in train)
         assert np.all(np.diff(train) > 0)
+
+
+@pytest.mark.parametrize("n_pi", [8, 16])
+def test_complete_xy8_cycles_generate_calibrated_sqrt_zz(n_pi):
+    """Validate schedule, timing and ideal gate for XY8-1 and XY8-2."""
+    nu_dip = 0.11261  # cycles per microsecond
+    coupling = 2 * np.pi * nu_dip
+
+    tau_2 = 1 / (4 * n_pi * nu_dip)
+    tau_1 = 2.5 * tau_2
+
+    schedule = xy8_gate_schedule(tau_1, tau_2, n_pi)
+    durations = xy8_gate_intervals(tau_1, tau_2, n_pi)
+    pulses = xy8_gate_pulses(tau_1, tau_2, n_pi)
+
+    cycle = ["x", "y", "x", "y", "y", "x", "y", "x"]
+
+    assert len(schedule) == len(pulses) == 2 * n_pi
+    assert len(durations) == 2 * n_pi + 1
+    assert all(duration >= 0 for duration in durations)
+    assert sum(durations) == pytest.approx(
+        sequence_duration(tau_1, n_pi),
+        abs=1e-12,
+    )
+
+    for nv in [1, 2]:
+        assert [
+            phase for _, label, phase in schedule if label == nv
+        ] == cycle * (n_pi // 8)
+
+    free = reduced_free_hamiltonian(
+        delta_1=0.31,
+        delta_2=-0.17,
+        coupling=coupling,
+    )
+    actual = finite_pulse_sequence_propagator(
+        free_hamiltonian=free,
+        durations=durations,
+        pulse_propagators=pulses,
+    ).full()
+
+    actual = actual * np.exp(-1j * np.angle(actual[0, 0]))
+
+    assert np.allclose(
+        actual,
+        sqrt_zz_gate().full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("n_pi", [1, 7, 9])
+def test_xy8_schedule_requires_complete_cycles(n_pi):
+    with pytest.raises(ValueError):
+        xy8_gate_schedule(1.0, 0.2, n_pi)

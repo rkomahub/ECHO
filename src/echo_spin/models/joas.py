@@ -144,24 +144,26 @@ def xy8_gate_times(
 def xy8_gate_schedule(
     tau_1: float,
     tau_2: float,
+    n_pi: int = 8,
 ):
-    """Return the chronological 16-pulse schedule of the Joas XY8-1 gate."""
-
+    """Return the chronological schedule for complete Joas XY8 cycles."""
     nv1_times, nv2_times = xy8_gate_times(
         tau_1=tau_1,
         tau_2=tau_2,
-        n_pi=8,
+        n_pi=n_pi,
     )
 
-    phases = ["x", "y", "x", "y", "y", "x", "y", "x"]
+    if n_pi % 8 != 0:
+        raise ValueError("n_pi must be a multiple of 8 for complete XY8 cycles.")
 
-    schedule = []
+    cycle = ["x", "y", "x", "y", "y", "x", "y", "x"]
+    phases = cycle * (n_pi // 8)
 
-    for time, phase in zip(nv1_times, phases):
-        schedule.append((time, 1, phase))
-
-    for time, phase in zip(nv2_times, phases):
-        schedule.append((time, 2, phase))
+    schedule = [
+        (time, nv, phase)
+        for nv, times in [(1, nv1_times), (2, nv2_times)]
+        for time, phase in zip(times, phases)
+    ]
 
     return sorted(schedule, key=lambda event: event[0])
 
@@ -169,50 +171,37 @@ def xy8_gate_schedule(
 def xy8_gate_intervals(
     tau_1: float,
     tau_2: float,
+    n_pi: int = 8,
 ):
-    """Return free-evolution intervals of the Joas XY8-1 gate."""
-
-    schedule = xy8_gate_schedule(
-        tau_1=tau_1,
-        tau_2=tau_2,
-    )
-
+    """Return free intervals for complete Joas XY8 cycles."""
+    schedule = xy8_gate_schedule(tau_1, tau_2, n_pi)
     pulse_times = [time for time, _, _ in schedule]
-    gate_duration = 8 * tau_1
+    gate_duration = sequence_duration(tau_1, n_pi)
 
     boundaries = [0.0] + pulse_times + [gate_duration]
 
     return [
-        boundaries[index + 1] - boundaries[index]
-        for index in range(len(boundaries) - 1)
+        following - previous
+        for previous, following in zip(boundaries[:-1], boundaries[1:])
     ]
 
 
 def xy8_gate_pulses(
     tau_1: float,
     tau_2: float,
+    n_pi: int = 8,
 ):
-    """Return chronological ideal pi pulses for the Joas XY8-1 gate."""
+    """Return chronological ideal pi pulses for complete Joas XY8 cycles."""
+    schedule = xy8_gate_schedule(tau_1, tau_2, n_pi)
 
-    schedule = xy8_gate_schedule(
-        tau_1=tau_1,
-        tau_2=tau_2,
-    )
-
-    pulses = []
-
-    for _, nv, phase in schedule:
-        qubit = 1 if nv == 1 else 0
-
-        pulses.append(
-            two_qubit_rotation(
-                qubit=qubit,
-                angle=np.pi,
-                axis=phase,
-            )
+    return [
+        two_qubit_rotation(
+            qubit=1 if nv == 1 else 0,
+            angle=np.pi,
+            axis=phase,
         )
-
-    return pulses
+        for _, nv, phase in schedule
+    ]
 
 
 def two_electron_hamiltonian(
