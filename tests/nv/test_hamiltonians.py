@@ -4,6 +4,11 @@ from qutip import basis
 
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
+from echo_spin.nv.frames import (
+    crystallographic_nv_axes,
+    local_frame_from_axis,
+    rotate_vector,
+)
 from echo_spin.nv.hamiltonians import (
     electronic_nv_hamiltonian,
     hyperfine_hamiltonian,
@@ -555,3 +560,78 @@ def test_rotated_nv_preserves_local_strain_term():
     )
 
     assert (hamiltonian - expected).norm() < 1e-12
+
+
+@pytest.mark.parametrize("index", range(4))
+@pytest.mark.parametrize("E", [0.0, 0.15])
+def test_oriented_nv_local_and_lab_hamiltonians_agree(index, E):
+    """Check field, ZFS and strain transformations for all four NV axes."""
+    D = 2.87
+    omega_lab = np.array([0.2, -0.1, 0.3])
+
+    axis = crystallographic_nv_axes()[index]
+    frame = local_frame_from_axis(axis, [0.0, 0.0, 1.0])
+    omega_local = rotate_vector(omega_lab, frame.T)
+
+    local_hamiltonian = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=D,
+        omega_e=omega_local,
+        E=E,
+    )
+
+    sx, sy, sz = spin_operators(1)
+    spin = [sx, sy, sz]
+
+    def spin_along(direction):
+        return sum(
+            component * operator
+            for component, operator in zip(direction, spin)
+        )
+
+    local_x_in_lab = spin_along(frame[:, 0])
+    local_y_in_lab = spin_along(frame[:, 1])
+    local_z_in_lab = spin_along(frame[:, 2])
+
+    lab_hamiltonian = (
+        D * local_z_in_lab**2
+        + E * (local_x_in_lab**2 - local_y_in_lab**2)
+        + spin_along(omega_lab)
+    )
+
+    # Euler angles for R = Rz(phi) Ry(theta) Rz(gamma).
+    theta = np.arccos(np.clip(axis[2], -1.0, 1.0))
+    phi = np.arctan2(axis[1], axis[0])
+
+    reference_x = np.array([
+        np.cos(theta) * np.cos(phi),
+        np.cos(theta) * np.sin(phi),
+        -np.sin(theta),
+    ])
+    reference_y = np.array([-np.sin(phi), np.cos(phi), 0.0])
+
+    gamma = np.arctan2(
+        reference_y @ frame[:, 0],
+        reference_x @ frame[:, 0],
+    )
+
+    spin_rotation = (
+        (-1j * phi * sz).expm()
+        * (-1j * theta * sy).expm()
+        * (-1j * gamma * sz).expm()
+    )
+
+    transformed = (
+        spin_rotation
+        * local_hamiltonian
+        * spin_rotation.dag()
+    )
+
+    assert (transformed - lab_hamiltonian).norm() < 1e-12
+    assert np.allclose(
+        local_hamiltonian.eigenenergies(),
+        lab_hamiltonian.eigenenergies(),
+        atol=1e-12,
+        rtol=0.0,
+    )
