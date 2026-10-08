@@ -311,3 +311,44 @@ def test_relative_operator_residual_zero_for_exact_match():
     )
 
     assert np.isclose(error, 0.0)
+
+
+@pytest.mark.parametrize("distance_nm", [0.5, 5.0, 20.0])
+def test_dipolar_geometry_is_independent_of_length_units(distance_nm):
+    """Metre and nanometre inputs describe the same physical coupling."""
+    positions_nm = np.array([
+        [0.0, 0.0, 0.0],
+        [distance_nm, 0.0, 0.0],
+    ])
+    positions_m = positions_nm * 1e-9
+
+    # C has dimensions frequency * length^3.
+    couplings_nm, directions_nm = dipolar_geometry(
+        positions_nm,
+        coupling_prefactor=1.0,
+    )
+    couplings_m, directions_m = dipolar_geometry(
+        positions_m,
+        coupling_prefactor=1e-27,
+    )
+
+    assert couplings_nm[0, 1] == pytest.approx(1 / distance_nm**3)
+    assert np.allclose(
+        couplings_m,
+        couplings_nm,
+        rtol=1e-12,
+        atol=0.0,
+    )
+    assert np.allclose(directions_m, directions_nm)
+
+
+def test_dipolar_geometry_rejects_coincident_positions():
+    "Dipolar geometry must reject coincident positions."
+    with pytest.raises(ValueError):
+        dipolar_geometry(
+            positions=[
+                [0.0, 0.0, 0.0],
+                [0.0, 0.0, 0.0],
+            ],
+            coupling_prefactor=1.0,
+        )

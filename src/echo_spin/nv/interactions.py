@@ -113,7 +113,7 @@ def dipolar_geometry(
             displacement = positions[j] - positions[i]
             distance = np.linalg.norm(displacement)
 
-            if np.isclose(distance, 0.0):
+            if distance == 0.0:
                 raise ValueError(
                     "Two spins cannot occupy the same position."
                 )
