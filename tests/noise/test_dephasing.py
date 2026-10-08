@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from qutip import basis, tensor
 
+from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.gates.gates import average_gate_fidelity, sqrt_zz_gate
 from echo_spin.noise.dephasing import (
     dephasing_channel,
@@ -535,3 +536,93 @@ def test_ensemble_ou_dephasing_matches_analytic_coherence():
     assert abs(
         normalized_coherence.imag
     ) < 5 * imag_standard_error
+
+
+def test_ou_hahn_echo_matches_analytic_coherence():
+    """Validate Hahn coherence using one continuous OU trajectory per run."""
+    sigma = 0.9
+    correlation_time = 0.8
+    total_time = 2.0
+    realizations = 1000
+    times = np.linspace(0.0, total_time, 41)
+    midpoint = (len(times) - 1) // 2
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = plus.proj()
+    pi_x = single_qubit_rotation(angle=np.pi, axis="x")
+    rng = np.random.default_rng(42)
+    average_density = 0 * initial_density
+
+    for _ in range(realizations):
+        noise = ornstein_uhlenbeck_noise(
+            times=times,
+            sigma=sigma,
+            correlation_time=correlation_time,
+            rng=rng,
+        )
+
+        first = stochastic_dephasing_propagator(
+            times=times[:midpoint + 1],
+            noise=noise[:midpoint + 1],
+        )
+        second = stochastic_dephasing_propagator(
+            times=times[midpoint:],
+            noise=noise[midpoint:],
+        )
+
+        # Remove the final control transformation to obtain the echo frame.
+        echo = pi_x.dag() * second * pi_x * first
+        average_density += echo * initial_density * echo.dag()
+
+    average_density /= realizations
+
+    sample_times = times[:-1]
+    weights = np.diff(times)
+    weights[midpoint:] *= -1
+
+    covariance = sigma**2 * np.exp(
+        -np.abs(sample_times[:, None] - sample_times[None, :])
+        / correlation_time
+    )
+    phase_variance = float(weights @ covariance @ weights)
+    sampled_coherence = np.exp(-phase_variance / 2)
+
+    ratio = total_time / correlation_time
+    analytic_coherence = np.exp(
+        -sigma**2
+        * correlation_time**2
+        * (
+            ratio - 3
+            + 4 * np.exp(-ratio / 2)
+            - np.exp(-ratio)
+        )
+    )
+
+    assert sampled_coherence == pytest.approx(
+        analytic_coherence,
+        rel=2e-3,
+    )
+
+    real_variance = (
+        (1 + np.exp(-2 * phase_variance)) / 2
+        - sampled_coherence**2
+    )
+    imag_variance = (1 - np.exp(-2 * phase_variance)) / 2
+
+    coherence = complex(
+        average_density[0, 1] / initial_density[0, 1]
+    )
+
+    assert abs(coherence.real - sampled_coherence) < (
+        5 * np.sqrt(real_variance / realizations)
+    )
+    assert abs(coherence.imag) < (
+        5 * np.sqrt(imag_variance / realizations)
+    )
+
+    fid_coherence = np.exp(
+        -sigma**2
+        * correlation_time**2
+        * (ratio - 1 + np.exp(-ratio))
+    )
+    assert analytic_coherence > fid_coherence

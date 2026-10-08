@@ -651,3 +651,32 @@ W(t)=
 Here \(\sigma\) is the stationary standard deviation in angular-frequency
 units. The numerical test accounts separately for time discretization
 and finite-ensemble sampling uncertainty.
+
+### Ideal Hahn echo under OU noise
+
+An instantaneous \(\pi_x\) pulse at \(t/2\) reverses the longitudinal
+noise coupling in the toggling frame. The accumulated phase becomes
+\[
+\phi_{\mathrm H}(t)
+=
+\int_0^{t/2}\delta\omega(s)\,ds
+-
+\int_{t/2}^{t}\delta\omega(s)\,ds.
+\]
+
+For stationary Gaussian OU noise,
+\[
+W_{\mathrm H}(t)
+=
+\exp\left[
+-\sigma^2\tau_c^2
+\left(
+\frac{t}{\tau_c}-3
++4e^{-t/(2\tau_c)}
+-e^{-t/\tau_c}
+\right)
+\right].
+\]
+
+The numerical validation preserves noise correlations across the pulse
+and compares coherence in the toggling frame.
