@@ -790,3 +790,18 @@ For this isolated commuting ZZ interaction, the coefficient reproduces
 the exact toggling-frame propagator. Additional noncommuting terms or
 finite pulses require further analysis. Any normalization prefactor
 in the original interaction is preserved.
+
+For the Joas reduced Hamiltonian, the coefficient multiplying
+\(Z_0Z_1\) is \(g/4\). The staggered ideal XY8 schedules give
+\[
+J_{\mathrm{eff}}
+=
+\frac{g}{4}\frac{2\tau_2}{\tau_1},
+\qquad T=N_\pi\tau_1.
+\]
+After removing the global phase, the odd-parity states acquire
+the phase
+\[
+2J_{\mathrm{eff}}T=gN_\pi\tau_2,
+\]
+consistent with the existing Joas interaction-time convention.

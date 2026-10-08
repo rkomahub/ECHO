@@ -3,6 +3,7 @@ import pytest
 from qutip import Qobj, qeye
 
 from echo_spin.control.rotations import two_qubit_rotation
+from echo_spin.decoupling.modulation import effective_zz_coupling
 from echo_spin.dynamics.sequences import (
     finite_pulse_sequence_propagator,
     toggling_hamiltonians,
@@ -591,3 +592,64 @@ def test_xy8_joas_sequence_generates_sqrt_zz():
         matrix,
         sqrt_zz_gate().full(),
     )
+
+
+@pytest.mark.parametrize("tau_2", [0.0, 0.2, 0.5])
+def test_joas_xy8_matches_generic_zz_recoupling(tau_2):
+    """Compare generic modulation with explicit ideal Joas propagation."""
+    tau_1 = 1.0
+    g = 0.08
+    total_duration = sequence_duration(tau_1=tau_1, n_pi=8)
+
+    nv1_times, nv2_times = xy8_gate_times(
+        tau_1=tau_1,
+        tau_2=tau_2,
+        n_pi=8,
+    )
+
+    effective = effective_zz_coupling(
+        coupling=g / 4,
+        total_duration=total_duration,
+        pulse_times_i=nv1_times,
+        pulse_times_j=nv2_times,
+    )
+
+    assert effective == pytest.approx(
+        (g / 4) * (2 * tau_2 / tau_1),
+        abs=1e-12,
+    )
+
+    free = reduced_free_hamiltonian(
+        delta_1=0.31,
+        delta_2=-0.17,
+        coupling=g,
+    )
+    pulses = xy8_gate_pulses(tau_1=tau_1, tau_2=tau_2)
+    hamiltonians = toggling_hamiltonians(
+        free_hamiltonian=free,
+        pulses=pulses,
+    )
+    actual = toggling_propagator(
+        hamiltonians=hamiltonians,
+        durations=xy8_gate_intervals(
+            tau_1=tau_1,
+            tau_2=tau_2,
+        ),
+    ).full()
+
+    # Remove the global phase; detunings should be refocused.
+    actual = actual * np.exp(-1j * np.angle(actual[0, 0]))
+
+    parity_phase = 2 * effective * total_duration
+    expected = np.diag([
+        1.0,
+        np.exp(1j * parity_phase),
+        np.exp(1j * parity_phase),
+        1.0,
+    ])
+
+    assert parity_phase == pytest.approx(
+        g * interaction_time(tau_2=tau_2, n_pi=8),
+        abs=1e-12,
+    )
+    assert np.allclose(actual, expected, atol=1e-12, rtol=0.0)
