@@ -214,6 +214,16 @@ The coordinate axes are \([100],[010],[001]\). These representatives
 do not specify the crystal's laboratory alignment or distinguish
 opposite defect polarities.
 
+A full local frame requires an NV axis and a transverse reference.
+The normalized NV axis defines \(\hat z\); projecting the reference
+onto its perpendicular plane defines \(\hat x\), with
+\(\hat y=\hat z\times\hat x\).
+
+The matrix \(R=(\hat x,\hat y,\hat z)\) maps local components to
+the original coordinates, while \(R^\mathsf{T}\) maps into the local
+frame. The strain parameter \(E\) is defined relative to these
+chosen transverse axes.
+
 ## basis.py
 
 The electronic Hamiltonian is diagonalized to obtain its energy eigenstates.

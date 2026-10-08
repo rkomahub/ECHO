@@ -3,6 +3,7 @@ import pytest
 
 from echo_spin.nv.frames import (
     crystallographic_nv_axes,
+    local_frame_from_axis,
     rotate_to_local_frame,
     rotate_vector,
     rotation_matrix,
@@ -119,3 +120,63 @@ def test_crystal_field_projections():
         axes @ field_111,
         [1.0, -1 / 3, -1 / 3, -1 / 3],
     )
+
+
+@pytest.mark.parametrize("index", range(4))
+def test_local_frames_for_crystallographic_axes(index):
+    axis = crystallographic_nv_axes()[index]
+    frame = local_frame_from_axis(axis, [0.0, 0.0, 1.0])
+
+    assert np.allclose(frame.T @ frame, np.eye(3), atol=1e-12)
+    assert np.linalg.det(frame) == pytest.approx(1.0)
+    assert np.allclose(frame[:, 2], axis)
+
+    # A vector along the NV axis has only a local z component.
+    assert np.allclose(
+        rotate_vector(axis, frame.T),
+        [0.0, 0.0, 1.0],
+        atol=1e-12,
+    )
+
+    vector = np.array([0.2, -0.3, 0.7])
+    local = rotate_vector(vector, frame.T)
+    recovered = rotate_vector(local, frame)
+
+    assert np.allclose(recovered, vector, atol=1e-12)
+
+
+def test_transverse_reference_fixes_local_xy_axes():
+    frame = local_frame_from_axis(
+        nv_axis=[0.0, 0.0, 2.0],
+        transverse_reference=[0.0, 3.0, 4.0],
+    )
+
+    # Local x follows global y; local y follows minus global x.
+    expected = np.array([
+        [0.0, -1.0, 0.0],
+        [1.0, 0.0, 0.0],
+        [0.0, 0.0, 1.0],
+    ])
+
+    assert np.allclose(frame, expected, atol=1e-12)
+    assert np.allclose(
+        rotate_vector([1.0, 0.0, 0.0], frame.T),
+        [0.0, -1.0, 0.0],
+    )
+
+
+@pytest.mark.parametrize(
+    "axis, reference",
+    [
+        ([0.0, 0.0, 0.0], [1.0, 0.0, 0.0]),
+        ([0.0, 0.0, 1.0], [0.0, 0.0, 0.0]),
+        ([0.0, 0.0, 1.0], [0.0, 0.0, 2.0]),
+        ([0.0, 0.0, 1.0], [0.0, 0.0, -2.0]),
+        ([0.0, np.nan, 1.0], [1.0, 0.0, 0.0]),
+        ([0.0, 1.0], [1.0, 0.0, 0.0]),
+        ([0.0, 0.0, 1.0], [1j, 0.0, 0.0]),
+    ],
+)
+def test_local_frame_rejects_invalid_vectors(axis, reference):
+    with pytest.raises(ValueError):
+        local_frame_from_axis(axis, reference)
