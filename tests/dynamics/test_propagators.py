@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import Qobj, basis, qeye, sigmax, tensor
+from qutip import Qobj, basis, qeye, sigmax, sigmaz, tensor
 
 from echo_spin.dynamics.propagators import (
     electron_nuclear_dynamical_map,
@@ -394,4 +394,60 @@ def test_logical_electron_nuclear_dynamical_map_preserves_leakage():
         result.tr(),
         0.0,
         atol=1e-12,
+    )
+
+
+def test_time_dependent_propagator_converges_for_linear_drive():
+    """Check convergence against the exact integral of H(t) = t sigma_x."""
+    t0 = 0.3
+    t1 = 1.1
+
+    def hamiltonian(time):
+        return time * sigmax()
+
+    integrated_amplitude = (t1**2 - t0**2) / 2
+    exact = (-1j * integrated_amplitude * sigmax()).expm()
+
+    errors = []
+
+    for steps in [20, 40]:
+        numerical = time_dependent_propagator(
+            hamiltonian=hamiltonian,
+            t0=t0,
+            t1=t1,
+            steps=steps,
+        )
+        errors.append(
+            np.linalg.norm(numerical.full() - exact.full())
+        )
+
+    # The current right-endpoint scheme has first-order global accuracy.
+    assert errors[1] < 0.02
+    assert errors[0] / errors[1] == pytest.approx(2.0, rel=0.01)
+
+
+def test_time_dependent_propagator_orders_noncommuting_intervals():
+    """Later evolution multiplies earlier evolution on the left."""
+    first = 0.3 * sigmax()
+    second = 0.4 * sigmaz()
+
+    def hamiltonian(time):
+        return first if time <= 0.5 else second
+
+    numerical = time_dependent_propagator(
+        hamiltonian=hamiltonian,
+        t0=0.0,
+        t1=1.0,
+        steps=2,
+    )
+    expected = (
+        (-1j * second * 0.5).expm()
+        * (-1j * first * 0.5).expm()
+    )
+
+    assert np.allclose(
+        numerical.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
     )
