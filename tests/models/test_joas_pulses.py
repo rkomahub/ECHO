@@ -1072,13 +1072,28 @@ def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
     assert population > 0.99
 
 
-def test_joas_nv1_finite_microwave_carrier_phase():
-    """A pi/2 carrier-phase shift changes the dressed rotation axis by pi/2."""
+@pytest.mark.parametrize(
+    "angle_degrees, splitting_mhz, excited_state",
+    [
+        pytest.param(
+            74.08, 2867.27, "+1", id="NV1"
+        ),
+        pytest.param(
+            3.58, 2865.42, "-1", id="NV2"
+        ),
+    ],
+)
+def test_joas_physical_microwave_carrier_phase(
+    angle_degrees,
+    splitting_mhz,
+    excited_state,
+):
+    """Check converged physical X/Y pi-gate fidelity and leakage for each NV."""
 
     system = SpinSystem([1])
 
     omega_e = 2 * np.pi * 295.18
-    theta_nv1 = np.deg2rad(74.08)
+    theta_nv1 = np.deg2rad(angle_degrees)
 
     omega_nv1 = omega_e * np.array([
         np.sin(theta_nv1),
@@ -1089,13 +1104,13 @@ def test_joas_nv1_finite_microwave_carrier_phase():
     h_nv1 = electronic_nv_hamiltonian(
         system=system,
         electron_site=0,
-        D=2 * np.pi * 2867.27, # NV1 = misaligned target, +1-like transition ~2990.8 MHz
+        D=2 * np.pi * splitting_mhz,
         omega_e=omega_nv1,
     )
 
     zero_nv1, one_nv1 = electron_logical_states(
         h_nv1,
-        excited_state="+1",
+        excited_state=excited_state,
     )
 
     sx, _, _ = spin_operators(1)
