@@ -1125,8 +1125,10 @@ def test_joas_nv1_finite_microwave_carrier_phase():
         )
     )
 
-    def pulse_propagator(phase):
+    def pulse_propagator(phase, steps):
+        """Return midpoint-sampled pulse evolution in the drift interaction picture."""
         def hamiltonian(time):
+            """Return the full spin-1 Hamiltonian during the microwave pulse."""
             envelope = sine_envelope(
                 time=time,
                 duration=pulse_duration,
@@ -1148,37 +1150,121 @@ def test_joas_nv1_finite_microwave_carrier_phase():
 
             return h_nv1 + microwave
 
-        return time_dependent_propagator(
-            hamiltonian=hamiltonian,
+        dt = pulse_duration / steps
+
+        def midpoint_hamiltonian(endpoint_time):
+            """Evaluate the physical Hamiltonian at the interval midpoint."""
+            return hamiltonian(endpoint_time - dt / 2)
+
+        lab_propagator = time_dependent_propagator(
+            hamiltonian=midpoint_hamiltonian,
             t0=0.0,
             t1=pulse_duration,
-            steps=5000,
+            steps=steps,
         )
 
-    x_logical = project_operator(
-        operator=pulse_propagator(0.0),
-        basis_states=[zero_nv1, one_nv1],
+        return (
+            (1j * h_nv1 * pulse_duration).expm()
+            * lab_propagator
+        )
+
+    logical_states = [zero_nv1, one_nv1]
+
+    transition_element = complex(
+        one_nv1.dag() * sx * zero_nv1
+    )
+    transition_phase = (
+        transition_element / abs(transition_element)
     )
 
-    y_logical = project_operator(
-        operator=pulse_propagator(np.pi / 2),
-        basis_states=[zero_nv1, one_nv1],
-    )
+    for phase in [0.0, np.pi / 2]:
+        coarse_propagator = pulse_propagator(
+            phase,
+            steps=5000,
+        )
+        propagator = pulse_propagator(
+            phase,
+            steps=10000,
+        )
 
-    x_ratio = (
-        x_logical.full()[0, 1]
-        / x_logical.full()[1, 0]
-    )
+        coarse_projected = project_operator(
+            operator=coarse_propagator,
+            basis_states=logical_states,
+        ).full()
 
-    y_ratio = (
-        y_logical.full()[0, 1]
-        / y_logical.full()[1, 0]
-    )
+        _assert_logical_subspace_survival(
+            propagator,
+            logical_states,
+        )
 
-    assert y_ratio / x_ratio == pytest.approx(
-        -1.0,
-        abs=1e-2,
-    )
+        projected = project_operator(
+            operator=propagator,
+            basis_states=logical_states,
+        ).full()
+
+        # Preserve the phase convention of the dressed eigenstates.
+        ideal_pi = -1j * np.array(
+            [
+                [
+                    0.0,
+                    np.conjugate(transition_phase)
+                    * np.exp(1j * phase),
+                ],
+                [
+                    transition_phase * np.exp(-1j * phase),
+                    0.0,
+                ],
+            ],
+            dtype=complex,
+        )
+
+        survival = float(
+            np.trace(
+                projected.conj().T @ projected
+            ).real / 2
+        )
+
+        overlap = np.trace(
+            ideal_pi.conj().T @ projected
+        )
+
+        # Average target-state fidelity includes loss from the logical subspace.
+        average_fidelity = float(
+            (
+                2 * survival
+                + abs(overlap) ** 2
+            ) / 6
+        )
+
+        coarse_survival = float(
+            np.trace(
+                coarse_projected.conj().T @ coarse_projected
+            ).real / 2
+        )
+        coarse_overlap = np.trace(
+            ideal_pi.conj().T @ coarse_projected
+        )
+        coarse_fidelity = float(
+            (
+                2 * coarse_survival
+                + abs(coarse_overlap) ** 2
+            ) / 6
+        )
+
+        assert abs(
+            average_fidelity - coarse_fidelity
+        ) < 1e-3, (
+            "Gate fidelity has not converged: "
+            f"5000 steps = {coarse_fidelity:.8f}, "
+            f"10000 steps = {average_fidelity:.8f}"
+        )
+
+        assert average_fidelity <= survival + 1e-10
+        assert average_fidelity > 0.99, (
+            f"Carrier phase {phase:.6g}: "
+            f"average fidelity = {average_fidelity:.6g}, "
+            f"survival = {survival:.6g}"
+        )
 
 
 def test_joas_nv1_finite_sine_pi_pulse_in_interacting_pair():
