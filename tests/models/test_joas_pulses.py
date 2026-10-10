@@ -1071,7 +1071,13 @@ def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
 
     assert population > 0.99
 
-
+@pytest.mark.parametrize(
+    "pulse_angle",
+    [
+        pytest.param(np.pi, id="pi"),
+        pytest.param(np.pi / 2, id="half_pi"),
+    ],
+)
 @pytest.mark.parametrize(
     "angle_degrees, splitting_mhz, excited_state",
     [
@@ -1087,8 +1093,9 @@ def test_joas_physical_microwave_carrier_phase(
     angle_degrees,
     splitting_mhz,
     excited_state,
+    pulse_angle,
 ):
-    """Check converged physical X/Y pi-gate fidelity and leakage for each NV."""
+    """Check converged physical X/Y rotations and leakage for both NV centers."""
 
     system = SpinSystem([1])
 
@@ -1131,7 +1138,7 @@ def test_joas_physical_microwave_carrier_phase(
     pulse_duration = 0.1
 
     peak_amplitude = (
-        np.pi**2
+        pulse_angle * np.pi
         / (
             2
             * np.sqrt(2.0)
@@ -1218,7 +1225,7 @@ def test_joas_physical_microwave_carrier_phase(
         ).full()
 
         # Preserve the phase convention of the dressed eigenstates.
-        ideal_pi = -1j * np.array(
+        logical_axis = np.array(
             [
                 [
                     0.0,
@@ -1233,6 +1240,14 @@ def test_joas_physical_microwave_carrier_phase(
             dtype=complex,
         )
 
+        ideal_rotation = (
+            np.cos(pulse_angle / 2)
+            * np.eye(2, dtype=complex)
+            - 1j
+            * np.sin(pulse_angle / 2)
+            * logical_axis
+        )
+
         survival = float(
             np.trace(
                 projected.conj().T @ projected
@@ -1240,7 +1255,7 @@ def test_joas_physical_microwave_carrier_phase(
         )
 
         overlap = np.trace(
-            ideal_pi.conj().T @ projected
+            ideal_rotation.conj().T @ projected
         )
 
         # Average target-state fidelity includes loss from the logical subspace.
@@ -1257,7 +1272,7 @@ def test_joas_physical_microwave_carrier_phase(
             ).real / 2
         )
         coarse_overlap = np.trace(
-            ideal_pi.conj().T @ coarse_projected
+            ideal_rotation.conj().T @ coarse_projected
         )
         coarse_fidelity = float(
             (
