@@ -635,3 +635,117 @@ def test_oriented_nv_local_and_lab_hamiltonians_agree(index, E):
         atol=1e-12,
         rtol=0.0,
     )
+
+
+def test_axial_nv_hyperfine_resolved_transitions():
+    """Verify axial product-state energies and nuclear-resolved MW transitions."""
+    system = SpinSystem([1, 1])
+
+    # Synthetic angular-frequency parameters isolate the analytical limit.
+    D = 30.0
+    omega_e_z = 4.0
+    Q = -2.0
+    omega_n_z = 0.3
+    A_parallel = 0.7
+
+    hamiltonian = nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        D=D,
+        omega_e=[0.0, 0.0, omega_e_z],
+        Q=Q,
+        omega_n=[0.0, 0.0, omega_n_z],
+        A=np.diag([0.0, 0.0, A_parallel]),
+    )
+
+    sx, _, _ = spin_operators(1)
+    microwave_operator = embed_operator(
+        sx,
+        0,
+        system,
+    )
+
+    projections = [1, 0, -1]
+    expected_energies = []
+
+    for electron_index, m_s in enumerate(projections):
+        for nuclear_index, m_i in enumerate(projections):
+            state = basis(
+                [3, 3],
+                [electron_index, nuclear_index],
+            )
+
+            expected_energy = (
+                D * m_s**2
+                + omega_e_z * m_s
+                + Q * m_i**2
+                + omega_n_z * m_i
+                + A_parallel * m_s * m_i
+            )
+            expected_energies.append(expected_energy)
+
+            assert (
+                hamiltonian * state
+                - expected_energy * state
+            ).norm() < 1e-12
+
+    np.testing.assert_allclose(
+        hamiltonian.eigenenergies(),
+        np.sort(expected_energies),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    for nuclear_index, m_i in enumerate(projections):
+        initial = basis([3, 3], [1, nuclear_index])
+        initial_energy = float(
+            np.real(initial.dag() * hamiltonian * initial)
+        )
+
+        for electron_index, m_s in [(0, 1), (2, -1)]:
+            final = basis(
+                [3, 3],
+                [electron_index, nuclear_index],
+            )
+            final_energy = float(
+                np.real(final.dag() * hamiltonian * final)
+            )
+
+            expected_frequency = (
+                D
+                + m_s * omega_e_z
+                + A_parallel * m_s * m_i
+            )
+
+            assert final_energy - initial_energy == pytest.approx(
+                expected_frequency,
+                abs=1e-12,
+            )
+
+            strength = abs(
+                final.dag() * microwave_operator * initial
+            ) ** 2
+            assert strength == pytest.approx(
+                0.5,
+                abs=1e-12,
+            )
+
+            for other_nuclear_index in range(3):
+                if other_nuclear_index == nuclear_index:
+                    continue
+
+                forbidden_final = basis(
+                    [3, 3],
+                    [electron_index, other_nuclear_index],
+                )
+                forbidden_strength = abs(
+                    forbidden_final.dag()
+                    * microwave_operator
+                    * initial
+                ) ** 2
+
+                assert forbidden_strength == pytest.approx(
+                    0.0,
+                    abs=1e-12,
+                )
