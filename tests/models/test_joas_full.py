@@ -36,6 +36,7 @@ from echo_spin.models.joas import xy8_gate_schedule
 from echo_spin.noise.dephasing import two_qubit_dephasing_channel
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian, nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
+from echo_spin.spectroscopy.transitions import allowed_transitions
 
 
 def test_full_nv_register_noninteracting_factorization():
@@ -248,6 +249,67 @@ def test_full_nv_register_noninteracting_factorization():
     ).norm() < 1e-10
     assert np.min(reduced_density.eigenenergies()) > -1e-10
 
+    # Each electron-only control must preserve the other NV's full state.
+    sx, _, _ = spin_operators(1)
+    local_control = embed_operator(
+        sx,
+        0,
+        local_system,
+    )
+
+    threshold = 1e-10
+
+    for local_hamiltonian, electron_site in zip(
+        local_hamiltonians,
+        [0, 2],
+    ):
+        local_transitions = allowed_transitions(
+            hamiltonian=local_hamiltonian,
+            control_operator=local_control,
+            threshold=threshold,
+        )
+
+        expected_lines = sorted([
+            (frequency, strength)
+            for frequency, strength, i, j in local_transitions
+            if i == 0
+        ])
+
+        full_control = embed_operator(
+            sx,
+            electron_site,
+            full_system,
+        )
+
+        full_transitions = allowed_transitions(
+            hamiltonian=full_hamiltonian,
+            control_operator=full_control,
+            threshold=threshold,
+        )
+
+        measured_lines = sorted([
+            (frequency, strength)
+            for frequency, strength, i, j in full_transitions
+            if i == 0
+        ])
+
+        assert len(expected_lines) > 0
+        assert len(measured_lines) == len(expected_lines)
+
+        np.testing.assert_allclose(
+            np.array(measured_lines)[:, 0],
+            np.array(expected_lines)[:, 0],
+            atol=1e-8,
+            rtol=0.0,
+        )
+
+        np.testing.assert_allclose(
+            np.array(measured_lines)[:, 1],
+            np.array(expected_lines)[:, 1],
+            atol=1e-10,
+            rtol=0.0,
+        )
+
 
 def test_full_axial_nv_pair_interacting_spectrum():
     """Verify all 81 axial pair energies including hyperfine and electron coupling."""
@@ -333,6 +395,108 @@ def test_full_axial_nv_pair_interacting_spectrum():
         atol=1e-11,
         rtol=0.0,
     )
+
+    # Logical |0> = mS=0 and logical |1> = mS=+1 on each electron.
+    logical_basis = [
+        tensor(basis(3, 1), basis(3, 1)),
+        tensor(basis(3, 1), basis(3, 0)),
+        tensor(basis(3, 0), basis(3, 1)),
+        tensor(basis(3, 0), basis(3, 0)),
+    ]
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    logical_density = tensor(plus, plus).proj()
+
+    nuclear_probabilities = [
+        np.array([1 / 3, 1 / 3, 1 / 3]),
+        np.array([0.2, 0.3, 0.5]),
+    ]
+
+    nuclear_states = [
+        sum(
+            probability * basis(3, index).proj()
+            for index, probability in enumerate(probabilities)
+        )
+        for probabilities in nuclear_probabilities
+    ]
+
+    evolution_time = 0.37
+
+    propagator = static_propagator(
+        hamiltonian=hamiltonian,
+        time=evolution_time,
+    )
+
+    reduced_density = logical_electron_nuclear_dynamical_map(
+        density_matrix=logical_density,
+        propagator=propagator,
+        logical_basis=logical_basis,
+        nuclear_states=nuclear_states,
+    )
+
+    logical_projections = [
+        (0, 0),
+        (0, 1),
+        (1, 0),
+        (1, 1),
+    ]
+    nuclear_projections = np.array([1, 0, -1])
+
+    electronic_energies = np.array([
+        30.0 * m_one**2
+        + 4.0 * m_one
+        + 32.0 * m_two**2
+        + 3.5 * m_two
+        + coupling * m_one * m_two
+        for m_one, m_two in logical_projections
+    ])
+
+    expected_density = np.zeros((4, 4), dtype=complex)
+
+    for a, projections_a in enumerate(logical_projections):
+        for b, projections_b in enumerate(logical_projections):
+            coherence_factor = 1.0 + 0.0j
+
+            for site, hyperfine_coupling in enumerate([0.7, -0.6]):
+                projection_difference = (
+                    projections_a[site] - projections_b[site]
+                )
+
+                coherence_factor *= np.sum(
+                    nuclear_probabilities[site]
+                    * np.exp(
+                        -1j
+                        * hyperfine_coupling
+                        * projection_difference
+                        * nuclear_projections
+                        * evolution_time
+                    )
+                )
+
+            expected_density[a, b] = (
+                0.25
+                * np.exp(
+                    -1j
+                    * (electronic_energies[a] - electronic_energies[b])
+                    * evolution_time
+                )
+                * coherence_factor
+            )
+
+    np.testing.assert_allclose(
+        reduced_density.full(),
+        expected_density,
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    assert abs(reduced_density.tr() - 1.0) < 1e-10
+    assert np.min(reduced_density.eigenenergies()) > -1e-10
+
+    purity = float(
+        np.real((reduced_density * reduced_density).tr())
+    )
+    assert purity < 1.0 - 1e-4
 
 # -----------------------------------------------------------------
 
