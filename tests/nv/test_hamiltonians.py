@@ -749,3 +749,89 @@ def test_axial_nv_hyperfine_resolved_transitions():
                     0.0,
                     abs=1e-12,
                 )
+
+
+@pytest.mark.parametrize("projection", [1, -1])
+@pytest.mark.parametrize("A_perp", [0.0, 0.4, -0.4])
+def test_transverse_hyperfine_mixing_block(projection, A_perp):
+    """Verify transverse hyperfine coupling and exact axial block energies."""
+    system = SpinSystem([1, 1])
+
+    D = 30.0
+    omega_e_z = 4.0
+    Q = -2.0
+    omega_n_z = 0.3
+    A_parallel = 0.7
+
+    hamiltonian = nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        D=D,
+        omega_e=[0.0, 0.0, omega_e_z],
+        Q=Q,
+        omega_n=[0.0, 0.0, omega_n_z],
+        A=np.diag([A_perp, A_perp, A_parallel]),
+    )
+
+    projection_index = 0 if projection == 1 else 2
+
+    electron_excited = basis(
+        [3, 3],
+        [projection_index, 1],
+    )
+    nuclear_excited = basis(
+        [3, 3],
+        [1, projection_index],
+    )
+
+    electron_energy = D + projection * omega_e_z
+    nuclear_energy = Q + projection * omega_n_z
+
+    # These two states span an invariant total-projection sector.
+    assert (
+        hamiltonian * electron_excited
+        - electron_energy * electron_excited
+        - A_perp * nuclear_excited
+    ).norm() < 1e-12
+
+    assert (
+        hamiltonian * nuclear_excited
+        - A_perp * electron_excited
+        - nuclear_energy * nuclear_excited
+    ).norm() < 1e-12
+
+    mean_energy = (
+        electron_energy + nuclear_energy
+    ) / 2
+    half_gap = np.sqrt(
+        ((electron_energy - nuclear_energy) / 2) ** 2
+        + A_perp**2
+    )
+
+    expected_energies = [
+        mean_energy - half_gap,
+        mean_energy + half_gap,
+    ]
+
+    block_projector = (
+        electron_excited.proj()
+        + nuclear_excited.proj()
+    )
+
+    # Obtain the block eigenvalues from the full nine-dimensional model.
+    energies, eigenstates = hamiltonian.eigenstates()
+    block_energies = [
+        energy
+        for energy, state in zip(energies, eigenstates)
+        if (block_projector * state).norm() ** 2 > 1 - 1e-10
+    ]
+
+    assert len(block_energies) == 2
+
+    np.testing.assert_allclose(
+        np.sort(block_energies),
+        expected_energies,
+        atol=1e-12,
+        rtol=0.0,
+    )
