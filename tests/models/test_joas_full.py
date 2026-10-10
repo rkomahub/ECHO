@@ -140,6 +140,114 @@ def test_full_nv_register_noninteracting_factorization():
         rtol=0.0,
     )
 
+    # Different nuclear states make exchanged subsystem labels detectable.
+    nuclear_one = (
+        basis(3, 0) + 1j * basis(3, 1)
+    ).unit().proj()
+
+    nuclear_two = (
+        0.2 * basis(3, 0).proj()
+        + 0.3 * basis(3, 1).proj()
+        + 0.5 * basis(3, 2).proj()
+    )
+
+    electron_one_states = [
+        basis(3, 0),
+        basis(3, 1),
+    ]
+    electron_two_states = [
+        basis(3, 1),
+        basis(3, 2),
+    ]
+
+    coefficients = np.array(
+        [1.0, 1j],
+        dtype=complex,
+    ) / np.sqrt(2)
+
+    electron_state = (
+        coefficients[0]
+        * tensor(
+            electron_one_states[0],
+            electron_two_states[0],
+        )
+        + coefficients[1]
+        * tensor(
+            electron_one_states[1],
+            electron_two_states[1],
+        )
+    )
+    electron_density = electron_state.proj()
+
+    reduced_density = electron_nuclear_dynamical_map(
+        density_matrix=electron_density,
+        propagator=full_propagator,
+        nuclear_states=[nuclear_one, nuclear_two],
+    )
+
+    local_propagators = [
+        static_propagator(
+            hamiltonian=hamiltonian,
+            time=evolution_time,
+        )
+        for hamiltonian in local_hamiltonians
+    ]
+
+    def local_electron_map(operator, propagator, nuclear_state):
+        """Evolve one electron operator with its nucleus and trace out the nucleus."""
+        joint_operator = tensor(operator, nuclear_state)
+        evolved = (
+            propagator
+            * joint_operator
+            * propagator.dag()
+        )
+        return evolved.ptrace(0)
+
+    expected_density = 0 * electron_density
+
+    # Apply the two independent local maps to every entangled-state term.
+    for a in range(2):
+        for b in range(2):
+            operator_one = (
+                electron_one_states[a]
+                * electron_one_states[b].dag()
+            )
+            operator_two = (
+                electron_two_states[a]
+                * electron_two_states[b].dag()
+            )
+
+            expected_density += (
+                coefficients[a]
+                * np.conjugate(coefficients[b])
+                * tensor(
+                    local_electron_map(
+                        operator_one,
+                        local_propagators[0],
+                        nuclear_one,
+                    ),
+                    local_electron_map(
+                        operator_two,
+                        local_propagators[1],
+                        nuclear_two,
+                    ),
+                )
+            )
+
+    np.testing.assert_allclose(
+        reduced_density.full(),
+        expected_density.full(),
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    assert reduced_density.dims == [[3, 3], [3, 3]]
+    assert abs(reduced_density.tr() - 1.0) < 1e-10
+    assert (
+        reduced_density - reduced_density.dag()
+    ).norm() < 1e-10
+    assert np.min(reduced_density.eigenenergies()) > -1e-10
+
 
 def test_joas_setting_2_full_nv_hamiltonian():
     """Build and evolve the full Joas Setting 2 model with N14 nuclei."""
