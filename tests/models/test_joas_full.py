@@ -34,8 +34,111 @@ from echo_spin.gates.gates import (
 )
 from echo_spin.models.joas import xy8_gate_schedule
 from echo_spin.noise.dephasing import two_qubit_dephasing_channel
-from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian, nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
+
+
+def test_full_nv_register_noninteracting_factorization():
+    """Verify the 81D register spectrum and evolution against independent NV factors."""
+    local_system = SpinSystem([1, 1])
+    full_system = SpinSystem([1, 1, 1, 1])
+
+    hyperfine = 2 * np.pi * np.diag(
+        [-2.62, -2.62, -2.162]
+    )
+
+    parameters = []
+
+    for splitting_mhz, angle_degrees in [
+        (2867.27, 74.08),
+        (2865.42, 3.58),
+    ]:
+        angle = np.deg2rad(angle_degrees)
+        direction = np.array(
+            [np.sin(angle), 0.0, np.cos(angle)]
+        )
+
+        parameters.append(
+            {
+                "D": 2 * np.pi * splitting_mhz,
+                "omega_e": 2 * np.pi * 295.18 * direction,
+                "Q": 2 * np.pi * (-4.945),
+                "omega_n": 2 * np.pi * 0.03241 * direction,
+                "A": hyperfine,
+            }
+        )
+
+    local_hamiltonians = [
+        nv_hamiltonian(
+            system=local_system,
+            electron_site=0,
+            nuclear_site=1,
+            **nv_parameters,
+        )
+        for nv_parameters in parameters
+    ]
+
+    full_hamiltonian = nv_register_hamiltonian(
+        system=full_system,
+        nv_parameters=parameters,
+    )
+
+    h_one, h_two = local_hamiltonians
+    local_identity = qeye([3, 3])
+
+    expected_hamiltonian = (
+        tensor(h_one, local_identity)
+        + tensor(local_identity, h_two)
+    )
+
+    assert full_hamiltonian.dims == [
+        [3, 3, 3, 3],
+        [3, 3, 3, 3],
+    ]
+
+    np.testing.assert_allclose(
+        full_hamiltonian.full(),
+        expected_hamiltonian.full(),
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    expected_energies = (
+        h_one.eigenenergies()[:, None]
+        + h_two.eigenenergies()[None, :]
+    ).ravel()
+
+    np.testing.assert_allclose(
+        full_hamiltonian.eigenenergies(),
+        np.sort(expected_energies),
+        atol=1e-9,
+        rtol=0.0,
+    )
+
+    evolution_time = 0.013
+
+    full_propagator = static_propagator(
+        hamiltonian=full_hamiltonian,
+        time=evolution_time,
+    )
+
+    expected_propagator = tensor(
+        static_propagator(
+            hamiltonian=h_one,
+            time=evolution_time,
+        ),
+        static_propagator(
+            hamiltonian=h_two,
+            time=evolution_time,
+        ),
+    )
+
+    np.testing.assert_allclose(
+        full_propagator.full(),
+        expected_propagator.full(),
+        atol=1e-10,
+        rtol=0.0,
+    )
 
 
 def test_joas_setting_2_full_nv_hamiltonian():
