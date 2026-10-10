@@ -249,6 +249,93 @@ def test_full_nv_register_noninteracting_factorization():
     assert np.min(reduced_density.eigenenergies()) > -1e-10
 
 
+def test_full_axial_nv_pair_interacting_spectrum():
+    """Verify all 81 axial pair energies including hyperfine and electron coupling."""
+    system = SpinSystem([1, 1, 1, 1])
+
+    # Synthetic angular-frequency parameters give an exact analytical reference.
+    parameters = [
+        {
+            "D": 30.0,
+            "omega_e": [0.0, 0.0, 4.0],
+            "Q": -2.0,
+            "omega_n": [0.0, 0.0, 0.3],
+            "A": np.diag([0.0, 0.0, 0.7]),
+        },
+        {
+            "D": 32.0,
+            "omega_e": [0.0, 0.0, 3.5],
+            "Q": -2.3,
+            "omega_n": [0.0, 0.0, 0.2],
+            "A": np.diag([0.0, 0.0, -0.6]),
+        },
+    ]
+
+    local_hamiltonian = nv_register_hamiltonian(
+        system=system,
+        nv_parameters=parameters,
+    )
+
+    _, _, sz = spin_operators(1)
+
+    sz_one = embed_operator(sz, 0, system)
+    sz_two = embed_operator(sz, 2, system)
+
+    coupling = 0.27
+    hamiltonian = (
+        local_hamiltonian
+        + coupling * sz_one * sz_two
+    )
+
+    projections = [1, 0, -1]
+    expected_energies = []
+
+    for e_one, m_s_one in enumerate(projections):
+        for n_one, m_i_one in enumerate(projections):
+            for e_two, m_s_two in enumerate(projections):
+                for n_two, m_i_two in enumerate(projections):
+                    state = basis(
+                        [3, 3, 3, 3],
+                        [e_one, n_one, e_two, n_two],
+                    )
+
+                    energy_one = (
+                        30.0 * m_s_one**2
+                        + 4.0 * m_s_one
+                        - 2.0 * m_i_one**2
+                        + 0.3 * m_i_one
+                        + 0.7 * m_s_one * m_i_one
+                    )
+
+                    energy_two = (
+                        32.0 * m_s_two**2
+                        + 3.5 * m_s_two
+                        - 2.3 * m_i_two**2
+                        + 0.2 * m_i_two
+                        - 0.6 * m_s_two * m_i_two
+                    )
+
+                    expected_energy = (
+                        energy_one
+                        + energy_two
+                        + coupling * m_s_one * m_s_two
+                    )
+                    expected_energies.append(expected_energy)
+
+                    assert (
+                        hamiltonian * state
+                        - expected_energy * state
+                    ).norm() < 1e-12
+
+    np.testing.assert_allclose(
+        hamiltonian.eigenenergies(),
+        np.sort(expected_energies),
+        atol=1e-11,
+        rtol=0.0,
+    )
+
+# -----------------------------------------------------------------
+
 def test_joas_setting_2_full_nv_hamiltonian():
     """Build and evolve the full Joas Setting 2 model with N14 nuclei."""
 
