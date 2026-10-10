@@ -538,6 +538,68 @@ def test_joas_nv2_physical_resonant_pi_pulse():
     )
 
 
+def _assert_physical_pair_pi_gate(
+    propagator,
+    drift,
+    duration,
+    logical_states,
+    transition_element,
+    driven_site,
+):
+    """Check pair pi-gate fidelity after removing known drift evolution."""
+    interaction_propagator = (
+        (1j * drift * duration).expm()
+        * propagator
+    )
+
+    projected = project_operator(
+        operator=interaction_propagator,
+        basis_states=logical_states,
+    ).full()
+
+    transition_phase = (
+        transition_element / abs(transition_element)
+    )
+
+    local_pi = -1j * np.array(
+        [
+            [0.0, np.conjugate(transition_phase)],
+            [transition_phase, 0.0],
+        ],
+        dtype=complex,
+    )
+
+    identity = np.eye(2, dtype=complex)
+
+    if driven_site == 0:
+        ideal_gate = np.kron(local_pi, identity)
+    elif driven_site == 1:
+        ideal_gate = np.kron(identity, local_pi)
+    else:
+        raise ValueError("driven_site must be 0 or 1.")
+
+    dimension = len(logical_states)
+
+    retained_weight = float(
+        np.trace(projected.conj().T @ projected).real
+    )
+    overlap = np.trace(
+        ideal_gate.conj().T @ projected
+    )
+
+    average_fidelity = float(
+        (retained_weight + abs(overlap) ** 2)
+        / (dimension * (dimension + 1))
+    )
+    average_survival = retained_weight / dimension
+
+    assert average_fidelity <= average_survival + 1e-10
+    assert average_fidelity > 0.99, (
+        f"Pair pi-gate fidelity = {average_fidelity:.8f}, "
+        f"survival = {average_survival:.8f}"
+    )
+
+
 def test_joas_two_electron_nv1_physical_pi_pulse():
     r"""The physical NV1 pulse survives embedding into the interacting \(9D\) system."""
     system = SpinSystem([1])
@@ -651,6 +713,7 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
     )
 
     def hamiltonian(time):
+        """Return the interacting pair Hamiltonian during the physical pulse."""
         return (
             h_two
             + amplitude
@@ -658,11 +721,18 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
             * sx_nv1
         )
 
+    steps = 10000
+    dt = pulse_duration / steps
+
+    def midpoint_hamiltonian(endpoint_time):
+        """Sample the interacting pulse Hamiltonian at the interval midpoint."""
+        return hamiltonian(endpoint_time - dt / 2)
+
     propagator = time_dependent_propagator(
-        hamiltonian=hamiltonian,
+        hamiltonian=midpoint_hamiltonian,
         t0=0.0,
         t1=pulse_duration,
-        steps=5000,
+        steps=steps,
     )
 
     final_state = propagator * initial_state
@@ -683,6 +753,17 @@ def test_joas_two_electron_nv1_physical_pi_pulse():
     _assert_logical_subspace_survival(
         propagator,
         logical_states,
+    )
+
+    _assert_physical_pair_pi_gate(
+        propagator=propagator,
+        drift=h_two,
+        duration=pulse_duration,
+        logical_states=logical_states,
+        transition_element=complex(
+            one_nv1.dag() * sx * zero_nv1
+        ),
+        driven_site=0,
     )
 
 
@@ -799,6 +880,7 @@ def test_joas_two_electron_nv2_physical_pi_pulse():
     )
 
     def hamiltonian(time):
+        """Return the interacting pair Hamiltonian during the physical pulse."""
         return (
             h_two
             + amplitude
@@ -806,11 +888,18 @@ def test_joas_two_electron_nv2_physical_pi_pulse():
             * sx_nv2
         )
 
+    steps = 10000
+    dt = pulse_duration / steps
+
+    def midpoint_hamiltonian(endpoint_time):
+        """Sample the interacting pulse Hamiltonian at the interval midpoint."""
+        return hamiltonian(endpoint_time - dt / 2)
+
     propagator = time_dependent_propagator(
-        hamiltonian=hamiltonian,
+        hamiltonian=midpoint_hamiltonian,
         t0=0.0,
         t1=pulse_duration,
-        steps=5000,
+        steps=steps,
     )
 
     final_state = propagator * initial_state
@@ -831,6 +920,17 @@ def test_joas_two_electron_nv2_physical_pi_pulse():
     _assert_logical_subspace_survival(
         propagator,
         logical_states,
+    )
+
+    _assert_physical_pair_pi_gate(
+        propagator=propagator,
+        drift=h_two,
+        duration=pulse_duration,
+        logical_states=logical_states,
+        transition_element=complex(
+            one_nv2.dag() * sx * zero_nv2
+        ),
+        driven_site=1,
     )
 
 
@@ -1070,6 +1170,7 @@ def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
     ) ** 2
 
     assert population > 0.99
+
 
 @pytest.mark.parametrize(
     "pulse_angle",
