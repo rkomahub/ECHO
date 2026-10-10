@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
+from qutip import basis
 
-from echo_spin.core.operators import spin_operators
+from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
-from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian, nv_hamiltonian
 from echo_spin.spectroscopy.transitions import allowed_transitions, electronic_spectrum
 
 
@@ -149,3 +150,101 @@ def test_transition_threshold_filters_by_strength():
     assert allowed_transitions(
         hamiltonian, sx, threshold=0.6
     ) == []
+
+
+def test_hyperfine_mixing_redistributes_transition_strength():
+    """Verify mixed-state transition frequencies and analytical strength redistribution."""
+    system = SpinSystem([1, 1])
+
+    D = 30.0
+    omega_e_z = 4.0
+    Q = -2.0
+    omega_n_z = 0.3
+    A_parallel = 0.7
+    A_perp = 0.4
+
+    hamiltonian = nv_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        D=D,
+        omega_e=[0.0, 0.0, omega_e_z],
+        Q=Q,
+        omega_n=[0.0, 0.0, omega_n_z],
+        A=np.diag([A_perp, A_perp, A_parallel]),
+    )
+
+    sx, _, _ = spin_operators(1)
+    control = embed_operator(sx, 0, system)
+
+    # The stretched state remains an exact eigenstate.
+    initial = basis([3, 3], [0, 0])
+    initial_energy = (
+        D + omega_e_z
+        + Q + omega_n_z
+        + A_parallel
+    )
+
+    energies, eigenstates = hamiltonian.eigenstates()
+    initial_weights = np.array([
+        abs(initial.overlap(state)) ** 2
+        for state in eigenstates
+    ])
+    initial_index = int(np.argmax(initial_weights))
+
+    assert initial_weights[initial_index] == pytest.approx(
+        1.0, abs=1e-12
+    )
+    assert energies[initial_index] == pytest.approx(
+        initial_energy, abs=1e-12
+    )
+
+    # Sx connects |+1,+1> to |0,+1>, which belongs to a mixed block.
+    electron_energy = D + omega_e_z
+    nuclear_energy = Q + omega_n_z
+
+    delta = electron_energy - nuclear_energy
+    splitting = np.sqrt(delta**2 + 4 * A_perp**2)
+    mean_energy = (electron_energy + nuclear_energy) / 2
+
+    lower_energy = mean_energy - splitting / 2
+    upper_energy = mean_energy + splitting / 2
+
+    lower_strength = (1 + delta / splitting) / 4
+    upper_strength = (1 - delta / splitting) / 4
+
+    expected_lines = sorted([
+        (
+            abs(lower_energy - initial_energy),
+            lower_strength,
+        ),
+        (
+            abs(upper_energy - initial_energy),
+            upper_strength,
+        ),
+    ])
+
+    transitions = allowed_transitions(
+        hamiltonian=hamiltonian,
+        control_operator=control,
+        threshold=1e-12,
+    )
+
+    measured_lines = sorted([
+        (frequency, strength)
+        for frequency, strength, i, j in transitions
+        if initial_index in (i, j)
+    ])
+
+    assert len(measured_lines) == 2
+
+    np.testing.assert_allclose(
+        measured_lines,
+        expected_lines,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    assert sum(
+        strength for _, strength in measured_lines
+    ) == pytest.approx(0.5, abs=1e-12)
