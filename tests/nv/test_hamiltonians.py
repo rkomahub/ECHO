@@ -835,3 +835,88 @@ def test_transverse_hyperfine_mixing_block(projection, A_perp):
         atol=1e-12,
         rtol=0.0,
     )
+
+
+def test_full_hyperfine_tensor_matrix_elements():
+    """Verify all nine hyperfine tensor components through spin-1 matrix elements."""
+    system = SpinSystem([1, 1])
+
+    # Distinct entries expose index swaps; this is a synthetic test tensor.
+    A = np.array(
+        [
+            [0.7, 0.2, -0.3],
+            [-0.4, 1.1, 0.5],
+            [0.6, -0.8, -0.9],
+        ],
+        dtype=float,
+    )
+
+    hamiltonian = hyperfine_hamiltonian(
+        system=system,
+        electron_site=0,
+        nuclear_site=1,
+        A=A,
+    )
+
+    plus_plus = basis([3, 3], [0, 0])
+    plus_zero = basis([3, 3], [0, 1])
+    zero_plus = basis([3, 3], [1, 0])
+    zero_zero = basis([3, 3], [1, 1])
+
+    double_raise = complex(
+        plus_plus.dag() * hamiltonian * zero_zero
+    )
+    expected_double_raise = (
+        A[0, 0]
+        - A[1, 1]
+        - 1j * (A[0, 1] + A[1, 0])
+    ) / 2
+
+    exchange = complex(
+        plus_zero.dag() * hamiltonian * zero_plus
+    )
+    expected_exchange = (
+        A[0, 0]
+        + A[1, 1]
+        + 1j * (A[0, 1] - A[1, 0])
+    ) / 2
+
+    electron_raise = complex(
+        plus_plus.dag() * hamiltonian * zero_plus
+    )
+    expected_electron_raise = (
+        A[0, 2] - 1j * A[1, 2]
+    ) / np.sqrt(2)
+
+    nuclear_raise = complex(
+        plus_plus.dag() * hamiltonian * plus_zero
+    )
+    expected_nuclear_raise = (
+        A[2, 0] - 1j * A[2, 1]
+    ) / np.sqrt(2)
+
+    diagonal = complex(
+        plus_plus.dag() * hamiltonian * plus_plus
+    )
+
+    np.testing.assert_allclose(
+        [
+            double_raise,
+            exchange,
+            electron_raise,
+            nuclear_raise,
+            diagonal,
+        ],
+        [
+            expected_double_raise,
+            expected_exchange,
+            expected_electron_raise,
+            expected_nuclear_raise,
+            A[2, 2],
+        ],
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    # A real tensor gives a Hermitian interaction even when nonsymmetric.
+    assert (hamiltonian - hamiltonian.dag()).norm() < 1e-12
