@@ -631,3 +631,60 @@ def test_ou_hahn_echo_matches_analytic_coherence():
         * (ratio - 1 + np.exp(-ratio))
     )
     assert analytic_coherence > fid_coherence
+
+
+@pytest.mark.parametrize("survival", [0.0, 0.73, 1.0])
+def test_dephasing_preserves_logical_loss_in_gate_fidelity(survival):
+    """Verify that dephasing preserves logical loss and its fidelity penalty."""
+    time = 6.4
+    coherence_times = (454.0, 476.0)
+
+    target = sqrt_zz_gate()
+
+    logical_basis = [
+        tensor(basis(2, 0), basis(2, 0)),
+        tensor(basis(2, 0), basis(2, 1)),
+        tensor(basis(2, 1), basis(2, 0)),
+        tensor(basis(2, 1), basis(2, 1)),
+    ]
+
+    def lossy_gate_with_dephasing(density_matrix):
+        """Apply an ideal gate, uniform logical loss and independent dephasing."""
+        evolved = (
+            survival
+            * target
+            * density_matrix
+            * target.dag()
+        )
+        return two_qubit_dephasing_channel(
+            density_matrix=evolved,
+            time=time,
+            coherence_times=coherence_times,
+        )
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = tensor(plus, plus).proj()
+    final_density = lossy_gate_with_dephasing(initial_density)
+
+    assert final_density.tr() == pytest.approx(
+        survival, abs=1e-12
+    )
+    assert np.min(final_density.eigenenergies()) > -1e-12
+
+    fidelity = average_gate_fidelity(
+        dynamical_map=lossy_gate_with_dephasing,
+        target=target,
+        basis_states=logical_basis,
+    )
+
+    coherence_one = np.exp(-time / coherence_times[0])
+    coherence_two = np.exp(-time / coherence_times[1])
+
+    expected_fidelity = survival * (
+        (1 + coherence_one) * (1 + coherence_two) + 1
+    ) / 5
+
+    assert fidelity == pytest.approx(
+        expected_fidelity, abs=1e-12
+    )
+    assert fidelity <= survival + 1e-12
