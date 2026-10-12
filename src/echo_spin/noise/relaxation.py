@@ -131,3 +131,43 @@ def spin_one_dephasing_operator(
     _, _, sz = spin_operators(1)
 
     return np.sqrt(2 / coherence_time) * sz
+
+
+def spin_one_energy_relaxation_operators(
+    hamiltonian: Qobj,
+    decay_rates,
+) -> list:
+    """Construct excited-to-ground jumps with rates ordered by excited-state energy."""
+    if (
+        hamiltonian.dims != [[3], [3]]
+        or not hamiltonian.isherm
+        or not np.all(np.isfinite(hamiltonian.full()))
+    ):
+        raise ValueError(
+            "hamiltonian must be a finite Hermitian single-spin-1 operator."
+        )
+
+    energies, states = hamiltonian.eigenstates()
+
+    if np.isclose(
+        energies[1],
+        energies[0],
+        atol=1e-12,
+        rtol=1e-12,
+    ):
+        raise ValueError("The ground state must be nondegenerate.")
+
+    # Reuse rate validation and the two-jump construction.
+    bare_jumps = spin_one_relaxation_operators(decay_rates)
+
+    # Map bare indices (0, 1, 2) to (lower excited, ground, upper excited).
+    transformation = (
+        states[1] * basis(3, 0).dag()
+        + states[0] * basis(3, 1).dag()
+        + states[2] * basis(3, 2).dag()
+    )
+
+    return [
+        transformation * jump * transformation.dag()
+        for jump in bare_jumps
+    ]
