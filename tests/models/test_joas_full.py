@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from qutip import basis, qeye, tensor
 
 from echo_spin.control.microwave import (
@@ -1722,8 +1723,15 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
 
 # -----------------------------------------------------------------
 
-def test_joas_full_finite_xy8_propagator():
-    """Validate the full finite-pulse Joas XY8 entangling gate."""
+@pytest.mark.parametrize(
+    "drive_mode",
+    [
+        pytest.param("shared", id="shared"),
+        pytest.param("selective", id="selective"),
+    ],
+)
+def test_joas_full_finite_xy8_propagator(drive_mode):
+    """Validate the full XY8 gate with shared or electron-selective microwave control."""
 
     # ------------------------------------------------------------------
     # 1. Full two-NV system
@@ -1904,6 +1912,16 @@ def test_joas_full_finite_xy8_propagator():
         gamma_ratio=gamma_ratio,
     )
 
+    # Keep nuclear coupling identical in both comparison cases.
+    nuclear_control = gamma_ratio * (
+        ix_n1_full + ix_n2_full
+    )
+
+    selective_controls = {
+        1: sx_e1_full + nuclear_control,
+        2: sx_e2_full + nuclear_control,
+    }
+
     # ------------------------------------------------------------------
     # 6. Joas rotating frame
     # ------------------------------------------------------------------
@@ -1972,6 +1990,12 @@ def test_joas_full_finite_xy8_propagator():
 
         start_time = center - pulse_duration / 2
 
+        pulse_control = (
+            control
+            if drive_mode == "shared"
+            else selective_controls[nv]
+        )
+
         def pulse_hamiltonian(time):
             """Return the full laboratory-frame Hamiltonian during this pulse."""
             envelope = centered_sine_envelope(
@@ -1990,7 +2014,7 @@ def test_joas_full_finite_xy8_propagator():
 
             microwave = microwave_hamiltonian(
                 time=time,
-                control=control,
+                control=pulse_control,
                 drives=drives,
             )
 
@@ -2197,4 +2221,10 @@ def test_joas_full_finite_xy8_propagator():
         "Nuclear-resolved fidelity range = "
         f"{min(resolved_fidelities):.8f} to "
         f"{max(resolved_fidelities):.8f}"
+    )
+    print(
+        f"Drive mode={drive_mode}: "
+        f"survival={average_survival:.8f}, "
+        f"fidelity={fidelity:.8f}, "
+        f"fidelity with dephasing={fidelity_with_dephasing:.8f}"
     )
