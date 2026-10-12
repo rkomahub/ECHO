@@ -812,3 +812,80 @@ def test_quasistatic_coherence_time_convention():
         time=t2_star,
         sigma=sigma,
     ) == pytest.approx(np.exp(-1.0), abs=1e-12)
+
+
+@pytest.mark.parametrize("detuning", [-1.3, 0.0, 2.4])
+@pytest.mark.parametrize("axis", ["x", "y"])
+def test_hahn_echo_refocuses_constant_detuning(detuning, axis):
+    """Verify exact Hahn refocusing when both intervals share one static detuning."""
+    total_time = 1.7
+
+    half_evolution = (
+        -1j
+        * dephasing_hamiltonian(detuning)
+        * total_time / 2
+    ).expm()
+
+    pi_pulse = single_qubit_rotation(
+        angle=np.pi,
+        axis=axis,
+    )
+
+    echo_propagator = (
+        half_evolution
+        * pi_pulse
+        * half_evolution
+    )
+
+    # The intended pi pulse remains; the detuning evolution cancels.
+    np.testing.assert_allclose(
+        echo_propagator.full(),
+        pi_pulse.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_independent_quasistatic_channels_do_not_preserve_echo_memory():
+    """Show that independently averaging each interval removes static-noise memory."""
+    total_time = 1.7
+    sigma = 0.6
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = plus.proj()
+
+    pi_pulse = single_qubit_rotation(
+        angle=np.pi,
+        axis="x",
+    )
+
+    first_interval = quasistatic_dephasing_channel(
+        density_matrix=initial_density,
+        time=total_time / 2,
+        sigma=sigma,
+    )
+    after_pulse = (
+        pi_pulse * first_interval * pi_pulse.dag()
+    )
+    second_interval = quasistatic_dephasing_channel(
+        density_matrix=after_pulse,
+        time=total_time / 2,
+        sigma=sigma,
+    )
+
+    # Remove the intended pulse to compare with the initial state.
+    corrected_density = (
+        pi_pulse.dag()
+        * second_interval
+        * pi_pulse
+    )
+
+    expected_coherence = np.exp(
+        -sigma**2 * total_time**2 / 4
+    )
+
+    assert corrected_density.full()[0, 1] == pytest.approx(
+        0.5 * expected_coherence,
+        abs=1e-12,
+    )
+    assert expected_coherence < 1.0
