@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, qeye, sigmax, sigmay, tensor
+from qutip import Qobj, basis, qeye, sigmax, sigmay, tensor
 
 from echo_spin.control.microwave import microwave_hamiltonian
 from echo_spin.control.pulses import (
@@ -1173,6 +1173,14 @@ def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
 
 
 @pytest.mark.parametrize(
+    "detuning_ratio",
+    [
+        pytest.param(0.0, id="resonant"),
+        pytest.param(-0.1, id="detuned_minus"),
+        pytest.param(0.1, id="detuned_plus"),
+    ],
+)
+@pytest.mark.parametrize(
     "fractional_error",
     [
         pytest.param(-0.05, id="underdrive"),
@@ -1204,6 +1212,7 @@ def test_joas_physical_microwave_carrier_phase(
     excited_state,
     pulse_angle,
     fractional_error,
+    detuning_ratio,
 ):
     """Check physical NV rotations, amplitude sensitivity, leakage and convergence."""
 
@@ -1247,6 +1256,10 @@ def test_joas_physical_microwave_carrier_phase(
 
     pulse_duration = 0.1
 
+    # Normalize carrier error to the nominal average Rabi frequency.
+    detuning = detuning_ratio * pulse_angle / pulse_duration
+    carrier_frequency = transition_frequency + detuning
+
     peak_amplitude = (
         pulse_angle * np.pi
         / (
@@ -1274,7 +1287,7 @@ def test_joas_physical_microwave_carrier_phase(
                 control=sx,
                 drives=[
                     {
-                        "omega": transition_frequency,
+                        "omega": carrier_frequency,
                         "phase": phase,
                         "omega_x": envelope,
                         "omega_y": 0.0,
@@ -1403,12 +1416,65 @@ def test_joas_physical_microwave_carrier_phase(
 
         assert average_fidelity <= survival + 1e-10
 
-        angle_error = pulse_angle * fractional_error
-        expected_qubit_fidelity = (
-            1 + 2 * np.cos(angle_error / 2) ** 2
-        ) / 3
+        if detuning_ratio == 0.0:
+            angle_error = pulse_angle * fractional_error
+            expected_qubit_fidelity = (
+                1 + 2 * np.cos(angle_error / 2) ** 2
+            ) / 3
+        else:
+            def reference_propagator(steps):
+                """Propagate the shaped two-level RWA reference in the drift interaction picture."""
+                dt_reference = pulse_duration / steps
 
-        # Compare physical spin-1 behaviour with the ideal amplitude-error reference.
+                def reference_hamiltonian(endpoint_time):
+                    """Return the slowly varying resonant-transition coupling at the midpoint."""
+                    time = endpoint_time - dt_reference / 2
+
+                    envelope = sine_envelope(
+                        time=time,
+                        duration=pulse_duration,
+                        peak_amplitude=peak_amplitude,
+                    )
+
+                    upper_coupling = (
+                        envelope
+                        * np.conjugate(transition_element)
+                        / np.sqrt(2.0)
+                        * np.exp(1j * (detuning * time + phase))
+                    )
+
+                    return Qobj(
+                        [
+                            [0.0, upper_coupling],
+                            [np.conjugate(upper_coupling), 0.0],
+                        ],
+                        dims=[[2], [2]],
+                    )
+
+                return time_dependent_propagator(
+                    hamiltonian=reference_hamiltonian,
+                    t0=0.0,
+                    t1=pulse_duration,
+                    steps=steps,
+                ).full()
+
+            reference_fidelities = []
+
+            for reference_steps in [1000, 2000]:
+                reference = reference_propagator(reference_steps)
+                reference_overlap = np.trace(
+                    ideal_rotation.conj().T @ reference
+                )
+                reference_fidelities.append(
+                    float((2 + abs(reference_overlap) ** 2) / 6)
+                )
+
+            assert abs(
+                reference_fidelities[1] - reference_fidelities[0]
+            ) < 1e-5
+
+            expected_qubit_fidelity = reference_fidelities[1]
+
         assert abs(
             average_fidelity - expected_qubit_fidelity
         ) < 2e-3, (
@@ -1416,7 +1482,7 @@ def test_joas_physical_microwave_carrier_phase(
             f"qubit reference = {expected_qubit_fidelity:.8f}"
         )
 
-        if fractional_error == 0.0:
+        if fractional_error == 0.0 and detuning_ratio == 0.0:
             assert average_fidelity > 0.99
 
 
