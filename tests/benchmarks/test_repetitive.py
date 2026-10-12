@@ -2,7 +2,10 @@ import numpy as np
 import pytest
 from qutip import basis, qeye, sigmaz, tensor
 
-from echo_spin.benchmarks.repetitive import repetitive_benchmark_signal
+from echo_spin.benchmarks.repetitive import (
+    fit_repetitive_decay,
+    repetitive_benchmark_signal,
+)
 from echo_spin.gates.gates import sqrt_zz_gate
 
 
@@ -97,3 +100,30 @@ def test_repetitive_benchmark_retains_environment_memory():
     assert abs(
         actual[-1] - reset_environment_prediction[-1]
     ) > 1e-2
+
+
+@pytest.mark.parametrize("amplitude", [0.73, -0.15])
+def test_repetitive_decay_fit_recovers_known_parameters(amplitude):
+    """Recover an exact exponential decay with positive or negative readout contrast."""
+    counts = np.arange(0, 81, 4)
+    offset = 0.2
+    decay_parameter = 0.96
+
+    signal = (
+        offset + amplitude * decay_parameter**counts
+    )
+
+    result = fit_repetitive_decay(
+        repetitions=counts,
+        signal=signal,
+    )
+
+    assert result["offset"] == pytest.approx(offset, abs=1e-7)
+    assert result["amplitude"] == pytest.approx(amplitude, abs=1e-7)
+    assert result["decay_parameter"] == pytest.approx(
+        decay_parameter, abs=1e-7
+    )
+    assert result["pseudo_error_per_gate"] == pytest.approx(
+        0.04, abs=1e-7
+    )
+    assert result["residual_rms"] < 1e-7

@@ -13,7 +13,8 @@ license = { file = "LICENSE" }
 dependencies = [
     "numpy",
     "qutip",
-    "matplotlib"
+    "matplotlib",
+    "scipy"
 ]
 
 [project.optional-dependencies]
