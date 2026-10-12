@@ -2463,3 +2463,78 @@ def test_joas_shared_microwave_spin_one_crosstalk(addressed_index):
         f"spectator logical excitation={spectator_excitation:.8f}, "
         f"spectator leakage={spectator_leakage:.8f}"
     )
+
+    spectator_plus = (
+        spectator_zero + spectator_one
+    ).unit()
+
+    spectator_drift = hamiltonians[spectator_index]
+    undo_free_evolution = (
+        1j * spectator_drift * pulse_duration
+    ).expm()
+
+    phase_results = []
+
+    for steps in [10000, 20000]:
+        spectator_final = evolve_local(
+            spectator_drift,
+            spectator_plus,
+            steps,
+        )
+
+        # Remove known drift; retain microwave-induced phase and leakage.
+        interaction_state = (
+            undo_free_evolution * spectator_final
+        )
+
+        amplitude_zero = spectator_zero.overlap(
+            interaction_state
+        )
+        amplitude_one = spectator_one.overlap(
+            interaction_state
+        )
+
+        coherence = (
+            amplitude_zero * np.conjugate(amplitude_one)
+        )
+        retained_population = (
+            abs(amplitude_zero) ** 2
+            + abs(amplitude_one) ** 2
+        )
+        state_fidelity = abs(
+            spectator_plus.overlap(interaction_state)
+        ) ** 2
+
+        # This identity includes logical population loss without renormalizing.
+        assert state_fidelity == pytest.approx(
+            retained_population / 2 + np.real(coherence),
+            abs=1e-12,
+        )
+        assert state_fidelity <= retained_population + 1e-10
+
+        phase_results.append(
+            [coherence, retained_population, state_fidelity]
+        )
+
+    np.testing.assert_allclose(
+        phase_results[0],
+        phase_results[1],
+        atol=1e-4,
+        rtol=0.0,
+    )
+
+    coherence, retained_population, state_fidelity = phase_results[1]
+
+    relative_phase = float(np.angle(coherence))
+    coherence_magnitude = float(2 * abs(coherence))
+    superposition_leakage = float(
+        1 - retained_population
+    )
+
+    print(
+        f"Spectator NV{spectator_index + 1}: "
+        f"relative phase={relative_phase:.8f} rad, "
+        f"coherence magnitude={coherence_magnitude:.8f}, "
+        f"superposition leakage={superposition_leakage:.8f}, "
+        f"state fidelity={float(state_fidelity):.8f}"
+    )
