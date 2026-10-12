@@ -11,6 +11,8 @@ from echo_spin.noise.dephasing import (
     ensemble_dephasing_map,
     exponential_coherence,
     ornstein_uhlenbeck_noise,
+    quasistatic_coherence,
+    quasistatic_dephasing_channel,
     stochastic_dephasing_propagator,
     two_qubit_dephasing_channel,
 )
@@ -747,3 +749,66 @@ def test_two_qubit_exponential_dephasing_composes_in_time():
         expected_coherence,
         abs=1e-12,
     )
+
+
+@pytest.mark.parametrize("time", [0.0, 0.7, 2.0])
+@pytest.mark.parametrize("sigma", [0.0, 0.6])
+def test_quasistatic_channel_matches_gaussian_detuning_average(time, sigma):
+    """Compare Gaussian dephasing with independent quadrature over static evolutions."""
+    initial_state = (
+        basis(2, 0) + (0.4 + 0.7j) * basis(2, 1)
+    ).unit()
+    initial_density = initial_state.proj()
+
+    actual = quasistatic_dephasing_channel(
+        density_matrix=initial_density,
+        time=time,
+        sigma=sigma,
+    )
+
+    # Gauss-Hermite quadrature integrates the Gaussian detuning distribution.
+    nodes, weights = np.polynomial.hermite.hermgauss(40)
+    expected = 0 * initial_density
+
+    for node, weight in zip(nodes, weights):
+        detuning = np.sqrt(2.0) * sigma * node
+
+        propagator = (
+            -1j
+            * dephasing_hamiltonian(detuning)
+            * time
+        ).expm()
+
+        expected += (
+            weight / np.sqrt(np.pi)
+            * propagator
+            * initial_density
+            * propagator.dag()
+        )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        np.diag(actual.full()),
+        np.diag(initial_density.full()),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    assert actual.tr() == pytest.approx(1.0, abs=1e-12)
+
+
+def test_quasistatic_coherence_time_convention():
+    """Verify the Gaussian T2-star convention at its one-over-e point."""
+    sigma = 0.6
+    t2_star = np.sqrt(2.0) / sigma
+
+    assert quasistatic_coherence(
+        time=t2_star,
+        sigma=sigma,
+    ) == pytest.approx(np.exp(-1.0), abs=1e-12)

@@ -221,3 +221,37 @@ def ensemble_dephasing_map(
         )
 
     return average_density / realizations
+
+
+def quasistatic_coherence(time: float, sigma: float) -> float:
+    """Return Gaussian Ramsey coherence for a constant random detuning."""
+    if not np.isfinite(time) or time < 0:
+        raise ValueError("time must be finite and non-negative.")
+
+    if not np.isfinite(sigma) or sigma < 0:
+        raise ValueError("sigma must be finite and non-negative.")
+
+    return float(np.exp(-0.5 * (sigma * time) ** 2))
+
+
+def quasistatic_dephasing_channel(
+    density_matrix: Qobj,
+    time: float,
+    sigma: float,
+) -> Qobj:
+    """Average single-qubit evolution over zero-mean Gaussian static detuning."""
+    if density_matrix.shape != (2, 2):
+        raise ValueError(
+            "quasistatic_dephasing_channel requires a single qubit."
+        )
+
+    coherence = quasistatic_coherence(time=time, sigma=sigma)
+
+    identity = qeye(2)
+    sigma_z = sigmaz()
+
+    return (
+        (1 + coherence) / 2 * density_matrix
+        + (1 - coherence) / 2
+        * sigma_z * density_matrix * sigma_z
+    )
