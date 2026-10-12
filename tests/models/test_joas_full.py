@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, qeye, tensor
+from qutip import basis, qeye, sigmax, tensor
 
 from echo_spin.benchmarks.repetitive import logical_repetitive_return_signal
 from echo_spin.control.microwave import (
@@ -2419,3 +2419,28 @@ def test_joas_full_finite_xy8_propagator(
 
     print("Repetitions =", benchmark_counts)
     print("Ideal-recovery return signal =", return_signal)
+
+    def local_benchmark_readout(density_matrix, count):
+        """Measure locally recovered NV1 logical Z for even gate counts."""
+        return (
+            (-1) ** (count // 2)
+            * (tensor(sigmax(), qeye(2)) * density_matrix).tr()
+        )
+
+    local_counts = np.arange(0, 33, 2)
+
+    local_signal = logical_repetitive_return_signal(
+        initial_density=tensor(plus, plus).proj(),
+        propagator=propagator,
+        logical_basis=logical_electron_basis,
+        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+        target=target,
+        repetitions=local_counts,
+        logical_readout=local_benchmark_readout,
+    )
+
+    assert local_signal[0] == pytest.approx(1.0, abs=1e-12)
+    assert np.all(np.abs(local_signal) <= 1 + 1e-10)
+
+    print("Local-recovery repetitions =", local_counts)
+    print("Local-recovery NV1 signal =", local_signal)

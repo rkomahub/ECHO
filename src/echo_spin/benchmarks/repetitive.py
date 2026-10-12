@@ -150,6 +150,7 @@ def logical_repetitive_return_signal(
     nuclear_states,
     target: Qobj,
     repetitions,
+    logical_readout=None,
 ) -> np.ndarray:
     """Measure ideal-recovery logical return while retaining nuclei across repeated gates."""
     logical_basis = list(logical_basis)
@@ -223,6 +224,15 @@ def logical_repetitive_return_signal(
             operator=reduced,
             basis_states=logical_basis,
         ).full()
+
+        if logical_readout is not None:
+            return logical_readout(
+                Qobj(
+                    logical_density,
+                    dims=initial_density.dims,
+                ),
+                count,
+            )
 
         recovery = (target.dag() ** count).full()
         recovered = (

@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, qeye, sigmaz, tensor
+from qutip import basis, qeye, sigmax, sigmaz, tensor
 
 from echo_spin.benchmarks.repetitive import (
     fit_repetitive_decay,
@@ -169,6 +169,52 @@ def test_logical_repetitive_return_preserves_three_level_nuclear_memory():
     np.testing.assert_allclose(
         actual,
         (1 + coherence) / 2,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_repetitive_local_recovery_for_even_gate_counts():
+    """Verify local recovery of ideal even entangler powers without resetting nuclei."""
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = tensor(plus, plus).proj()
+    target = sqrt_zz_gate()
+
+    logical_basis = [
+        tensor(basis(2, i), basis(2, j))
+        for i in range(2)
+        for j in range(2)
+    ]
+
+    joint_gate = tensor(
+        target,
+        qeye(2),
+        qeye(2),
+    ).permute([0, 2, 1, 3])
+
+    def local_readout(density_matrix, count):
+        """Measure recovered logical Z through its equivalent signed X observable."""
+        if count % 2:
+            raise ValueError("This local recovery requires even gate counts.")
+
+        return (
+            (-1) ** (count // 2)
+            * (tensor(sigmax(), qeye(2)) * density_matrix).tr()
+        )
+
+    signal = logical_repetitive_return_signal(
+        initial_density=initial_density,
+        propagator=joint_gate,
+        logical_basis=logical_basis,
+        nuclear_states=[qeye(2) / 2, qeye(2) / 2],
+        target=target,
+        repetitions=np.arange(0, 17, 2),
+        logical_readout=local_readout,
+    )
+
+    np.testing.assert_allclose(
+        signal,
+        1.0,
         atol=1e-12,
         rtol=0.0,
     )
