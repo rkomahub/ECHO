@@ -889,3 +889,56 @@ def test_independent_quasistatic_channels_do_not_preserve_echo_memory():
         abs=1e-12,
     )
     assert expected_coherence < 1.0
+
+
+def test_ou_stationary_covariance_on_irregular_grid():
+    """Verify stationary OU means and temporal covariance on unequal time steps."""
+    times = np.array([0.0, 0.03, 0.4, 1.7])
+    sigma = 0.7
+    correlation_time = 0.8
+    realizations = 5000
+
+    rng = np.random.default_rng(123)
+
+    trajectories = np.array([
+        ornstein_uhlenbeck_noise(
+            times=times,
+            sigma=sigma,
+            correlation_time=correlation_time,
+            rng=rng,
+        )
+        for _ in range(realizations)
+    ])
+
+    expected_covariance = sigma**2 * np.exp(
+        -np.abs(times[:, None] - times[None, :])
+        / correlation_time
+    )
+
+    # The stationary mean is known to be zero.
+    measured_mean = trajectories.mean(axis=0)
+    mean_standard_error = sigma / np.sqrt(realizations)
+
+    assert np.all(
+        np.abs(measured_mean) < 5 * mean_standard_error
+    )
+
+    measured_covariance = (
+        trajectories.T @ trajectories / realizations
+    )
+
+    # For zero-mean Gaussian variables:
+    # Var(X_i X_j) = C_ii C_jj + C_ij^2.
+    diagonal = np.diag(expected_covariance)
+    covariance_standard_error = np.sqrt(
+        (
+            diagonal[:, None] * diagonal[None, :]
+            + expected_covariance**2
+        ) / realizations
+    )
+
+    assert np.all(
+        np.abs(
+            measured_covariance - expected_covariance
+        ) < 5 * covariance_standard_error
+    )
