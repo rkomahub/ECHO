@@ -2139,6 +2139,78 @@ def test_joas_full_finite_xy8_propagator(drive_mode):
     # Leakage limits the average fidelity attainable in the logical subspace.
     assert 0.0 <= fidelity <= average_survival + 1e-10
 
+    # Embed the four electron logical states for each of nine nuclear inputs.
+    nuclear_embeddings = []
+
+    for nuclear_one_index in range(3):
+        for nuclear_two_index in range(3):
+            columns = [
+                tensor(
+                    electron_state,
+                    basis(3, nuclear_one_index),
+                    basis(3, nuclear_two_index),
+                ).permute([0, 2, 1, 3]).full().ravel()
+                for electron_state in logical_electron_basis
+            ]
+
+            nuclear_embeddings.append(
+                np.column_stack(columns)
+            )
+
+    full_unitary = propagator.full()
+    target_matrix = target.full()
+
+    kraus_survival_weight = 0.0
+    kraus_target_overlap = 0.0
+
+    for input_embedding in nuclear_embeddings:
+        evolved_embedding = full_unitary @ input_embedding
+
+        for output_embedding in nuclear_embeddings:
+            # Each maximally mixed nuclear input has probability 1/9.
+            kraus = (
+                output_embedding.conj().T
+                @ evolved_embedding
+            ) / 3
+
+            kraus_survival_weight += float(
+                np.linalg.norm(kraus, ord="fro") ** 2
+            )
+            kraus_target_overlap += float(
+                abs(np.trace(
+                    target_matrix.conj().T @ kraus
+                )) ** 2
+            )
+
+    dimension = len(logical_electron_basis)
+
+    kraus_average_survival = (
+        kraus_survival_weight / dimension
+    )
+    kraus_average_fidelity = (
+        kraus_survival_weight + kraus_target_overlap
+    ) / (dimension * (dimension + 1))
+
+    np.testing.assert_allclose(
+        kraus_average_survival,
+        average_survival,
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        kraus_average_fidelity,
+        fidelity,
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    print(
+        f"Independent Kraus check: "
+        f"survival={kraus_average_survival:.8f}, "
+        f"fidelity={kraus_average_fidelity:.8f}"
+    )
+
     t2_nv1 = 454.0  # microseconds
     t2_nv2 = 476.0  # microseconds
 
