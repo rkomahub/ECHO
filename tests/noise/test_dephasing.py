@@ -13,6 +13,7 @@ from echo_spin.noise.dephasing import (
     ornstein_uhlenbeck_noise,
     quasistatic_coherence,
     quasistatic_dephasing_channel,
+    sampled_noise_propagator,
     stochastic_dephasing_propagator,
     stochastic_noise_hamiltonian,
     two_qubit_dephasing_channel,
@@ -1013,3 +1014,60 @@ def test_generic_noise_hamiltonian_combines_independent_axes():
         rtol=0.0,
     )
     assert actual.isherm
+
+
+def test_sampled_noise_recovers_longitudinal_propagation():
+    """Verify compatibility with the existing left-endpoint longitudinal propagator."""
+    times = np.array([0.0, 0.2, 0.7, 1.0])
+    noise = np.array([0.3, -0.5, 0.8, 1.2])
+
+    actual = sampled_noise_propagator(
+        times=times,
+        coefficients=noise[:-1, None],
+        operators=[sigmaz() / 2],
+    )
+
+    expected = stochastic_dephasing_propagator(
+        times=times,
+        noise=noise,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_sampled_noise_preserves_noncommuting_chronology():
+    """Verify that successive X and Y noise intervals retain their physical order."""
+    times = np.array([2.0, 2.3, 2.7])
+
+    actual = sampled_noise_propagator(
+        times=times,
+        coefficients=[
+            [0.8, 0.0],
+            [0.0, -0.6],
+        ],
+        operators=[sigmax() / 2, sigmay() / 2],
+    )
+
+    first = single_qubit_rotation(
+        angle=0.8 * 0.3,
+        axis="x",
+    )
+    second = single_qubit_rotation(
+        angle=-0.6 * 0.4,
+        axis="y",
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        (second * first).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    assert (actual - first * second).norm() > 1e-3
+    assert actual.isunitary

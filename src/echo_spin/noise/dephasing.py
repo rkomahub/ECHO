@@ -270,3 +270,66 @@ def stochastic_noise_hamiltonian(
         operators=operators,
         amplitudes=amplitudes,
     )
+
+
+def sampled_noise_propagator(
+    times,
+    coefficients,
+    operators,
+) -> Qobj:
+    """Propagate piecewise-constant noise coefficients in chronological order."""
+    if np.iscomplexobj(times):
+        raise ValueError("times must be real.")
+
+    times = np.asarray(times, dtype=float)
+
+    if (
+        times.ndim != 1
+        or len(times) < 2
+        or not np.all(np.isfinite(times))
+    ):
+        raise ValueError("times must contain at least two finite values.")
+
+    durations = np.diff(times)
+
+    if np.any(durations <= 0):
+        raise ValueError("times must be strictly increasing.")
+
+    operators = list(operators)
+
+    if not operators:
+        raise ValueError("At least one noise operator is required.")
+
+    if np.iscomplexobj(coefficients):
+        raise ValueError("coefficients must be real.")
+
+    coefficients = np.asarray(coefficients, dtype=float)
+
+    expected_shape = (len(durations), len(operators))
+
+    if coefficients.shape != expected_shape:
+        raise ValueError(
+            f"coefficients must have shape {expected_shape}."
+        )
+
+    if not np.all(np.isfinite(coefficients)):
+        raise ValueError("coefficients must be finite.")
+
+    propagator = None
+
+    for index, duration in enumerate(durations):
+        hamiltonian = stochastic_noise_hamiltonian(
+            time=times[index],
+            operators=operators,
+            amplitudes=coefficients[index],
+        )
+
+        if propagator is None:
+            propagator = qeye(hamiltonian.dims[0])
+
+        propagator = (
+            (-1j * hamiltonian * duration).expm()
+            * propagator
+        )
+
+    return propagator
