@@ -2103,7 +2103,10 @@ def test_joas_full_finite_xy8_propagator():
 
     print("full Joas average gate fidelity =", fidelity)
 
-    assert 0.0 <= fidelity <= 1.0
+    average_survival = float(np.mean(survivals))
+
+    # Leakage limits the average fidelity attainable in the logical subspace.
+    assert 0.0 <= fidelity <= average_survival + 1e-10
 
     t2_nv1 = 454.0  # microseconds
     t2_nv2 = 476.0  # microseconds
@@ -2138,33 +2141,53 @@ def test_joas_full_finite_xy8_propagator():
     # 13. Nuclear-state-resolved fidelity diagnostic
     # ------------------------------------------------------------------
 
-    nuclear_states_to_test = {
-        "mI=+1": basis(3, 0).proj(),
-        "mI=0": basis(3, 1).proj(),
-        "mI=-1": basis(3, 2).proj(),
-        "mixed": qeye(3) / 3,
-    }
+    # Resolve all nine nuclear preparations underlying the mixed-state result.
+    resolved_fidelities = []
 
-    for label, nuclear_test_state in nuclear_states_to_test.items():
+    for nuclear_one_index in range(3):
+        for nuclear_two_index in range(3):
+            nuclear_preparation = [
+                basis(3, nuclear_one_index).proj(),
+                basis(3, nuclear_two_index).proj(),
+            ]
 
-        def nuclear_dynamical_map(density_matrix):
-            return logical_electron_nuclear_dynamical_map(
-                density_matrix=density_matrix,
-                propagator=propagator,
-                logical_basis=logical_electron_basis,
-                nuclear_states=[
-                    nuclear_test_state,
-                    nuclear_test_state,
-                ],
+            def nuclear_dynamical_map(density_matrix):
+                """Apply the full gate for the current pure nuclear preparation."""
+                return logical_electron_nuclear_dynamical_map(
+                    density_matrix=density_matrix,
+                    propagator=propagator,
+                    logical_basis=logical_electron_basis,
+                    nuclear_states=nuclear_preparation,
+                )
+
+            resolved_fidelity = average_gate_fidelity(
+                dynamical_map=nuclear_dynamical_map,
+                target=target,
+                basis_states=logical_states,
             )
 
-        nuclear_fidelity = average_gate_fidelity(
-            dynamical_map=nuclear_dynamical_map,
-            target=target,
-            basis_states=logical_states,
-        )
+            resolved_fidelities.append(resolved_fidelity)
 
-        print(
-            f"{label} nuclear fidelity =",
-            nuclear_fidelity,
-        )
+            print(
+                f"Nuclear indices "
+                f"({nuclear_one_index}, {nuclear_two_index}): "
+                f"fidelity = {resolved_fidelity:.8f}"
+            )
+
+            assert -1e-10 <= resolved_fidelity <= 1.0 + 1e-10
+
+    # Independent maximally mixed nuclei are the equal mixture of nine pairs.
+    np.testing.assert_allclose(
+        fidelity,
+        np.mean(resolved_fidelities),
+        atol=1e-9,
+        rtol=0.0,
+    )
+
+    print(f"Average logical survival = {average_survival:.8f}")
+    print(f"Mixed-nuclear gate fidelity = {fidelity:.8f}")
+    print(
+        "Nuclear-resolved fidelity range = "
+        f"{min(resolved_fidelities):.8f} to "
+        f"{max(resolved_fidelities):.8f}"
+    )
