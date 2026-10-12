@@ -2281,6 +2281,7 @@ def test_joas_full_finite_xy8_propagator(
 
     # Resolve all nine nuclear preparations underlying the mixed-state result.
     resolved_fidelities = []
+    resolved_dephased_fidelities = []
 
     for nuclear_one_index in range(3):
         for nuclear_two_index in range(3):
@@ -2306,6 +2307,33 @@ def test_joas_full_finite_xy8_propagator(
 
             resolved_fidelities.append(resolved_fidelity)
 
+            def nuclear_map_with_dephasing(density_matrix):
+                """Apply the nuclear-resolved gate followed by the existing dephasing model."""
+                evolved = nuclear_dynamical_map(density_matrix)
+
+                return two_qubit_dephasing_channel(
+                    density_matrix=evolved,
+                    time=gate_duration,
+                    coherence_times=(t2_nv1, t2_nv2),
+                )
+
+            resolved_dephased_fidelity = average_gate_fidelity(
+                dynamical_map=nuclear_map_with_dephasing,
+                target=target,
+                basis_states=logical_states,
+            )
+
+            resolved_dephased_fidelities.append(
+                resolved_dephased_fidelity
+            )
+
+            print(
+                f"Nuclear indices "
+                f"({nuclear_one_index}, {nuclear_two_index}): "
+                f"fidelity with dephasing = "
+                f"{resolved_dephased_fidelity:.8f}"
+            )
+
             print(
                 f"Nuclear indices "
                 f"({nuclear_one_index}, {nuclear_two_index}): "
@@ -2320,6 +2348,21 @@ def test_joas_full_finite_xy8_propagator(
         np.mean(resolved_fidelities),
         atol=1e-9,
         rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        fidelity_with_dephasing,
+        np.mean(resolved_dephased_fidelities),
+        atol=1e-9,
+        rtol=0.0,
+    )
+
+    # Index 4 corresponds to the initial product preparation mI1=mI2=0.
+    print(
+        "Initial mI=(0,0): "
+        f"fidelity={resolved_fidelities[4]:.8f}, "
+        f"fidelity with dephasing="
+        f"{resolved_dephased_fidelities[4]:.8f}"
     )
 
     if hyperfine_mode == "off":
