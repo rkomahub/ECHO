@@ -1173,6 +1173,14 @@ def test_joas_nv1_finite_microwave_pi_pulse_phase(axis, phase):
 
 
 @pytest.mark.parametrize(
+    "fractional_error",
+    [
+        pytest.param(-0.05, id="underdrive"),
+        pytest.param(0.0, id="calibrated"),
+        pytest.param(0.05, id="overdrive"),
+    ],
+)
+@pytest.mark.parametrize(
     "pulse_angle",
     [
         pytest.param(np.pi, id="pi"),
@@ -1195,8 +1203,9 @@ def test_joas_physical_microwave_carrier_phase(
     splitting_mhz,
     excited_state,
     pulse_angle,
+    fractional_error,
 ):
-    """Check converged physical X/Y rotations and leakage for both NV centers."""
+    """Check physical NV rotations, amplitude sensitivity, leakage and convergence."""
 
     system = SpinSystem([1])
 
@@ -1247,6 +1256,8 @@ def test_joas_physical_microwave_carrier_phase(
             * pulse_duration
         )
     )
+
+    peak_amplitude *= 1 + fractional_error
 
     def pulse_propagator(phase, steps):
         """Return midpoint-sampled pulse evolution in the drift interaction picture."""
@@ -1391,11 +1402,22 @@ def test_joas_physical_microwave_carrier_phase(
         )
 
         assert average_fidelity <= survival + 1e-10
-        assert average_fidelity > 0.99, (
-            f"Carrier phase {phase:.6g}: "
-            f"average fidelity = {average_fidelity:.6g}, "
-            f"survival = {survival:.6g}"
+
+        angle_error = pulse_angle * fractional_error
+        expected_qubit_fidelity = (
+            1 + 2 * np.cos(angle_error / 2) ** 2
+        ) / 3
+
+        # Compare physical spin-1 behaviour with the ideal amplitude-error reference.
+        assert abs(
+            average_fidelity - expected_qubit_fidelity
+        ) < 2e-3, (
+            f"Physical fidelity = {average_fidelity:.8f}, "
+            f"qubit reference = {expected_qubit_fidelity:.8f}"
         )
+
+        if fractional_error == 0.0:
+            assert average_fidelity > 0.99
 
 
 def test_joas_nv1_finite_sine_pi_pulse_in_interacting_pair():
