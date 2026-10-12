@@ -396,3 +396,69 @@ def test_resonant_pi_pulse_amplitude_error(fractional_error):
         abs=1e-12,
     )
     assert propagator.isunitary
+
+
+@pytest.mark.parametrize(
+    "detuning_ratio",
+    [-1.0, -0.1, 0.0, 0.1, 1.0],
+)
+def test_pi_pulse_detuning_gate_fidelity(detuning_ratio):
+    """Verify detuned pi-pulse fidelity against the exact rotating-frame solution."""
+    rabi_frequency = 1.0
+    carrier = 100.0
+    detuning = detuning_ratio * rabi_frequency
+    pulse_duration = np.pi / rabi_frequency
+
+    hamiltonian = linear_drive_qubit_hamiltonian(
+        time=0.0,
+        omega_0=carrier + detuning,
+        carrier=carrier,
+        rabi_frequency=rabi_frequency,
+        frame="rotating",
+        rwa=True,
+    )
+
+    propagator = static_propagator(
+        hamiltonian=hamiltonian,
+        time=pulse_duration,
+    )
+
+    ideal_pi = -1j * np.array(
+        [[0.0, 1.0], [1.0, 0.0]],
+        dtype=complex,
+    )
+
+    overlap = np.trace(
+        ideal_pi.conj().T @ propagator.full()
+    )
+    average_fidelity = (
+        2 + abs(overlap) ** 2
+    ) / 6
+
+    generalized_rabi = np.sqrt(
+        rabi_frequency**2 + detuning**2
+    )
+    expected_transfer = (
+        rabi_frequency**2
+        / generalized_rabi**2
+        * np.sin(
+            generalized_rabi * pulse_duration / 2
+        ) ** 2
+    )
+    expected_fidelity = (
+        1 + 2 * expected_transfer
+    ) / 3
+
+    final_state = propagator * basis(2, 0)
+    transfer = abs(
+        basis(2, 1).overlap(final_state)
+    ) ** 2
+
+    assert transfer == pytest.approx(
+        expected_transfer,
+        abs=1e-12,
+    )
+    assert average_fidelity == pytest.approx(
+        expected_fidelity,
+        abs=1e-12,
+    )
