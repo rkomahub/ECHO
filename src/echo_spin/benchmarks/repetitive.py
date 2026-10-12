@@ -1,6 +1,8 @@
 import numpy as np
-from qutip import Qobj
+from qutip import Qobj, tensor
 from scipy.optimize import curve_fit
+
+from echo_spin.core.basis import project_operator
 
 
 def repetitive_benchmark_signal(
@@ -139,3 +141,101 @@ def fit_repetitive_decay(
         "residuals": residuals,
         "parameter_covariance": covariance,
     }
+
+
+def logical_repetitive_return_signal(
+    initial_density: Qobj,
+    propagator: Qobj,
+    logical_basis,
+    nuclear_states,
+    target: Qobj,
+    repetitions,
+) -> np.ndarray:
+    """Measure ideal-recovery logical return while retaining nuclei across repeated gates."""
+    logical_basis = list(logical_basis)
+    nuclear_states = list(nuclear_states)
+
+    if len(nuclear_states) != 2:
+        raise ValueError("Provide two nuclear density matrices.")
+
+    dimension = initial_density.shape[0]
+
+    if len(logical_basis) != dimension:
+        raise ValueError("logical_basis must match the logical input dimension.")
+
+    if target.dims != initial_density.dims or not target.isunitary:
+        raise ValueError("target must be a matching unitary logical gate.")
+
+    isometry = np.column_stack([
+        state.full().ravel()
+        for state in logical_basis
+    ])
+
+    if not np.allclose(
+        isometry.conj().T @ isometry,
+        np.eye(dimension),
+        atol=1e-12,
+        rtol=0.0,
+    ):
+        raise ValueError("logical_basis must be orthonormal.")
+
+    physical_density = Qobj(
+        isometry @ initial_density.full() @ isometry.conj().T,
+        dims=logical_basis[0].proj().dims,
+    )
+
+    joint_density = tensor(
+        physical_density,
+        nuclear_states[0],
+        nuclear_states[1],
+    ).permute([0, 2, 1, 3])
+
+    if propagator.dims != joint_density.dims:
+        raise ValueError(
+            "Joint dimensions do not match: "
+            f"propagator={propagator.dims}, "
+            f"state={joint_density.dims}."
+        )
+
+    matrix = propagator.full()
+    unitary_defect = np.linalg.norm(
+        matrix.conj().T @ matrix
+        - np.eye(matrix.shape[0]),
+        ord="fro",
+    )
+
+    # Explicit tolerance for numerical propagation; do not renormalize.
+    if not np.isfinite(unitary_defect) or unitary_defect > 1e-8:
+        raise ValueError(
+            "Propagator is not sufficiently unitary: "
+            f"Frobenius defect={unitary_defect:.3e}."
+        )
+
+    def gate_map(density_matrix):
+        """Apply another fixed joint gate without resetting the nuclei."""
+        return propagator * density_matrix * propagator.dag()
+
+    def readout(density_matrix, count):
+        """Trace nuclei and evaluate unnormalized return after ideal logical recovery."""
+        reduced = density_matrix.ptrace([0, 2])
+
+        logical_density = project_operator(
+            operator=reduced,
+            basis_states=logical_basis,
+        ).full()
+
+        recovery = (target.dag() ** count).full()
+        recovered = (
+            recovery @ logical_density @ recovery.conj().T
+        )
+
+        return np.trace(
+            initial_density.full() @ recovered
+        )
+
+    return repetitive_benchmark_signal(
+        initial_density=joint_density,
+        gate_map=gate_map,
+        repetitions=repetitions,
+        readout=readout,
+    )

@@ -4,6 +4,7 @@ from qutip import basis, qeye, sigmaz, tensor
 
 from echo_spin.benchmarks.repetitive import (
     fit_repetitive_decay,
+    logical_repetitive_return_signal,
     repetitive_benchmark_signal,
 )
 from echo_spin.gates.gates import sqrt_zz_gate
@@ -127,3 +128,47 @@ def test_repetitive_decay_fit_recovers_known_parameters(amplitude):
         0.04, abs=1e-7
     )
     assert result["residual_rms"] < 1e-7
+
+
+def test_logical_repetitive_return_preserves_three_level_nuclear_memory():
+    """Verify logical return against an exact persistent spin-1 nuclear reference."""
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = tensor(plus, basis(2, 0)).proj()
+
+    logical_basis = [
+        tensor(basis(3, 1), basis(3, 1)),
+        tensor(basis(3, 1), basis(3, 0)),
+        tensor(basis(3, 0), basis(3, 1)),
+        tensor(basis(3, 0), basis(3, 0)),
+    ]
+
+    # Diagonal operator with eigenvalues (+1, 0, -1).
+    sz = basis(3, 0).proj() - basis(3, 2).proj()
+    phase_per_gate = 0.4
+
+    propagator = (
+        -1j * phase_per_gate
+        * tensor(sz, sz, qeye(3), qeye(3))
+    ).expm()
+
+    counts = np.arange(6)
+
+    actual = logical_repetitive_return_signal(
+        initial_density=initial_density,
+        propagator=propagator,
+        logical_basis=logical_basis,
+        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+        target=qeye([2, 2]),
+        repetitions=counts,
+    )
+
+    coherence = (
+        1 + 2 * np.cos(counts * phase_per_gate)
+    ) / 3
+
+    np.testing.assert_allclose(
+        actual,
+        (1 + coherence) / 2,
+        atol=1e-12,
+        rtol=0.0,
+    )

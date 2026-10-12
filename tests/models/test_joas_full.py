@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from qutip import basis, qeye, tensor
 
+from echo_spin.benchmarks.repetitive import logical_repetitive_return_signal
 from echo_spin.control.microwave import (
     control_operator,
     microwave_hamiltonian,
@@ -2395,3 +2396,26 @@ def test_joas_full_finite_xy8_propagator(
         f"fidelity={fidelity:.8f}, "
         f"fidelity with dephasing={fidelity_with_dephasing:.8f}"
     )
+
+    # ------------------------------------------------------------------
+    # 14. Repetitive benchmarking
+    # ------------------------------------------------------------------
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    benchmark_counts = np.array([0, 1, 2, 4, 8, 16])
+
+    return_signal = logical_repetitive_return_signal(
+        initial_density=tensor(plus, plus).proj(),
+        propagator=propagator,
+        logical_basis=logical_electron_basis,
+        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+        target=target,
+        repetitions=benchmark_counts,
+    )
+
+    assert return_signal[0] == pytest.approx(1.0, abs=1e-12)
+    assert np.all(return_signal >= -1e-10)
+    assert np.all(return_signal <= 1 + 1e-10)
+
+    print("Repetitions =", benchmark_counts)
+    print("Ideal-recovery return signal =", return_signal)
