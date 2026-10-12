@@ -2298,3 +2298,168 @@ def test_joas_delayed_x_pulse_phase():
     print("ratio_delayed =", ratio_delayed)
     print("relative =", ratio_delayed / ratio_0)
 
+
+@pytest.mark.parametrize(
+    "addressed_index",
+    [
+        pytest.param(0, id="drive_NV1"),
+        pytest.param(1, id="drive_NV2"),
+    ],
+)
+def test_joas_shared_microwave_spin_one_crosstalk(addressed_index):
+    """Measure direct spectator excitation under a shared physical microwave field."""
+    system = SpinSystem([1])
+    sx, _, _ = spin_operators(1)
+
+    hamiltonians = []
+    logical_states = []
+
+    for splitting_mhz, angle_degrees, excited_state in [
+        (2867.27, 74.08, "+1"),
+        (2865.42, 3.58, "-1"),
+    ]:
+        angle = np.deg2rad(angle_degrees)
+        field = 2 * np.pi * 295.18 * np.array(
+            [np.sin(angle), 0.0, np.cos(angle)]
+        )
+
+        hamiltonian = electronic_nv_hamiltonian(
+            system=system,
+            electron_site=0,
+            D=2 * np.pi * splitting_mhz,
+            omega_e=field,
+        )
+
+        hamiltonians.append(hamiltonian)
+        logical_states.append(
+            electron_logical_states(
+                hamiltonian,
+                excited_state=excited_state,
+            )
+        )
+
+    addressed_zero, addressed_one = logical_states[addressed_index]
+    addressed_hamiltonian = hamiltonians[addressed_index]
+
+    carrier = float(np.real(
+        addressed_one.dag()
+        * addressed_hamiltonian
+        * addressed_one
+        - addressed_zero.dag()
+        * addressed_hamiltonian
+        * addressed_zero
+    ))
+
+    matrix_element = abs(
+        addressed_one.dag() * sx * addressed_zero
+    )
+
+    pulse_duration = 0.1
+    peak_amplitude = (
+        np.pi**2
+        / (
+            2
+            * np.sqrt(2.0)
+            * matrix_element
+            * pulse_duration
+        )
+    )
+
+    def microwave(time):
+        """Return the common carrier drive acting on either local spin."""
+        envelope = sine_envelope(
+            time=time,
+            duration=pulse_duration,
+            peak_amplitude=peak_amplitude,
+        )
+        return microwave_hamiltonian(
+            time=time,
+            control=sx,
+            drives=[{
+                "omega": carrier,
+                "phase": 0.0,
+                "omega_x": envelope,
+                "omega_y": 0.0,
+            }],
+        )
+
+    def evolve_local(drift, initial_state, steps):
+        """Evolve one NV under the shared field using midpoint sampling."""
+        dt = pulse_duration / steps
+
+        def midpoint_hamiltonian(endpoint_time):
+            """Return the local Hamiltonian at the interval midpoint."""
+            return drift + microwave(endpoint_time - dt / 2)
+
+        propagator = time_dependent_propagator(
+            hamiltonian=midpoint_hamiltonian,
+            t0=0.0,
+            t1=pulse_duration,
+            steps=steps,
+        )
+        return propagator * initial_state
+
+    spectator_index = 1 - addressed_index
+    spectator_zero, spectator_one = logical_states[spectator_index]
+
+    spectator_logical_projector = (
+        spectator_zero.proj() + spectator_one.proj()
+    )
+    spectator_leakage_projector = (
+        qeye(3) - spectator_logical_projector
+    )
+
+    results = []
+
+    for steps in [5000, 10000]:
+        addressed_final = evolve_local(
+            addressed_hamiltonian,
+            addressed_zero,
+            steps,
+        )
+        spectator_final = evolve_local(
+            hamiltonians[spectator_index],
+            spectator_zero,
+            steps,
+        )
+
+        transfer = abs(
+            addressed_one.overlap(addressed_final)
+        ) ** 2
+        spectator_excitation = abs(
+            spectator_one.overlap(spectator_final)
+        ) ** 2
+        spectator_leakage = (
+            spectator_leakage_projector * spectator_final
+        ).norm() ** 2
+        spectator_remaining = abs(
+            spectator_zero.overlap(spectator_final)
+        ) ** 2
+
+        assert (
+            spectator_remaining
+            + spectator_excitation
+            + spectator_leakage
+        ) == pytest.approx(1.0, abs=1e-10)
+
+        results.append(
+            [transfer, spectator_excitation, spectator_leakage]
+        )
+
+    np.testing.assert_allclose(
+        results[0],
+        results[1],
+        atol=1e-4,
+        rtol=0.0,
+    )
+
+    transfer, spectator_excitation, spectator_leakage = results[1]
+
+    assert transfer > 0.99
+
+    print(
+        f"Drive NV{addressed_index + 1}: "
+        f"target transfer={transfer:.8f}, "
+        f"spectator logical excitation={spectator_excitation:.8f}, "
+        f"spectator leakage={spectator_leakage:.8f}"
+    )
