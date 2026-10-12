@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import jmat, qeye, sigmax, sigmay, sigmaz
+from qutip import basis, jmat, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.control.microwave import (
     control_amplitude,
@@ -13,6 +13,7 @@ from echo_spin.control.microwave import (
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.dynamics.propagators import (
     rotating_frame_hamiltonian,
+    static_propagator,
     time_dependent_propagator,
 )
 
@@ -257,3 +258,79 @@ def test_linear_drive_rejects_invalid_options(options):
 
     with pytest.raises(ValueError):
         linear_drive_qubit_hamiltonian(**parameters)
+
+
+@pytest.mark.parametrize("detuning_ratio", [0.0, 1.0, 4.0, 20.0])
+def test_shared_carrier_detuned_spectator_excitation(detuning_ratio):
+    """Verify spectator excitation under a shared carrier against the detuned Rabi solution."""
+    rabi_frequency = 1.0
+    carrier = 100.0
+    detuning = detuning_ratio * rabi_frequency
+    pulse_duration = np.pi / rabi_frequency
+
+    addressed_hamiltonian = linear_drive_qubit_hamiltonian(
+        time=0.0,
+        omega_0=carrier,
+        carrier=carrier,
+        rabi_frequency=rabi_frequency,
+        frame="rotating",
+        rwa=True,
+    )
+
+    spectator_hamiltonian = linear_drive_qubit_hamiltonian(
+        time=0.0,
+        omega_0=carrier + detuning,
+        carrier=carrier,
+        rabi_frequency=rabi_frequency,
+        frame="rotating",
+        rwa=True,
+    )
+
+    addressed_propagator = static_propagator(
+        hamiltonian=addressed_hamiltonian,
+        time=pulse_duration,
+    )
+    spectator_propagator = static_propagator(
+        hamiltonian=spectator_hamiltonian,
+        time=pulse_duration,
+    )
+
+    final_state = tensor(
+        addressed_propagator,
+        spectator_propagator,
+    ) * tensor(basis(2, 0), basis(2, 0))
+
+    addressed_density = final_state.ptrace(0)
+    spectator_density = final_state.ptrace(1)
+
+    addressed_excitation = float(np.real(
+        basis(2, 1).dag()
+        * addressed_density
+        * basis(2, 1)
+    ))
+    spectator_excitation = float(np.real(
+        basis(2, 1).dag()
+        * spectator_density
+        * basis(2, 1)
+    ))
+
+    generalized_rabi = np.sqrt(
+        rabi_frequency**2 + detuning**2
+    )
+    excitation_bound = (
+        rabi_frequency**2 / generalized_rabi**2
+    )
+    expected_excitation = (
+        excitation_bound
+        * np.sin(
+            generalized_rabi * pulse_duration / 2
+        ) ** 2
+    )
+
+    assert addressed_excitation == pytest.approx(
+        1.0, abs=1e-12
+    )
+    assert spectator_excitation == pytest.approx(
+        expected_excitation, abs=1e-12
+    )
+    assert spectator_excitation <= excitation_bound + 1e-12
