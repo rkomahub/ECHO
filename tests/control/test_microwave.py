@@ -28,7 +28,9 @@ def test_constant_control_amplitude():
 
 def test_time_dependent_control_amplitude():
     """A callable control amplitude should be evaluated at the requested time."""
-    amplitude = lambda t: 2.0 * t
+    def amplitude(time):
+        """Return a linearly increasing control amplitude."""
+        return 2.0 * time
 
     assert np.isclose(
         control_amplitude(amplitude, time=3.0),
