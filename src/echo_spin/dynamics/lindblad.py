@@ -52,3 +52,39 @@ def static_lindblad_map(
     )
 
     return vector_to_operator(evolved_vector)
+
+
+def piecewise_lindblad_map(
+    density_matrix: Qobj,
+    hamiltonians,
+    durations,
+    collapse_operators,
+) -> Qobj:
+    """Evolve consecutive constant-Hamiltonian intervals with fixed collapse operators."""
+    hamiltonians = list(hamiltonians)
+    durations = np.asarray(durations, dtype=float)
+    collapse_operators = list(collapse_operators)
+
+    if (
+        durations.ndim != 1
+        or len(durations) == 0
+        or len(hamiltonians) != len(durations)
+    ):
+        raise ValueError(
+            "Provide one Hamiltonian per duration and at least one interval."
+        )
+
+    if not np.all(np.isfinite(durations)) or np.any(durations <= 0):
+        raise ValueError("durations must be finite and positive.")
+
+    result = density_matrix
+
+    for hamiltonian, duration in zip(hamiltonians, durations):
+        result = static_lindblad_map(
+            density_matrix=result,
+            hamiltonian=hamiltonian,
+            time=duration,
+            collapse_operators=collapse_operators,
+        )
+
+    return result
