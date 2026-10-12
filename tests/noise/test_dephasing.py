@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, tensor
+from qutip import basis, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.decoupling.modulation import modulation_function
@@ -14,6 +14,7 @@ from echo_spin.noise.dephasing import (
     quasistatic_coherence,
     quasistatic_dephasing_channel,
     stochastic_dephasing_propagator,
+    stochastic_noise_hamiltonian,
     two_qubit_dephasing_channel,
 )
 
@@ -942,3 +943,73 @@ def test_ou_stationary_covariance_on_irregular_grid():
             measured_covariance - expected_covariance
         ) < 5 * covariance_standard_error
     )
+
+
+def test_generic_noise_hamiltonian_recovers_longitudinal_convention():
+    """Verify that generic noise reproduces the existing xi-Z-over-two convention."""
+    noise_value = 0.37
+
+    actual = stochastic_noise_hamiltonian(
+        time=0.4,
+        operators=[sigmaz() / 2],
+        amplitudes=[noise_value],
+    )
+
+    expected = dephasing_hamiltonian(
+        noise_value=noise_value,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_generic_noise_hamiltonian_combines_independent_axes():
+    """Verify distinct time-dependent noise coefficients on three Hermitian axes."""
+    def noise_x(time):
+        """Return the supplied x-noise realization at the requested time."""
+        return 0.2 + time
+
+    def noise_y(time):
+        """Return the supplied y-noise realization at the requested time."""
+        return -0.3 * time
+
+    def noise_z(time):
+        """Return the supplied z-noise realization at the requested time."""
+        return 0.1 - time**2
+
+    time = 0.4
+
+    actual = stochastic_noise_hamiltonian(
+        time=time,
+        operators=[
+            sigmax() / 2,
+            sigmay() / 2,
+            sigmaz() / 2,
+        ],
+        amplitudes=[noise_x, noise_y, noise_z],
+    )
+
+    # Explicit matrix reference checks coefficients and the Sy sign convention.
+    x = 0.6
+    y = -0.12
+    z = -0.06
+
+    expected = np.array(
+        [
+            [z / 2, (x - 1j * y) / 2],
+            [(x + 1j * y) / 2, -z / 2],
+        ],
+        dtype=complex,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert actual.isherm

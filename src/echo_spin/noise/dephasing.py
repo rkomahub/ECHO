@@ -1,6 +1,8 @@
 import numpy as np
 from qutip import Qobj, qeye, sigmaz, tensor
 
+from echo_spin.control.microwave import control_hamiltonian
+
 
 def exponential_coherence(
     time: float,
@@ -254,4 +256,17 @@ def quasistatic_dephasing_channel(
         (1 + coherence) / 2 * density_matrix
         + (1 - coherence) / 2
         * sigma_z * density_matrix * sigma_z
+    )
+
+
+def stochastic_noise_hamiltonian(
+    time: float,
+    operators,
+    amplitudes,
+) -> Qobj:
+    """Construct a stochastic Hamiltonian from supplied real noise coefficients."""
+    return control_hamiltonian(
+        time=time,
+        operators=operators,
+        amplitudes=amplitudes,
     )
