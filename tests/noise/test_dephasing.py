@@ -1178,3 +1178,79 @@ def test_vector_noise_population_response(axis):
     )
 
     assert actual.tr() == pytest.approx(1.0, abs=1e-12)
+
+
+def test_vector_noise_with_drift_matches_exact_rotation():
+    """Verify simultaneous static drift and vector noise against an exact SU2 rotation."""
+    duration = 0.7
+    omega_zero = 1.3
+    noise_vector = np.array([0.4, -0.3, 0.2])
+
+    actual = sampled_noise_propagator(
+        times=[0.0, 0.2, duration],
+        coefficients=[noise_vector, noise_vector],
+        operators=[
+            sigmax() / 2,
+            sigmay() / 2,
+            sigmaz() / 2,
+        ],
+        drift=omega_zero * sigmaz() / 2,
+    )
+
+    x, y, z = noise_vector
+    z += omega_zero
+
+    magnitude = np.sqrt(x**2 + y**2 + z**2)
+    generator = np.array(
+        [
+            [z, x - 1j * y],
+            [x + 1j * y, -z],
+        ],
+        dtype=complex,
+    )
+
+    expected = (
+        np.cos(magnitude * duration / 2) * np.eye(2)
+        - 1j
+        * np.sin(magnitude * duration / 2)
+        * generator / magnitude
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_noise_ensemble_with_drift_recovers_zero_noise_evolution():
+    """Verify that ensemble propagation retains static drift when noise vanishes."""
+    duration = 0.7
+    omega_zero = 1.3
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+
+    actual = sampled_noise_ensemble_map(
+        density_matrix=plus.proj(),
+        times=[0.0, 0.2, duration],
+        coefficients=np.zeros((2, 2, 1)),
+        operators=[sigmax() / 2],
+        drift=omega_zero * sigmaz() / 2,
+    )
+
+    coherence = np.exp(-1j * omega_zero * duration)
+    expected = 0.5 * np.array(
+        [
+            [1.0, coherence],
+            [np.conjugate(coherence), 1.0],
+        ],
+        dtype=complex,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )

@@ -276,8 +276,9 @@ def sampled_noise_propagator(
     times,
     coefficients,
     operators,
+    drift=None,
 ) -> Qobj:
-    """Propagate piecewise-constant noise coefficients in chronological order."""
+    """Propagate sampled noise with optional static drift in chronological order."""
     if np.iscomplexobj(times):
         raise ValueError("times must be real.")
 
@@ -315,6 +316,13 @@ def sampled_noise_propagator(
     if not np.all(np.isfinite(coefficients)):
         raise ValueError("coefficients must be finite.")
 
+    if drift is not None:
+        if not isinstance(drift, Qobj) or not drift.isherm:
+            raise ValueError("drift must be a Hermitian Qobj.")
+
+        if not np.all(np.isfinite(drift.full())):
+            raise ValueError("drift must contain finite entries.")
+
     propagator = None
 
     for index, duration in enumerate(durations):
@@ -323,6 +331,13 @@ def sampled_noise_propagator(
             operators=operators,
             amplitudes=coefficients[index],
         )
+
+        if drift is not None:
+            if drift.dims != hamiltonian.dims:
+                raise ValueError(
+                    "drift dimensions must match the noise operators."
+                )
+            hamiltonian = drift + hamiltonian
 
         if propagator is None:
             propagator = qeye(hamiltonian.dims[0])
@@ -340,6 +355,7 @@ def sampled_noise_ensemble_map(
     times,
     coefficients,
     operators,
+    drift=None,
 ) -> Qobj:
     """Average evolution over equally weighted sampled noise realizations."""
     if np.iscomplexobj(coefficients):
@@ -362,6 +378,7 @@ def sampled_noise_ensemble_map(
             times=times,
             coefficients=realization,
             operators=operators,
+            drift=drift,
         )
 
         if density_matrix.dims != propagator.dims:
