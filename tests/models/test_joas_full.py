@@ -1724,16 +1724,25 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
 # -----------------------------------------------------------------
 
 @pytest.mark.parametrize(
-    "drive_mode",
+    "drive_mode, hyperfine_mode",
     [
-        pytest.param("shared", id="shared"),
-        pytest.param("selective", id="selective"),
-        pytest.param("qubit_selective", id="qubit_selective"),
+        pytest.param("shared", "full", id="shared"),
+        pytest.param("selective", "full", id="selective"),
+        pytest.param(
+            "qubit_selective", "full",
+            id="qubit_selective",
+        ),
+        pytest.param(
+            "qubit_selective", "off",
+            id="qubit_selective_no_hyperfine",
+        ),
     ],
 )
-def test_joas_full_finite_xy8_propagator(drive_mode):
-    """Validate the full XY8 gate with shared or electron-selective microwave control."""
-
+def test_joas_full_finite_xy8_propagator(
+    drive_mode,
+    hyperfine_mode,
+):
+    """Validate full XY8 control with explicit drive and hyperfine comparison modes."""
     # ------------------------------------------------------------------
     # 1. Full two-NV system
     # ------------------------------------------------------------------
@@ -1751,6 +1760,9 @@ def test_joas_full_finite_xy8_propagator(drive_mode):
         -2.62,
         -2.162,
     ])
+
+    if hyperfine_mode == "off":
+        A = np.zeros((3, 3))
 
     omega_e = 2 * np.pi * 295.18
     omega_n = 2 * np.pi * 0.03241
@@ -2310,6 +2322,23 @@ def test_joas_full_finite_xy8_propagator(drive_mode):
         rtol=0.0,
     )
 
+    if hyperfine_mode == "off":
+        # Without hyperfine coupling, nuclear preparation cannot affect the gate.
+        np.testing.assert_allclose(
+            resolved_fidelities,
+            fidelity,
+            atol=1e-9,
+            rtol=0.0,
+        )
+
+        # Logical-selective drive and diagonal electronic drift preserve the subspace.
+        np.testing.assert_allclose(
+            survivals,
+            1.0,
+            atol=1e-9,
+            rtol=0.0,
+        )
+
     print(f"Average logical survival = {average_survival:.8f}")
     print(f"Mixed-nuclear gate fidelity = {fidelity:.8f}")
     print(
@@ -2318,7 +2347,7 @@ def test_joas_full_finite_xy8_propagator(drive_mode):
         f"{max(resolved_fidelities):.8f}"
     )
     print(
-        f"Drive mode={drive_mode}: "
+        f"Drive mode={drive_mode}, hyperfine={hyperfine_mode}: "
         f"survival={average_survival:.8f}, "
         f"fidelity={fidelity:.8f}, "
         f"fidelity with dephasing={fidelity_with_dephasing:.8f}"
