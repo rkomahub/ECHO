@@ -1,6 +1,7 @@
 import numpy as np
 from qutip import Qobj, basis, sigmax
 
+from echo_spin.core.operators import spin_operators
 from echo_spin.noise.dephasing import dephasing_channel
 
 
@@ -92,3 +93,41 @@ def generalized_amplitude_damping_channel(
         (1 - population) * downward
         + population * upward
     )
+
+
+def spin_one_relaxation_operators(decay_rates) -> list:
+    """Construct independent spin-1 jumps from mS=+1 and -1 into mS=0."""
+    if np.iscomplexobj(decay_rates):
+        raise ValueError("decay_rates must be real.")
+
+    decay_rates = np.asarray(decay_rates, dtype=float)
+
+    if (
+        decay_rates.shape != (2,)
+        or not np.all(np.isfinite(decay_rates))
+        or np.any(decay_rates < 0)
+    ):
+        raise ValueError(
+            "Provide two finite non-negative rates, ordered (+1, -1)."
+        )
+
+    ground = basis(3, 1)
+
+    return [
+        np.sqrt(rate) * ground * basis(3, index).dag()
+        for rate, index in zip(decay_rates, [0, 2])
+    ]
+
+
+def spin_one_dephasing_operator(
+    single_quantum_coherence_time: float,
+) -> Qobj:
+    """Construct longitudinal spin-1 dephasing calibrated to single-quantum coherence."""
+    coherence_time = single_quantum_coherence_time
+
+    if not np.isfinite(coherence_time) or coherence_time <= 0:
+        raise ValueError("coherence time must be finite and positive.")
+
+    _, _, sz = spin_operators(1)
+
+    return np.sqrt(2 / coherence_time) * sz
