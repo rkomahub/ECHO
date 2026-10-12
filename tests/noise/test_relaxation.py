@@ -4,6 +4,7 @@ from qutip import basis
 
 from echo_spin.noise.relaxation import (
     amplitude_damping_channel,
+    generalized_amplitude_damping_channel,
     relaxation_dephasing_channel,
 )
 
@@ -86,3 +87,81 @@ def test_amplitude_damping_preserves_ground_state():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize("initial_excited", [0.0, 1.0])
+@pytest.mark.parametrize("equilibrium_excited", [0.0, 0.2, 0.5])
+def test_generalized_damping_population_equilibration(
+    initial_excited,
+    equilibrium_excited,
+):
+    """Verify excitation and relaxation toward the specified equilibrium population."""
+    time = 0.7
+    relaxation_time = 2.0
+
+    initial_density = (
+        (1 - initial_excited) * basis(2, 0).proj()
+        + initial_excited * basis(2, 1).proj()
+    )
+
+    actual = generalized_amplitude_damping_channel(
+        density_matrix=initial_density,
+        time=time,
+        relaxation_time=relaxation_time,
+        equilibrium_excited_population=equilibrium_excited,
+    )
+
+    expected_excited = (
+        equilibrium_excited
+        + (initial_excited - equilibrium_excited)
+        * np.exp(-time / relaxation_time)
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        np.diag([1 - expected_excited, expected_excited]),
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert actual.tr() == pytest.approx(1.0, abs=1e-12)
+
+
+def test_generalized_damping_stationary_state_and_coherence():
+    """Verify equilibrium stationarity and the relaxation-only coherence factor."""
+    time = 0.7
+    relaxation_time = 2.0
+    equilibrium_excited = 0.2
+
+    equilibrium_density = (
+        (1 - equilibrium_excited) * basis(2, 0).proj()
+        + equilibrium_excited * basis(2, 1).proj()
+    )
+
+    stationary = generalized_amplitude_damping_channel(
+        density_matrix=equilibrium_density,
+        time=time,
+        relaxation_time=relaxation_time,
+        equilibrium_excited_population=equilibrium_excited,
+    )
+
+    np.testing.assert_allclose(
+        stationary.full(),
+        equilibrium_density.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+
+    evolved = generalized_amplitude_damping_channel(
+        density_matrix=plus.proj(),
+        time=time,
+        relaxation_time=relaxation_time,
+        equilibrium_excited_population=equilibrium_excited,
+    )
+
+    assert evolved.full()[0, 1] == pytest.approx(
+        0.5 * np.exp(-time / (2 * relaxation_time)),
+        abs=1e-12,
+    )
+    assert np.min(evolved.eigenenergies()) > -1e-12
