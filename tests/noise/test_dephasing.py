@@ -1129,3 +1129,52 @@ def test_sampled_noise_ensemble_matches_two_static_detunings():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize("axis", ["x", "y", "z"])
+def test_vector_noise_population_response(axis):
+    """Verify transverse population changes and longitudinal population preservation."""
+    duration = 0.7
+    amplitude = 0.8
+
+    operators = {
+        "x": sigmax() / 2,
+        "y": sigmay() / 2,
+        "z": sigmaz() / 2,
+    }
+
+    # Two equally weighted, opposite constant field realizations.
+    coefficients = np.array([
+        [[amplitude]],
+        [[-amplitude]],
+    ])
+
+    initial_density = basis(2, 0).proj()
+
+    actual = sampled_noise_ensemble_map(
+        density_matrix=initial_density,
+        times=[0.0, duration],
+        coefficients=coefficients,
+        operators=[operators[axis]],
+    )
+
+    if axis == "z":
+        expected_excitation = 0.0
+    else:
+        expected_excitation = np.sin(
+            amplitude * duration / 2
+        ) ** 2
+
+    expected_density = np.diag([
+        1 - expected_excitation,
+        expected_excitation,
+    ])
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected_density,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    assert actual.tr() == pytest.approx(1.0, abs=1e-12)
