@@ -688,3 +688,62 @@ def test_dephasing_preserves_logical_loss_in_gate_fidelity(survival):
         expected_fidelity, abs=1e-12
     )
     assert fidelity <= survival + 1e-12
+
+
+def test_two_qubit_exponential_dephasing_composes_in_time():
+    """Verify exponential time composition and preservation of all populations."""
+    coherence_times = (2.0, 5.0)
+    first_time = 0.7
+    second_time = 1.3
+
+    state = (
+        tensor(basis(2, 0), basis(2, 0))
+        + 1j * tensor(basis(2, 0), basis(2, 1))
+        + 2 * tensor(basis(2, 1), basis(2, 0))
+        - 0.5j * tensor(basis(2, 1), basis(2, 1))
+    ).unit()
+    initial_density = state.proj()
+
+    first_result = two_qubit_dephasing_channel(
+        density_matrix=initial_density,
+        time=first_time,
+        coherence_times=coherence_times,
+    )
+    sequential_result = two_qubit_dephasing_channel(
+        density_matrix=first_result,
+        time=second_time,
+        coherence_times=coherence_times,
+    )
+    combined_result = two_qubit_dephasing_channel(
+        density_matrix=initial_density,
+        time=first_time + second_time,
+        coherence_times=coherence_times,
+    )
+
+    np.testing.assert_allclose(
+        sequential_result.full(),
+        combined_result.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        np.diag(combined_result.full()),
+        np.diag(initial_density.full()),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    # A coherence differing on both qubits receives both decay factors.
+    expected_coherence = (
+        initial_density.full()[0, 3]
+        * np.exp(
+            -(first_time + second_time)
+            * (1 / coherence_times[0] + 1 / coherence_times[1])
+        )
+    )
+
+    assert combined_result.full()[0, 3] == pytest.approx(
+        expected_coherence,
+        abs=1e-12,
+    )
