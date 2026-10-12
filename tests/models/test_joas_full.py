@@ -1973,6 +1973,7 @@ def test_joas_full_finite_xy8_propagator():
         start_time = center - pulse_duration / 2
 
         def pulse_hamiltonian(time):
+            """Return the full laboratory-frame Hamiltonian during this pulse."""
             envelope = centered_sine_envelope(
                 time=time,
                 center=center,
@@ -1995,8 +1996,14 @@ def test_joas_full_finite_xy8_propagator():
 
             return h_free + microwave
 
+        dt = pulse_duration / pulse_steps
+
+        def midpoint_pulse_hamiltonian(endpoint_time):
+            """Evaluate this pulse Hamiltonian at the integration interval midpoint."""
+            return pulse_hamiltonian(endpoint_time - dt / 2)
+
         pulse_propagator = time_dependent_propagator(
-            hamiltonian=pulse_hamiltonian,
+            hamiltonian=midpoint_pulse_hamiltonian,
             t0=start_time,
             t1=start_time + pulse_duration,
             steps=pulse_steps,
