@@ -1728,6 +1728,7 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
     [
         pytest.param("shared", id="shared"),
         pytest.param("selective", id="selective"),
+        pytest.param("qubit_selective", id="qubit_selective"),
     ],
 )
 def test_joas_full_finite_xy8_propagator(drive_mode):
@@ -1922,6 +1923,27 @@ def test_joas_full_finite_xy8_propagator(drive_mode):
         2: sx_e2_full + nuclear_control,
     }
 
+    # Logical levels in the electronic eigenbasis used by this test.
+    logical_projector_one = (
+        basis(3, 1).proj() + basis(3, 0).proj()
+    )
+    logical_projector_two = (
+        basis(3, 1).proj() + basis(3, 2).proj()
+    )
+
+    qubit_selective_controls = {
+        1: embed_operator(
+            logical_projector_one * sx * logical_projector_one,
+            site=0,
+            system=system,
+        ) + nuclear_control,
+        2: embed_operator(
+            logical_projector_two * sx * logical_projector_two,
+            site=2,
+            system=system,
+        ) + nuclear_control,
+    }
+
     # ------------------------------------------------------------------
     # 6. Joas rotating frame
     # ------------------------------------------------------------------
@@ -1990,11 +2012,12 @@ def test_joas_full_finite_xy8_propagator(drive_mode):
 
         start_time = center - pulse_duration / 2
 
-        pulse_control = (
-            control
-            if drive_mode == "shared"
-            else selective_controls[nv]
-        )
+        if drive_mode == "shared":
+            pulse_control = control
+        elif drive_mode == "selective":
+            pulse_control = selective_controls[nv]
+        else:
+            pulse_control = qubit_selective_controls[nv]
 
         def pulse_hamiltonian(time):
             """Return the full laboratory-frame Hamiltonian during this pulse."""
