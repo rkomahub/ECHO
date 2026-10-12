@@ -336,3 +336,63 @@ def test_shared_carrier_detuned_spectator_excitation(detuning_ratio):
         expected_excitation, abs=1e-12
     )
     assert spectator_excitation <= excitation_bound + 1e-12
+
+
+@pytest.mark.parametrize(
+    "fractional_error",
+    [-0.1, -0.02, 0.0, 0.02, 0.1],
+)
+def test_resonant_pi_pulse_amplitude_error(fractional_error):
+    """Verify population and gate-fidelity errors from a miscalibrated pi pulse."""
+    nominal_rabi = 1.0
+    carrier = 100.0
+    pulse_duration = np.pi / nominal_rabi
+
+    hamiltonian = linear_drive_qubit_hamiltonian(
+        time=0.0,
+        omega_0=carrier,
+        carrier=carrier,
+        rabi_frequency=nominal_rabi * (1 + fractional_error),
+        frame="rotating",
+        rwa=True,
+    )
+
+    propagator = static_propagator(
+        hamiltonian=hamiltonian,
+        time=pulse_duration,
+    )
+
+    initial = basis(2, 0)
+    final = propagator * initial
+
+    transfer = abs(basis(2, 1).overlap(final)) ** 2
+
+    angle_error = np.pi * fractional_error
+    expected_transfer = np.cos(angle_error / 2) ** 2
+
+    ideal_pi = -1j * np.array(
+        [[0.0, 1.0], [1.0, 0.0]],
+        dtype=complex,
+    )
+    actual = propagator.full()
+
+    overlap = np.trace(
+        ideal_pi.conj().T @ actual
+    )
+    average_fidelity = (
+        2 + abs(overlap) ** 2
+    ) / 6
+
+    expected_fidelity = (
+        1 + 2 * np.cos(angle_error / 2) ** 2
+    ) / 3
+
+    assert transfer == pytest.approx(
+        expected_transfer,
+        abs=1e-12,
+    )
+    assert average_fidelity == pytest.approx(
+        expected_fidelity,
+        abs=1e-12,
+    )
+    assert propagator.isunitary
