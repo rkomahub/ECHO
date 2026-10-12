@@ -13,6 +13,7 @@ from echo_spin.noise.dephasing import (
     ornstein_uhlenbeck_noise,
     quasistatic_coherence,
     quasistatic_dephasing_channel,
+    sampled_noise_ensemble_map,
     sampled_noise_propagator,
     stochastic_dephasing_propagator,
     stochastic_noise_hamiltonian,
@@ -1071,3 +1072,60 @@ def test_sampled_noise_preserves_noncommuting_chronology():
 
     assert (actual - first * second).norm() > 1e-3
     assert actual.isunitary
+
+
+def test_sampled_noise_ensemble_matches_two_static_detunings():
+    """Verify an equally weighted detuning ensemble and preservation of logical loss."""
+    duration = 0.7
+    detuning = 0.8
+
+    coefficients = np.array([
+        [[detuning]],
+        [[-detuning]],
+    ])
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = 0.73 * plus.proj()
+
+    actual = sampled_noise_ensemble_map(
+        density_matrix=initial_density,
+        times=[0.0, duration],
+        coefficients=coefficients,
+        operators=[sigmaz() / 2],
+    )
+
+    # Averaging opposite phases gives cosine coherence, not Gaussian decay.
+    coherence = np.cos(detuning * duration)
+    expected = 0.73 / 2 * np.array(
+        [
+            [1.0, coherence],
+            [coherence, 1.0],
+        ],
+        dtype=complex,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    assert actual.tr() == pytest.approx(0.73, abs=1e-12)
+    assert np.min(actual.eigenenergies()) > -1e-12
+
+    off_diagonal = basis(2, 0) * basis(2, 1).dag()
+
+    evolved_off_diagonal = sampled_noise_ensemble_map(
+        density_matrix=off_diagonal,
+        times=[0.0, duration],
+        coefficients=coefficients,
+        operators=[sigmaz() / 2],
+    )
+
+    np.testing.assert_allclose(
+        evolved_off_diagonal.full(),
+        coherence * off_diagonal.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )

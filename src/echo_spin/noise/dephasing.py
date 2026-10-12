@@ -333,3 +333,46 @@ def sampled_noise_propagator(
         )
 
     return propagator
+
+
+def sampled_noise_ensemble_map(
+    density_matrix: Qobj,
+    times,
+    coefficients,
+    operators,
+) -> Qobj:
+    """Average evolution over equally weighted sampled noise realizations."""
+    if np.iscomplexobj(coefficients):
+        raise ValueError("coefficients must be real.")
+
+    coefficients = np.asarray(coefficients, dtype=float)
+
+    if coefficients.ndim != 3 or coefficients.shape[0] == 0:
+        raise ValueError(
+            "coefficients must have shape "
+            "(realizations, intervals, operators), "
+            "with at least one realization."
+        )
+
+    operators = list(operators)
+    result = 0 * density_matrix
+
+    for realization in coefficients:
+        propagator = sampled_noise_propagator(
+            times=times,
+            coefficients=realization,
+            operators=operators,
+        )
+
+        if density_matrix.dims != propagator.dims:
+            raise ValueError(
+                "Input operator dimensions must match the noise system."
+            )
+
+        result += (
+            propagator
+            * density_matrix
+            * propagator.dag()
+        )
+
+    return result / len(coefficients)
