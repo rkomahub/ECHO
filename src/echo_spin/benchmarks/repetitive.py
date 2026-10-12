@@ -60,6 +60,7 @@ def fit_repetitive_decay(
     repetitions,
     signal,
     standard_errors=None,
+    parameter_bounds=None,
 ) -> dict:
     """Fit offset-plus-exponential repetitive decay and report its pseudo-error."""
     counts = np.asarray(repetitions)
@@ -109,6 +110,12 @@ def fit_repetitive_decay(
     first = int(np.argmin(counts))
     last = int(np.argmax(counts))
 
+    if parameter_bounds is None:
+        parameter_bounds = (
+            [-np.inf, -np.inf, 0.0],
+            [np.inf, np.inf, 1.0],
+        )
+
     parameters, covariance = curve_fit(
         decay_model,
         counts,
@@ -118,10 +125,7 @@ def fit_repetitive_decay(
             values[first] - values[last],
             0.95,
         ],
-        bounds=(
-            [-np.inf, -np.inf, 0.0],
-            [np.inf, np.inf, 1.0],
-        ),
+        bounds=parameter_bounds,
         sigma=sigma,
         absolute_sigma=sigma is not None,
         maxfev=20000,
@@ -249,3 +253,72 @@ def logical_repetitive_return_signal(
         repetitions=repetitions,
         readout=readout,
     )
+
+
+def fit_normalized_repetitive_decay(repetitions, signal) -> dict:
+    """Fit normalized repetitive decay with fixed initial signal and bounded asymptote."""
+    counts = np.asarray(repetitions)
+
+    if (
+        counts.ndim != 1
+        or counts.dtype.kind not in "iu"
+        or np.any(counts < 0)
+        or len(np.unique(counts)) < 4
+        or not np.any(counts == 0)
+    ):
+        raise ValueError(
+            "Provide at least four distinct non-negative integer counts, including zero."
+        )
+
+    if np.iscomplexobj(signal):
+        raise ValueError("signal must be real.")
+
+    values = np.asarray(signal, dtype=float)
+
+    if values.shape != counts.shape or not np.all(np.isfinite(values)):
+        raise ValueError("signal must contain one finite value per count.")
+
+    if np.any(np.abs(values) > 1 + 1e-10):
+        raise ValueError("Normalized signal must lie between -1 and 1.")
+
+    if not np.allclose(
+        values[counts == 0],
+        1.0,
+        atol=1e-10,
+        rtol=0.0,
+    ):
+        raise ValueError("The zero-repetition signal must equal one.")
+
+    if np.ptp(values) == 0:
+        raise ValueError("A constant signal does not identify a decay parameter.")
+
+    def decay_model(count, asymptote, decay_parameter):
+        """Return exponential decay with its zero-count value fixed to one."""
+        return (
+            asymptote
+            + (1 - asymptote) * decay_parameter**count
+        )
+
+    parameters, covariance = curve_fit(
+        decay_model,
+        counts,
+        values,
+        p0=[0.0, 0.95],
+        bounds=([-1.0, 0.0], [1.0, 1.0]),
+        maxfev=20000,
+    )
+
+    asymptote, decay_parameter = parameters
+    fitted = decay_model(counts, *parameters)
+    residuals = values - fitted
+
+    return {
+        "offset": float(asymptote),
+        "amplitude": float(1 - asymptote),
+        "decay_parameter": float(decay_parameter),
+        "pseudo_error_per_gate": float(1 - decay_parameter),
+        "residual_rms": float(np.sqrt(np.mean(residuals**2))),
+        "fitted_signal": fitted,
+        "residuals": residuals,
+        "parameter_covariance": covariance,
+    }

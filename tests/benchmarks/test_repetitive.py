@@ -3,6 +3,7 @@ import pytest
 from qutip import basis, qeye, sigmax, sigmaz, tensor
 
 from echo_spin.benchmarks.repetitive import (
+    fit_normalized_repetitive_decay,
     fit_repetitive_decay,
     logical_repetitive_return_signal,
     repetitive_benchmark_signal,
@@ -218,3 +219,35 @@ def test_repetitive_local_recovery_for_even_gate_counts():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize("asymptote", [-0.3, 0.0, 0.2])
+def test_normalized_repetitive_fit_recovers_known_decay(asymptote):
+    """Recover normalized exponential parameters with physically bounded signals."""
+    counts = np.arange(0, 81, 4)
+    decay_parameter = 0.96
+
+    signal = (
+        asymptote
+        + (1 - asymptote) * decay_parameter**counts
+    )
+
+    result = fit_normalized_repetitive_decay(
+        repetitions=counts,
+        signal=signal,
+    )
+
+    assert result["offset"] == pytest.approx(
+        asymptote, abs=1e-7
+    )
+    assert result["decay_parameter"] == pytest.approx(
+        decay_parameter, abs=1e-7
+    )
+    assert result["pseudo_error_per_gate"] == pytest.approx(
+        0.04, abs=1e-7
+    )
+    assert result["fitted_signal"][0] == pytest.approx(
+        1.0, abs=1e-12
+    )
+    assert np.all(np.abs(result["fitted_signal"]) <= 1 + 1e-12)
+    assert result["residual_rms"] < 1e-7
