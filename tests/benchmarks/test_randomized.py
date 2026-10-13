@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import basis, qeye, sigmax, sigmay, sigmaz
+from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.benchmarks.randomized import (
     random_single_qubit_clifford_sequence,
@@ -10,6 +10,7 @@ from echo_spin.benchmarks.randomized import (
     single_qubit_rb_signal,
     two_qubit_clifford_catalog,
     two_qubit_native_gate_counts,
+    two_qubit_rb_signal,
 )
 
 
@@ -228,3 +229,65 @@ def test_two_qubit_native_gate_counts():
     ) == (4, 2)
 
     assert two_qubit_native_gate_counts(()) == (0, 0)
+
+
+@pytest.mark.parametrize("primitive_decay", [1.0, 0.98])
+def test_two_qubit_rb_includes_noisy_compiled_recovery(primitive_decay):
+    """Verify compiled RB against exact depolarizing survival for each circuit's primitive count."""
+    catalog = two_qubit_clifford_catalog()
+    initial_density = tensor(
+        basis(2, 0),
+        basis(2, 0),
+    ).proj()
+
+    def primitive_map(density_matrix, generator_index):
+        """Apply a native ideal primitive followed by two-qubit depolarization."""
+        matrix = catalog["generators"][generator_index]
+
+        evolved_matrix = (
+            matrix
+            @ density_matrix.full()
+            @ matrix.conj().T
+        )
+        evolved = density_matrix.copy()
+        # Construct through the existing Qobj class, preserving subsystem dimensions.
+        evolved = type(density_matrix)(
+            evolved_matrix,
+            dims=density_matrix.dims,
+        )
+
+        return (
+            primitive_decay * evolved
+            + (1 - primitive_decay)
+            * evolved.tr() * qeye([2, 2]) / 4
+        )
+
+    def readout(density_matrix):
+        """Measure computational two-qubit ground-state return."""
+        return (initial_density * density_matrix).tr()
+
+    result = two_qubit_rb_signal(
+        initial_density=initial_density,
+        lengths=[0, 1, 4],
+        sequences_per_length=8,
+        rng=np.random.default_rng(123),
+        primitive_map=primitive_map,
+        readout=readout,
+    )
+
+    total_primitives = (
+        result["gate_counts"] + result["recovery_counts"]
+    ).sum(axis=2)
+
+    expected = (
+        0.25 + 0.75 * primitive_decay**total_primitives
+    )
+
+    np.testing.assert_allclose(
+        result["samples"],
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    assert np.any(result["recovery_counts"][1:] > 0)

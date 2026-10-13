@@ -339,3 +339,93 @@ def two_qubit_native_gate_counts(word) -> tuple:
         sum(index < 4 for index in word),
         sum(index == 4 for index in word),
     )
+
+
+def two_qubit_rb_signal(
+    initial_density,
+    lengths,
+    sequences_per_length,
+    rng,
+    primitive_map,
+    readout,
+) -> dict:
+    """Average compiled two-qubit RB circuits with the same primitive map during recovery."""
+    lengths = np.asarray(lengths)
+
+    if (
+        lengths.ndim != 1
+        or lengths.size == 0
+        or lengths.dtype.kind not in "iu"
+        or np.any(lengths < 0)
+    ):
+        raise ValueError("lengths must be non-negative integers.")
+
+    if (
+        isinstance(sequences_per_length, (bool, np.bool_))
+        or not isinstance(sequences_per_length, (int, np.integer))
+        or sequences_per_length < 2
+    ):
+        raise ValueError("Use at least two sequences per length.")
+
+    shape = (len(lengths), sequences_per_length)
+    samples = np.empty(shape)
+    gate_counts = np.zeros(shape + (2,), dtype=int)
+    recovery_counts = np.zeros(shape + (2,), dtype=int)
+    sampled_indices = []
+
+    for row, length in enumerate(lengths):
+        row_indices = []
+
+        for column in range(sequences_per_length):
+            sequence = random_two_qubit_clifford_sequence(
+                int(length),
+                rng,
+            )
+            row_indices.append(
+                tuple(int(index) for index in sequence["indices"])
+            )
+            state = initial_density.copy()
+
+            for word in sequence["words"]:
+                gate_counts[row, column] += (
+                    two_qubit_native_gate_counts(word)
+                )
+
+                for generator_index in word:
+                    state = primitive_map(state, generator_index)
+
+                    if state.dims != initial_density.dims:
+                        raise ValueError("primitive_map must preserve dimensions.")
+
+            recovery_word = sequence["recovery_word"]
+            recovery_counts[row, column] = (
+                two_qubit_native_gate_counts(recovery_word)
+            )
+
+            for generator_index in recovery_word:
+                state = primitive_map(state, generator_index)
+
+                if state.dims != initial_density.dims:
+                    raise ValueError("primitive_map must preserve dimensions.")
+
+            value = complex(readout(state))
+
+            if not np.isfinite(value) or abs(value.imag) > 1e-10:
+                raise ValueError("readout must return a finite real value.")
+
+            samples[row, column] = value.real
+
+        sampled_indices.append(tuple(row_indices))
+
+    return {
+        "lengths": lengths.copy(),
+        "samples": samples,
+        "mean": samples.mean(axis=1),
+        "standard_error": (
+            samples.std(axis=1, ddof=1)
+            / np.sqrt(sequences_per_length)
+        ),
+        "gate_counts": gate_counts,
+        "recovery_counts": recovery_counts,
+        "clifford_indices": tuple(sampled_indices),
+    }
