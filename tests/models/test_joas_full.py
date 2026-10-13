@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from qutip import basis, qeye, sigmax, tensor
 
+from echo_spin.benchmarks.randomized import timed_primitive_map
 from echo_spin.benchmarks.repetitive import logical_repetitive_return_signal
 from echo_spin.control.microwave import (
     control_operator,
@@ -1742,6 +1743,10 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
             "shared", "full", "native_half_pi",
             id="native_half_pi",
         ),
+        pytest.param(
+            "shared", "full", "rb_circuit_smoke",
+            id="rb_circuit_smoke",
+        ),
     ],
 )
 def test_joas_full_finite_xy8_propagator(
@@ -2101,6 +2106,109 @@ def test_joas_full_finite_xy8_propagator(
                 f"survival={measurements[1][0]:.8f}, "
                 f"fidelity={measurements[1][1]:.8f}"
             )
+
+        return
+
+    if check_scope == "rb_circuit_smoke":
+        zero_one = basis(3, 1)
+        plus_two = (
+            basis(3, 1) + basis(3, 2)
+        ).unit()
+
+        initial_electron = tensor(
+            zero_one,
+            plus_two,
+        ).proj()
+
+        initial_joint = tensor(
+            zero_one.proj(),
+            qeye(3) / 3,
+            plus_two.proj(),
+            qeye(3) / 3,
+        )
+
+        logical_projector = tensor(
+            basis(3, 1).proj() + basis(3, 0).proj(),
+            basis(3, 1).proj() + basis(3, 2).proj(),
+        )
+
+        measurements = []
+
+        for steps in [5000, 10000]:
+            builders = joas_rb_primitive_builders(
+                free_hamiltonian=h_free,
+                controls={1: control, 2: control},
+                carriers={1: omega_1, 2: omega_2},
+                transition_elements={
+                    1: 1 / np.sqrt(2),
+                    2: 1 / np.sqrt(2),
+                },
+                pi_pulse_duration=pulse_duration,
+                tau_1=tau_1,
+                tau_2=tau_2,
+                pulse_steps=steps,
+            )
+
+            recorded_starts = []
+            original_builder = builders[0]
+
+            def recorded_builder(start_time):
+                """Record absolute timing while building the physical NV1 X primitive."""
+                recorded_starts.append(start_time)
+                return original_builder(start_time)
+
+            builders[0] = recorded_builder
+
+            active_map = timed_primitive_map(
+                builders=builders,
+                frame_generator=h_trans,
+            )
+
+            state = initial_joint.copy()
+
+            # First Clifford, then its three-pulse compiled recovery.
+            for generator_index in [0, 0, 0, 0]:
+                state = active_map(state, generator_index)
+
+            np.testing.assert_allclose(
+                recorded_starts,
+                np.arange(4) * pulse_duration / 2,
+                atol=1e-12,
+                rtol=0.0,
+            )
+
+            reduced_electron = state.ptrace([0, 2])
+
+            survival = float(np.real(
+                (logical_projector * reduced_electron).tr()
+            ))
+            return_probability = float(np.real(
+                (initial_electron * reduced_electron).tr()
+            ))
+
+            assert state.tr() == pytest.approx(1.0, abs=1e-9)
+            assert (
+                state - state.dag()
+            ).norm("fro") < 1e-9
+            assert -1e-9 <= return_probability <= survival + 1e-9
+            assert survival <= 1 + 1e-9
+
+            measurements.append(
+                [survival, return_probability]
+            )
+
+        np.testing.assert_allclose(
+            measurements[0],
+            measurements[1],
+            atol=1e-4,
+            rtol=0.0,
+        )
+
+        print(
+            "Physical Clifford plus compiled recovery: "
+            f"survival={measurements[1][0]:.8f}, "
+            f"return={measurements[1][1]:.8f}"
+        )
 
         return
 
