@@ -5,6 +5,7 @@ import pytest
 from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.benchmarks.randomized import (
+    fit_rb_decay,
     random_single_qubit_clifford_sequence,
     random_two_qubit_clifford_sequence,
     rb_error_per_clifford,
@@ -382,3 +383,36 @@ def test_timed_primitive_dephasing_uses_elapsed_duration():
         atol=1e-12,
     )
     assert actual.tr() == pytest.approx(0.73, abs=1e-12)
+
+
+def test_rb_decay_fit_and_uncertainty_scaling():
+    """Verify exact RB parameter recovery and absolute-error covariance scaling."""
+    lengths = np.array([0, 1, 2, 4, 8, 16, 32, 64])
+    signal = 0.25 + 0.70 * 0.97**lengths
+    errors = np.full(len(lengths), 0.002)
+
+    result = fit_rb_decay(
+        lengths, signal,
+        qubits=2,
+        offset=0.25,
+        standard_errors=errors,
+    )
+    doubled_errors = fit_rb_decay(
+        lengths, signal,
+        qubits=2,
+        offset=0.25,
+        standard_errors=2 * errors,
+    )
+
+    assert result["amplitude"] == pytest.approx(0.70, abs=1e-7)
+    assert result["decay_parameter"] == pytest.approx(0.97, abs=1e-7)
+    assert result["error_per_clifford"] == pytest.approx(0.0225, abs=1e-7)
+
+    assert result["error_per_clifford_standard_error"] == pytest.approx(
+        0.75 * result["decay_parameter_standard_error"],
+        rel=1e-12,
+    )
+    assert doubled_errors["error_per_clifford_standard_error"] == pytest.approx(
+        2 * result["error_per_clifford_standard_error"],
+        rel=1e-4,
+    )

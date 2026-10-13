@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 from qutip import Qobj, qeye
+from scipy.optimize import curve_fit
 
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.gates.gates import sqrt_zz_gate
@@ -581,3 +582,106 @@ def save_two_qubit_rb_result(
         np.savez_compressed(output, **payload)
 
     return path
+
+
+def fit_rb_decay(
+    lengths,
+    signal,
+    qubits,
+    offset,
+    standard_errors=None,
+) -> dict:
+    """Fit positive-contrast RB return probabilities with an independently fixed offset."""
+    dimension_factor = rb_error_per_clifford(0.0, qubits)
+    lengths = np.asarray(lengths)
+
+    if (
+        lengths.ndim != 1
+        or lengths.dtype.kind not in "iu"
+        or np.any(lengths < 0)
+        or len(np.unique(lengths)) < 4
+    ):
+        raise ValueError(
+            "Provide at least four distinct non-negative integer lengths."
+        )
+
+    if np.iscomplexobj(signal):
+        raise ValueError("signal must be real.")
+
+    values = np.asarray(signal, dtype=float)
+
+    if (
+        values.shape != lengths.shape
+        or not np.all(np.isfinite(values))
+        or np.any(values < 0)
+        or np.any(values > 1)
+        or np.ptp(values) == 0
+    ):
+        raise ValueError("Provide finite, nonconstant return probabilities in [0, 1].")
+
+    if not np.isfinite(offset) or not 0 <= offset < 1:
+        raise ValueError("offset must be finite and lie in [0, 1).")
+
+    sigma = None
+
+    if standard_errors is not None:
+        if np.iscomplexobj(standard_errors):
+            raise ValueError("standard_errors must be real.")
+
+        sigma = np.asarray(standard_errors, dtype=float)
+
+        if (
+            sigma.shape != values.shape
+            or not np.all(np.isfinite(sigma))
+            or np.any(sigma <= 0)
+        ):
+            raise ValueError("Standard errors must be finite and strictly positive.")
+
+    def decay_model(length, amplitude, decay_parameter):
+        """Return the RB probability with its independently specified offset."""
+        return offset + amplitude * decay_parameter**length
+
+    first = int(np.argmin(lengths))
+    initial_amplitude = np.clip(
+        values[first] - offset,
+        0.0,
+        1 - offset,
+    )
+
+    parameters, covariance = curve_fit(
+        decay_model,
+        lengths,
+        values,
+        p0=[initial_amplitude, 0.97],
+        bounds=([0.0, 0.0], [1 - offset, 1.0]),
+        sigma=sigma,
+        absolute_sigma=sigma is not None,
+        maxfev=20000,
+    )
+
+    amplitude, decay_parameter = parameters
+    fitted = decay_model(lengths, *parameters)
+    residuals = values - fitted
+    decay_standard_error = float(np.sqrt(covariance[1, 1]))
+
+    return {
+        "offset": float(offset),
+        "amplitude": float(amplitude),
+        "decay_parameter": float(decay_parameter),
+        "decay_parameter_standard_error": decay_standard_error,
+        "error_per_clifford": float(
+            dimension_factor * (1 - decay_parameter)
+        ),
+        "error_per_clifford_standard_error": float(
+            dimension_factor * decay_standard_error
+        ),
+        "fitted_signal": fitted,
+        "residuals": residuals,
+        "residual_rms": float(np.sqrt(np.mean(residuals**2))),
+        "reduced_chi_squared": (
+            float(np.sum((residuals / sigma) ** 2) / (len(values) - 2))
+            if sigma is not None
+            else None
+        ),
+        "parameter_covariance": covariance,
+    }
