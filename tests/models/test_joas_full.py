@@ -1,8 +1,10 @@
+import os
+
 import numpy as np
 import pytest
 from qutip import basis, qeye, sigmax, tensor
 
-from echo_spin.benchmarks.randomized import timed_primitive_map
+from echo_spin.benchmarks.randomized import timed_primitive_map, two_qubit_rb_signal
 from echo_spin.benchmarks.repetitive import logical_repetitive_return_signal
 from echo_spin.control.microwave import (
     control_operator,
@@ -1747,6 +1749,14 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
             "shared", "full", "rb_circuit_smoke",
             id="rb_circuit_smoke",
         ),
+        pytest.param(
+            "shared", "full", "physical_rb_smoke",
+            id="physical_rb_smoke",
+            marks=pytest.mark.skipif(
+                os.environ.get("ECHO_RUN_PHYSICAL_RB") != "1",
+                reason="Physical RB experiment requires explicit opt-in.",
+            ),
+        ),
     ],
 )
 def test_joas_full_finite_xy8_propagator(
@@ -2209,6 +2219,96 @@ def test_joas_full_finite_xy8_propagator(
             f"survival={measurements[1][0]:.8f}, "
             f"return={measurements[1][1]:.8f}"
         )
+
+        return
+
+    if check_scope == "physical_rb_smoke":
+        builders = joas_rb_primitive_builders(
+            free_hamiltonian=h_free,
+            controls={1: control, 2: control},
+            carriers={1: omega_1, 2: omega_2},
+            transition_elements={
+                1: 1 / np.sqrt(2),
+                2: 1 / np.sqrt(2),
+            },
+            pi_pulse_duration=pulse_duration,
+            tau_1=tau_1,
+            tau_2=tau_2,
+            pulse_steps=5000,
+        )
+
+        initial_joint = tensor(
+            basis(3, 1).proj(),
+            qeye(3) / 3,
+            basis(3, 1).proj(),
+            qeye(3) / 3,
+        )
+
+        return_projector = tensor(
+            basis(3, 1).proj(),
+            qeye(3),
+            basis(3, 1).proj(),
+            qeye(3),
+        )
+
+        circuit_counter = 0
+
+        def primitive_factory():
+            """Create a fresh clock for a newly prepared physical RB circuit."""
+            nonlocal circuit_counter
+            circuit_counter += 1
+
+            print(
+                f"Starting physical RB circuit {circuit_counter}/4",
+                flush=True,
+            )
+
+            return timed_primitive_map(
+                builders=builders,
+                frame_generator=h_trans,
+            )
+
+        def physical_readout(density_matrix):
+            """Measure joint electron ground-state return while retaining nuclear normalization."""
+            assert density_matrix.tr() == pytest.approx(
+                1.0, abs=1e-8
+            )
+
+            probability = float(np.real(
+                (return_projector * density_matrix).tr()
+            ))
+
+            print(
+                f"Physical circuit return={probability:.8f}",
+                flush=True,
+            )
+            return probability
+
+        result = two_qubit_rb_signal(
+            initial_density=initial_joint,
+            lengths=[0, 1],
+            sequences_per_length=2,
+            rng=np.random.default_rng(42),
+            primitive_map=None,
+            primitive_map_factory=primitive_factory,
+            readout=physical_readout,
+        )
+
+        np.testing.assert_allclose(
+            result["samples"][0],
+            1.0,
+            atol=1e-10,
+            rtol=0.0,
+        )
+        assert np.all(result["samples"] >= -1e-8)
+        assert np.all(result["samples"] <= 1 + 1e-8)
+
+        print("RB lengths =", result["lengths"])
+        print("Physical RB samples =", result["samples"])
+        print("Physical RB means =", result["mean"])
+        print("Clifford indices =", result["clifford_indices"])
+        print("Native counts excluding recovery =", result["gate_counts"])
+        print("Recovery native counts =", result["recovery_counts"])
 
         return
 
