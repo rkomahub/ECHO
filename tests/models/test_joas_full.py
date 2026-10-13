@@ -8,6 +8,7 @@ from echo_spin.control.microwave import (
     microwave_hamiltonian,
 )
 from echo_spin.control.pulses import centered_sine_envelope, sine_envelope
+from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.core.basis import (
     basis_unitary,
     dressed_spin_one_basis,
@@ -1725,25 +1726,30 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
 # -----------------------------------------------------------------
 
 @pytest.mark.parametrize(
-    "drive_mode, hyperfine_mode",
+    "drive_mode, hyperfine_mode, check_scope",
     [
-        pytest.param("shared", "full", id="shared"),
-        pytest.param("selective", "full", id="selective"),
+        pytest.param("shared", "full", "gate", id="shared"),
+        pytest.param("selective", "full", "gate", id="selective"),
         pytest.param(
-            "qubit_selective", "full",
+            "qubit_selective", "full", "gate",
             id="qubit_selective",
         ),
         pytest.param(
-            "qubit_selective", "off",
+            "qubit_selective", "off", "gate",
             id="qubit_selective_no_hyperfine",
+        ),
+        pytest.param(
+            "shared", "full", "native_half_pi",
+            id="native_half_pi",
         ),
     ],
 )
 def test_joas_full_finite_xy8_propagator(
     drive_mode,
     hyperfine_mode,
+    check_scope,
 ):
-    """Validate full XY8 control with explicit drive and hyperfine comparison modes."""
+    """Validate full-register gate evolution or its physical RB half-pi primitives."""
     # ------------------------------------------------------------------
     # 1. Full two-NV system
     # ------------------------------------------------------------------
@@ -1998,6 +2004,105 @@ def test_joas_full_finite_xy8_propagator(
         np.pi**2
         / (2 * pulse_duration)
     )
+
+    if check_scope == "native_half_pi":
+        physical_basis = [
+            tensor(basis(3, 1), basis(3, 1)),
+            tensor(basis(3, 1), basis(3, 2)),
+            tensor(basis(3, 0), basis(3, 1)),
+            tensor(basis(3, 0), basis(3, 2)),
+        ]
+
+        qubit_basis = [
+            tensor(basis(2, i), basis(2, j))
+            for i in range(2)
+            for j in range(2)
+        ]
+
+        start_time = 0.123
+
+        for primitive_index, nv, axis in [
+            (0, 1, "x"),
+            (1, 1, "y"),
+            (2, 2, "x"),
+            (3, 2, "y"),
+        ]:
+            rotation = single_qubit_rotation(
+                angle=np.pi / 2,
+                axis=axis,
+            )
+            ideal_primitive = (
+                tensor(rotation, qeye(2))
+                if nv == 1
+                else tensor(qeye(2), rotation)
+            )
+
+            measurements = []
+
+            for steps in [5000, 10000]:
+                builders = joas_rb_primitive_builders(
+                    free_hamiltonian=h_free,
+                    controls={1: control, 2: control},
+                    carriers={1: omega_1, 2: omega_2},
+                    transition_elements={
+                        1: 1 / np.sqrt(2),
+                        2: 1 / np.sqrt(2),
+                    },
+                    pi_pulse_duration=pulse_duration,
+                    tau_1=tau_1,
+                    tau_2=tau_2,
+                    pulse_steps=steps,
+                )
+
+                lab_primitive, duration = builders[primitive_index](
+                    start_time
+                )
+
+                rotating_primitive = (
+                    (1j * h_trans * (start_time + duration)).expm()
+                    * lab_primitive
+                    * (-1j * h_trans * start_time).expm()
+                )
+
+                def primitive_map(density_matrix):
+                    """Apply the physical primitive with freshly prepared mixed nuclei."""
+                    return logical_electron_nuclear_dynamical_map(
+                        density_matrix=density_matrix,
+                        propagator=rotating_primitive,
+                        logical_basis=physical_basis,
+                        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+                    )
+
+                survival = float(np.mean([
+                    np.real(primitive_map(state.proj()).tr())
+                    for state in qubit_basis
+                ]))
+
+                fidelity = average_gate_fidelity(
+                    dynamical_map=primitive_map,
+                    target=ideal_primitive,
+                    basis_states=qubit_basis,
+                )
+
+                assert -1e-10 <= fidelity <= survival + 1e-10
+                assert -1e-10 <= survival <= 1 + 1e-10
+
+                measurements.append([survival, fidelity])
+
+            np.testing.assert_allclose(
+                measurements[0],
+                measurements[1],
+                atol=1e-4,
+                rtol=0.0,
+            )
+
+            print(
+                f"NV{nv} positive {axis.upper()} half-pi: "
+                f"survival={measurements[1][0]:.8f}, "
+                f"fidelity={measurements[1][1]:.8f}"
+            )
+
+        return
 
     # ------------------------------------------------------------------
     # 8. Finite pulse propagators
