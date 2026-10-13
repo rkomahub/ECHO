@@ -726,3 +726,57 @@ def extract_entangling_gate_error(
     return float(
         -np.expm1(min(log_entangling_survival, 0.0))
     )
+
+
+def estimate_entangling_gate_error(
+    error_per_clifford,
+    single_qubit_error,
+    single_qubit_gates_per_clifford,
+    entangling_gates_per_clifford,
+    epc_standard_error,
+    single_qubit_error_standard_error,
+) -> dict:
+    """Estimate entangling error with first-order independent-input uncertainty."""
+    error = extract_entangling_gate_error(
+        error_per_clifford=error_per_clifford,
+        single_qubit_error=single_qubit_error,
+        single_qubit_gates_per_clifford=single_qubit_gates_per_clifford,
+        entangling_gates_per_clifford=entangling_gates_per_clifford,
+    )
+
+    for uncertainty in [
+        epc_standard_error,
+        single_qubit_error_standard_error,
+    ]:
+        if not np.isfinite(uncertainty) or uncertainty < 0:
+            raise ValueError("Standard errors must be finite and non-negative.")
+
+    survival = 1 - error
+
+    derivative_epc = survival / (
+        entangling_gates_per_clifford
+        * (1 - error_per_clifford)
+    )
+
+    derivative_single_error = (
+        -single_qubit_gates_per_clifford
+        * survival
+        / (
+            entangling_gates_per_clifford
+            * (1 - single_qubit_error)
+        )
+    )
+
+    standard_error = np.sqrt(
+        (derivative_epc * epc_standard_error) ** 2
+        + (
+            derivative_single_error
+            * single_qubit_error_standard_error
+        ) ** 2
+    )
+
+    return {
+        "entangling_error": float(error),
+        "entangling_fidelity": float(survival),
+        "standard_error": float(standard_error),
+    }

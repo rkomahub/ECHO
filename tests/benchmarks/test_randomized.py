@@ -5,6 +5,7 @@ import pytest
 from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.benchmarks.randomized import (
+    estimate_entangling_gate_error,
     extract_entangling_gate_error,
     fit_rb_decay,
     random_single_qubit_clifford_sequence,
@@ -458,3 +459,54 @@ def test_entangling_error_extraction_rejects_inconsistent_inputs():
             single_qubit_gates_per_clifford=10.5,
             entangling_gates_per_clifford=1.8,
         )
+
+
+def test_entangling_error_uncertainty_matches_finite_difference():
+    """Verify analytical uncertainty derivatives against independent numerical differences."""
+    epc = 0.149
+    single_error = 0.0077
+    single_count = 10.5
+    entangling_count = 1.8
+    step = 1e-6
+
+    def extracted_error(clifford_error, native_single_error):
+        """Evaluate the point estimate at perturbed calibration inputs."""
+        return extract_entangling_gate_error(
+            error_per_clifford=clifford_error,
+            single_qubit_error=native_single_error,
+            single_qubit_gates_per_clifford=single_count,
+            entangling_gates_per_clifford=entangling_count,
+        )
+
+    derivative_epc = (
+        extracted_error(epc + step, single_error)
+        - extracted_error(epc - step, single_error)
+    ) / (2 * step)
+
+    derivative_single = (
+        extracted_error(epc, single_error + step)
+        - extracted_error(epc, single_error - step)
+    ) / (2 * step)
+
+    expected_uncertainty = np.sqrt(
+        (derivative_epc * 0.027) ** 2
+        + (derivative_single * 0.0012) ** 2
+    )
+
+    result = estimate_entangling_gate_error(
+        error_per_clifford=epc,
+        single_qubit_error=single_error,
+        single_qubit_gates_per_clifford=single_count,
+        entangling_gates_per_clifford=entangling_count,
+        epc_standard_error=0.027,
+        single_qubit_error_standard_error=0.0012,
+    )
+
+    assert result["standard_error"] == pytest.approx(
+        expected_uncertainty,
+        rel=1e-6,
+    )
+    assert result["entangling_fidelity"] == pytest.approx(
+        1 - extracted_error(epc, single_error),
+        abs=1e-12,
+    )
