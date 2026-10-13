@@ -2252,6 +2252,12 @@ def test_joas_full_finite_xy8_propagator(
         rb_pulse_steps = int(
             os.environ.get("ECHO_RB_PULSE_STEPS", "5000")
         )
+        rb_family = os.environ.get("ECHO_RB_FAMILY", "full")
+
+        if rb_family not in ("full", "local"):
+            raise ValueError("ECHO_RB_FAMILY must be full or local.")
+
+        rb_include_entangler = rb_family == "full"
 
         dephasing_setting = os.environ.get(
             "ECHO_RB_DEPHASING", "0"
@@ -2310,7 +2316,9 @@ def test_joas_full_finite_xy8_propagator(
             ])
             projector = isometry @ isometry.conj().T
 
-            catalog = two_qubit_clifford_catalog()
+            catalog = two_qubit_clifford_catalog(
+                include_entangler=rb_include_entangler,
+            )
             ideal_joint_generators = []
 
             for logical_generator in catalog["generators"]:
@@ -2360,7 +2368,7 @@ def test_joas_full_finite_xy8_propagator(
 
             builders = {
                 index: ideal_builder(index)
-                for index in range(5)
+                for index in range(len(ideal_joint_generators))
             }
 
         initial_joint = tensor(
@@ -2433,6 +2441,7 @@ def test_joas_full_finite_xy8_propagator(
             primitive_map=None,
             primitive_map_factory=primitive_factory,
             readout=physical_readout,
+            include_entangler=rb_include_entangler,
         )
 
         np.testing.assert_allclose(
@@ -2494,6 +2503,7 @@ def test_joas_full_finite_xy8_propagator(
                         float(1 / np.sqrt(2)),
                     ],
                     "subsystem_order": ["e1", "n1", "e2", "n2"],
+                    "clifford_family": rb_family,
                 },
                 model_arrays={
                     "free_hamiltonian": h_free.full(),

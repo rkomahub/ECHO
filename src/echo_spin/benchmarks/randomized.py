@@ -368,8 +368,10 @@ def two_qubit_rb_signal(
     primitive_map,
     readout,
     primitive_map_factory=None,
+    include_entangler=True,
 ) -> dict:
     """Average compiled two-qubit RB circuits with the same primitive map during recovery."""
+
     lengths = np.asarray(lengths)
 
     if (
@@ -405,6 +407,7 @@ def two_qubit_rb_signal(
             sequence = random_two_qubit_clifford_sequence(
                 int(length),
                 rng,
+                include_entangler=include_entangler,
             )
             row_indices.append(
                 tuple(int(index) for index in sequence["indices"])
@@ -459,6 +462,7 @@ def two_qubit_rb_signal(
         "gate_counts": gate_counts,
         "recovery_counts": recovery_counts,
         "clifford_indices": tuple(sampled_indices),
+        "clifford_family": "full" if include_entangler else "local",
     }
 
 
@@ -554,7 +558,14 @@ def save_two_qubit_rb_result(
     if path.suffix != ".npz":
         raise ValueError("Result path must end in .npz.")
 
-    catalog = two_qubit_clifford_catalog()
+    family = result.get("clifford_family", "full")
+
+    if family not in ("full", "local"):
+        raise ValueError("Unknown Clifford family.")
+
+    catalog = two_qubit_clifford_catalog(
+        include_entangler=family == "full",
+    )
 
     payload = {
         name: np.asarray(result[name])
@@ -580,6 +591,7 @@ def save_two_qubit_rb_result(
             json.dumps(catalog["generator_labels"])
         ),
         "generators": catalog["generators"],
+        "clifford_family": np.array(family),
     })
 
     if model_arrays is not None:

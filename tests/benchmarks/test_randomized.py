@@ -2,7 +2,7 @@ import json
 
 import numpy as np
 import pytest
-from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
+from qutip import Qobj, basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.benchmarks.randomized import (
     estimate_entangling_gate_error,
@@ -510,3 +510,124 @@ def test_entangling_error_uncertainty_matches_finite_difference():
         1 - extracted_error(epc, single_error),
         abs=1e-12,
     )
+
+
+def test_local_clifford_catalog_contains_only_product_operations():
+    """Verify all 576 local Cliffords factor into single-qubit operations."""
+    catalog = two_qubit_clifford_catalog(
+        include_entangler=False,
+    )
+
+    assert catalog["matrices"].shape == (576, 4, 4)
+    assert catalog["clifford_family"] == "local"
+
+    assert all(
+        index < 4
+        for word in catalog["words"]
+        for index in word
+    )
+
+    # Operator reshuffling has rank one precisely for product unitaries.
+    reshuffled = (
+        catalog["matrices"]
+        .reshape(-1, 2, 2, 2, 2)
+        .transpose(0, 1, 3, 2, 4)
+        .reshape(-1, 4, 4)
+    )
+
+    singular_values = np.linalg.svd(
+        reshuffled,
+        compute_uv=False,
+    )
+
+    np.testing.assert_allclose(
+        singular_values,
+        np.broadcast_to(
+            [2.0, 0.0, 0.0, 0.0],
+            singular_values.shape,
+        ),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("length", [0, 1, 10])
+def test_local_clifford_sequence_has_local_recovery(length):
+    """Verify local-only compilation and recovery of sampled product Cliffords."""
+    sequence = random_two_qubit_clifford_sequence(
+        length,
+        np.random.default_rng(42),
+        include_entangler=False,
+    )
+
+    assert sequence["clifford_family"] == "local"
+    assert all(
+        index < 4
+        for word in sequence["words"]
+        for index in word
+    )
+    assert all(index < 4 for index in sequence["recovery_word"])
+
+    total = qeye([2, 2])
+
+    for gate in sequence["gates"]:
+        total = gate * total
+
+    np.testing.assert_allclose(
+        (sequence["recovery"] * total).full(),
+        np.eye(4),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_local_rb_runner_and_archive(tmp_path):
+    """Verify local circuit recovery, zero entangler counts and matching archived compilation."""
+    catalog = two_qubit_clifford_catalog(
+        include_entangler=False,
+    )
+    initial_density = tensor(
+        basis(2, 0), basis(2, 0)
+    ).proj()
+
+    def primitive_map(density_matrix, generator_index):
+        """Apply an ideal local primitive from the selected catalogue."""
+        gate = Qobj(
+            catalog["generators"][generator_index],
+            dims=[[2, 2], [2, 2]],
+        )
+        return gate * density_matrix * gate.dag()
+
+    def readout(density_matrix):
+        """Measure two-qubit computational return probability."""
+        return (initial_density * density_matrix).tr()
+
+    result = two_qubit_rb_signal(
+        initial_density=initial_density,
+        lengths=[0, 1],
+        sequences_per_length=2,
+        rng=np.random.default_rng(42),
+        primitive_map=primitive_map,
+        readout=readout,
+        include_entangler=False,
+    )
+
+    np.testing.assert_allclose(
+        result["samples"], 1.0,
+        atol=1e-12, rtol=0.0,
+    )
+    assert np.all(result["gate_counts"][:, :, 1] == 0)
+    assert np.all(result["recovery_counts"][:, :, 1] == 0)
+
+    path = save_two_qubit_rb_result(
+        tmp_path / "local_rb.npz",
+        result,
+        metadata={"seed": 42},
+    )
+
+    with np.load(path, allow_pickle=False) as archive:
+        assert archive["clifford_family"].item() == "local"
+        assert len(json.loads(
+            archive["catalog_words_json"].item()
+        )) == 576
+        assert archive["generators"].shape == (4, 4, 4)
