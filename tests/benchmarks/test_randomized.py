@@ -5,6 +5,7 @@ import pytest
 from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.benchmarks.randomized import (
+    extract_entangling_gate_error,
     fit_rb_decay,
     random_single_qubit_clifford_sequence,
     random_two_qubit_clifford_sequence,
@@ -416,3 +417,44 @@ def test_rb_decay_fit_and_uncertainty_scaling():
         2 * result["error_per_clifford_standard_error"],
         rel=1e-4,
     )
+
+
+@pytest.mark.parametrize(
+    "single_count, entangling_count",
+    [
+        (10.5, 1.8),
+        (5.8727430555555555, 1.8458333333333334),
+    ],
+)
+def test_entangling_error_extraction_round_trip(
+    single_count,
+    entangling_count,
+):
+    """Recover a known entangling error using the matching compiler's gate counts."""
+    single_error = 0.0077
+    entangling_error = 0.04
+
+    epc = 1 - (
+        (1 - single_error) ** single_count
+        * (1 - entangling_error) ** entangling_count
+    )
+
+    actual = extract_entangling_gate_error(
+        error_per_clifford=epc,
+        single_qubit_error=single_error,
+        single_qubit_gates_per_clifford=single_count,
+        entangling_gates_per_clifford=entangling_count,
+    )
+
+    assert actual == pytest.approx(entangling_error, abs=1e-12)
+
+
+def test_entangling_error_extraction_rejects_inconsistent_inputs():
+    """Reject an EPC smaller than the assumed single-qubit error contribution."""
+    with pytest.raises(ValueError, match="single-qubit contribution"):
+        extract_entangling_gate_error(
+            error_per_clifford=0.01,
+            single_qubit_error=0.0077,
+            single_qubit_gates_per_clifford=10.5,
+            entangling_gates_per_clifford=1.8,
+        )

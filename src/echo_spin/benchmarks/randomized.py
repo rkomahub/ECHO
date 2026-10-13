@@ -685,3 +685,44 @@ def fit_rb_decay(
         ),
         "parameter_covariance": covariance,
     }
+
+
+def extract_entangling_gate_error(
+    error_per_clifford,
+    single_qubit_error,
+    single_qubit_gates_per_clifford,
+    entangling_gates_per_clifford,
+) -> float:
+    """Infer entangling error under the multiplicative native-gate error model."""
+    epc = error_per_clifford
+    single_error = single_qubit_error
+    single_count = single_qubit_gates_per_clifford
+    entangling_count = entangling_gates_per_clifford
+
+    if not np.isfinite(epc) or not 0 <= epc < 1:
+        raise ValueError("error_per_clifford must lie in [0, 1).")
+
+    if not np.isfinite(single_error) or not 0 <= single_error < 1:
+        raise ValueError("single_qubit_error must lie in [0, 1).")
+
+    if not np.isfinite(single_count) or single_count < 0:
+        raise ValueError("single-qubit gate count must be finite and non-negative.")
+
+    if not np.isfinite(entangling_count) or entangling_count <= 0:
+        raise ValueError("Entangling gate count must be finite and positive.")
+
+    log_entangling_survival = (
+        np.log1p(-epc)
+        - single_count * np.log1p(-single_error)
+    ) / entangling_count
+
+    if log_entangling_survival > 1e-12:
+        raise ValueError(
+            "EPC is below the single-qubit contribution predicted by this model. "
+            "Check the calibration, compiler counts and uncertainties."
+        )
+
+    # Permit only negligible numerical roundoff at zero inferred error.
+    return float(
+        -np.expm1(min(log_entangling_survival, 0.0))
+    )
