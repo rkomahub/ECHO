@@ -1,4 +1,6 @@
+import json
 from functools import lru_cache
+from pathlib import Path
 
 import numpy as np
 from qutip import Qobj, qeye
@@ -509,3 +511,61 @@ def timed_primitive_map(
         return result
 
     return primitive_map
+
+
+def save_two_qubit_rb_result(
+    path,
+    result,
+    metadata,
+    model_arrays=None,
+):
+    """Archive RB samples, compiler words and model inputs without overwriting existing results."""
+    path = Path(path)
+
+    if path.suffix != ".npz":
+        raise ValueError("Result path must end in .npz.")
+
+    catalog = two_qubit_clifford_catalog()
+
+    payload = {
+        name: np.asarray(result[name])
+        for name in [
+            "lengths",
+            "samples",
+            "mean",
+            "standard_error",
+            "gate_counts",
+            "recovery_counts",
+        ]
+    }
+
+    payload.update({
+        "metadata_json": np.array(json.dumps(metadata, sort_keys=True)),
+        "clifford_indices_json": np.array(
+            json.dumps(result["clifford_indices"])
+        ),
+        "catalog_words_json": np.array(
+            json.dumps(catalog["words"])
+        ),
+        "generator_labels_json": np.array(
+            json.dumps(catalog["generator_labels"])
+        ),
+        "generators": catalog["generators"],
+    })
+
+    if model_arrays is not None:
+        for name, value in model_arrays.items():
+            array = np.asarray(value)
+
+            if array.dtype.hasobject:
+                raise ValueError("Model arrays must not contain Python objects.")
+
+            payload[f"model_{name}"] = array
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Exclusive creation protects previous experimental results.
+    with path.open("xb") as output:
+        np.savez_compressed(output, **payload)
+
+    return path

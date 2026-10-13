@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 from qutip import basis, qeye, sigmax, sigmay, sigmaz, tensor
@@ -6,6 +8,7 @@ from echo_spin.benchmarks.randomized import (
     random_single_qubit_clifford_sequence,
     random_two_qubit_clifford_sequence,
     rb_error_per_clifford,
+    save_two_qubit_rb_result,
     single_qubit_cliffords,
     single_qubit_rb_signal,
     two_qubit_clifford_catalog,
@@ -291,3 +294,39 @@ def test_two_qubit_rb_includes_noisy_compiled_recovery(primitive_decay):
     )
 
     assert np.any(result["recovery_counts"][1:] > 0)
+
+
+def test_rb_archive_preserves_data_without_pickle(tmp_path):
+    """Verify numeric results and circuit provenance survive a pickle-free archive round trip."""
+    result = {
+        "lengths": np.array([0, 1]),
+        "samples": np.array([[1.0, 1.0], [0.9, 0.8]]),
+        "mean": np.array([1.0, 0.85]),
+        "standard_error": np.array([0.0, 0.05]),
+        "gate_counts": np.zeros((2, 2, 2), dtype=int),
+        "recovery_counts": np.zeros((2, 2, 2), dtype=int),
+        "clifford_indices": (((), ()), ((0,), (1,))),
+    }
+
+    path = save_two_qubit_rb_result(
+        tmp_path / "rb.npz",
+        result,
+        metadata={"seed": 42},
+        model_arrays={"example": np.eye(4, dtype=complex)},
+    )
+
+    with np.load(path, allow_pickle=False) as archive:
+        np.testing.assert_array_equal(
+            archive["samples"], result["samples"]
+        )
+        assert json.loads(
+            archive["metadata_json"].item()
+        ) == {"seed": 42}
+        assert json.loads(
+            archive["clifford_indices_json"].item()
+        ) == [[[], []], [[0], [1]]]
+
+    with pytest.raises(FileExistsError):
+        save_two_qubit_rb_result(
+            path, result, metadata={"seed": 42}
+        )

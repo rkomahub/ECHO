@@ -1,10 +1,13 @@
 import os
+from datetime import datetime, timezone
+from pathlib import Path
 
 import numpy as np
 import pytest
 from qutip import Qobj, basis, qeye, sigmax, tensor
 
 from echo_spin.benchmarks.randomized import (
+    save_two_qubit_rb_result,
     timed_primitive_map,
     two_qubit_clifford_catalog,
     two_qubit_rb_signal,
@@ -2231,6 +2234,36 @@ def test_joas_full_finite_xy8_propagator(
         return
 
     if check_scope in ("physical_rb_smoke", "ideal_rb_smoke"):
+        rb_lengths = np.array([
+            int(value)
+            for value in os.environ.get(
+                "ECHO_RB_LENGTHS", "0,1"
+            ).split(",")
+        ])
+        rb_sequences = int(
+            os.environ.get("ECHO_RB_SEQUENCES", "2")
+        )
+        rb_seed = int(
+            os.environ.get("ECHO_RB_SEED", "42")
+        )
+        rb_pulse_steps = int(
+            os.environ.get("ECHO_RB_PULSE_STEPS", "5000")
+        )
+
+        if (
+            rb_lengths.size == 0
+            or rb_lengths[0] != 0
+            or np.any(rb_lengths < 0)
+            or rb_sequences < 2
+            or rb_pulse_steps <= 0
+        ):
+            raise ValueError(
+                "Start lengths at zero, use non-negative lengths, "
+                "at least two sequences and positive pulse steps."
+            )
+
+        total_circuits = len(rb_lengths) * rb_sequences
+
         builders = joas_rb_primitive_builders(
             free_hamiltonian=h_free,
             controls={1: control, 2: control},
@@ -2242,7 +2275,7 @@ def test_joas_full_finite_xy8_propagator(
             pi_pulse_duration=pulse_duration,
             tau_1=tau_1,
             tau_2=tau_2,
-            pulse_steps=5000,
+            pulse_steps=rb_pulse_steps,
         )
 
         if check_scope == "ideal_rb_smoke":
@@ -2334,7 +2367,8 @@ def test_joas_full_finite_xy8_propagator(
             circuit_counter += 1
 
             print(
-                f"Starting {check_scope} circuit {circuit_counter}/4",
+                f"Starting {check_scope} circuit "
+                f"{circuit_counter}/{total_circuits}",
                 flush=True,
             )
 
@@ -2361,9 +2395,9 @@ def test_joas_full_finite_xy8_propagator(
 
         result = two_qubit_rb_signal(
             initial_density=initial_joint,
-            lengths=[0, 1],
-            sequences_per_length=2,
-            rng=np.random.default_rng(42),
+            lengths=rb_lengths,
+            sequences_per_length=rb_sequences,
+            rng=np.random.default_rng(rb_seed),
             primitive_map=None,
             primitive_map_factory=primitive_factory,
             readout=physical_readout,
@@ -2394,6 +2428,48 @@ def test_joas_full_finite_xy8_propagator(
                 atol=1e-9,
                 rtol=0.0,
             )
+
+        if check_scope == "physical_rb_smoke":
+            timestamp = datetime.now(timezone.utc).strftime(
+                "%Y%m%dT%H%M%S_%fZ"
+            )
+            result_path = (
+                Path("results/data")
+                / f"joas_physical_rb_{timestamp}.npz"
+            )
+
+            saved_path = save_two_qubit_rb_result(
+                path=result_path,
+                result=result,
+                metadata={
+                    "seed": rb_seed,
+                    "sequences_per_length": rb_sequences,
+                    "pulse_steps": rb_pulse_steps,
+                    "drive_mode": drive_mode,
+                    "hyperfine_mode": hyperfine_mode,
+                    "dephasing_included": False,
+                    "spam_included": False,
+                    "pi_pulse_duration": float(pulse_duration),
+                    "gate_duration": float(gate_duration),
+                    "tau_1": float(tau_1),
+                    "tau_2": float(tau_2),
+                    "carriers": [float(omega_1), float(omega_2)],
+                    "transition_elements": [
+                        float(1 / np.sqrt(2)),
+                        float(1 / np.sqrt(2)),
+                    ],
+                    "subsystem_order": ["e1", "n1", "e2", "n2"],
+                },
+                model_arrays={
+                    "free_hamiltonian": h_free.full(),
+                    "frame_generator": h_trans.full(),
+                    "shared_control": control.full(),
+                    "initial_density": initial_joint.full(),
+                    "return_projector": return_projector.full(),
+                },
+            )
+
+            print("Saved physical RB result:", saved_path)
 
         print("RB lengths =", result["lengths"])
         print("Physical RB samples =", result["samples"])
