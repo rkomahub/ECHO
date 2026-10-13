@@ -348,6 +348,7 @@ def two_qubit_rb_signal(
     rng,
     primitive_map,
     readout,
+    primitive_map_factory=None,
 ) -> dict:
     """Average compiled two-qubit RB circuits with the same primitive map during recovery."""
     lengths = np.asarray(lengths)
@@ -366,6 +367,11 @@ def two_qubit_rb_signal(
         or sequences_per_length < 2
     ):
         raise ValueError("Use at least two sequences per length.")
+
+    if (primitive_map is None) == (primitive_map_factory is None):
+        raise ValueError(
+            "Provide either primitive_map or primitive_map_factory."
+        )
 
     shape = (len(lengths), sequences_per_length)
     samples = np.empty(shape)
@@ -386,13 +392,19 @@ def two_qubit_rb_signal(
             )
             state = initial_density.copy()
 
+            active_map = (
+                primitive_map_factory()
+                if primitive_map_factory is not None
+                else primitive_map
+            )
+
             for word in sequence["words"]:
                 gate_counts[row, column] += (
                     two_qubit_native_gate_counts(word)
                 )
 
                 for generator_index in word:
-                    state = primitive_map(state, generator_index)
+                    state = active_map(state, generator_index)
 
                     if state.dims != initial_density.dims:
                         raise ValueError("primitive_map must preserve dimensions.")
@@ -403,7 +415,7 @@ def two_qubit_rb_signal(
             )
 
             for generator_index in recovery_word:
-                state = primitive_map(state, generator_index)
+                state = active_map(state, generator_index)
 
                 if state.dims != initial_density.dims:
                     raise ValueError("primitive_map must preserve dimensions.")
@@ -429,3 +441,71 @@ def two_qubit_rb_signal(
         "recovery_counts": recovery_counts,
         "clifford_indices": tuple(sampled_indices),
     }
+
+
+def timed_primitive_map(
+    builders,
+    frame_generator: Qobj,
+    start_time: float = 0.0,
+):
+    """Create a fresh circuit clock using laboratory propagators and one common rotating frame."""
+    if (
+        not frame_generator.isoper
+        or not frame_generator.isherm
+        or not np.all(np.isfinite(frame_generator.full()))
+    ):
+        raise ValueError("frame_generator must be a finite Hermitian operator.")
+
+    if not np.isfinite(start_time):
+        raise ValueError("start_time must be finite.")
+
+    builders = dict(builders)
+    clock = float(start_time)
+
+    def primitive_map(density_matrix, generator_index):
+        """Build a pulse at the current absolute time and advance the circuit clock."""
+        nonlocal clock
+
+        lab_propagator, duration = builders[generator_index](clock)
+
+        if not np.isfinite(duration) or duration <= 0:
+            raise ValueError("Primitive duration must be finite and positive.")
+
+        if (
+            lab_propagator.dims != frame_generator.dims
+            or density_matrix.dims != frame_generator.dims
+        ):
+            raise ValueError("Primitive, frame and state dimensions must match.")
+
+        matrix = lab_propagator.full()
+        defect = np.linalg.norm(
+            matrix.conj().T @ matrix - np.eye(matrix.shape[0]),
+            ord="fro",
+        )
+
+        if not np.isfinite(defect) or defect > 1e-8:
+            raise ValueError(
+                f"Primitive is not sufficiently unitary: defect={defect:.3e}."
+            )
+
+        end_time = clock + duration
+
+        start_frame = (-1j * frame_generator * clock).expm()
+        end_frame = (-1j * frame_generator * end_time).expm()
+
+        rotating_propagator = (
+            end_frame.dag()
+            * lab_propagator
+            * start_frame
+        )
+
+        result = (
+            rotating_propagator
+            * density_matrix
+            * rotating_propagator.dag()
+        )
+
+        clock = end_time
+        return result
+
+    return primitive_map
