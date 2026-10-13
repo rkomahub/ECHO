@@ -2,9 +2,13 @@ import os
 
 import numpy as np
 import pytest
-from qutip import basis, qeye, sigmax, tensor
+from qutip import Qobj, basis, qeye, sigmax, tensor
 
-from echo_spin.benchmarks.randomized import timed_primitive_map, two_qubit_rb_signal
+from echo_spin.benchmarks.randomized import (
+    timed_primitive_map,
+    two_qubit_clifford_catalog,
+    two_qubit_rb_signal,
+)
 from echo_spin.benchmarks.repetitive import logical_repetitive_return_signal
 from echo_spin.control.microwave import (
     control_operator,
@@ -1757,6 +1761,10 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
                 reason="Physical RB experiment requires explicit opt-in.",
             ),
         ),
+        pytest.param(
+            "shared", "full", "ideal_rb_smoke",
+            id="ideal_rb_smoke",
+        ),
     ],
 )
 def test_joas_full_finite_xy8_propagator(
@@ -2222,7 +2230,7 @@ def test_joas_full_finite_xy8_propagator(
 
         return
 
-    if check_scope == "physical_rb_smoke":
+    if check_scope in ("physical_rb_smoke", "ideal_rb_smoke"):
         builders = joas_rb_primitive_builders(
             free_hamiltonian=h_free,
             controls={1: control, 2: control},
@@ -2236,6 +2244,73 @@ def test_joas_full_finite_xy8_propagator(
             tau_2=tau_2,
             pulse_steps=5000,
         )
+
+        if check_scope == "ideal_rb_smoke":
+            physical_basis = [
+                tensor(basis(3, 1), basis(3, 1)),
+                tensor(basis(3, 1), basis(3, 2)),
+                tensor(basis(3, 0), basis(3, 1)),
+                tensor(basis(3, 0), basis(3, 2)),
+            ]
+
+            isometry = np.column_stack([
+                state.full().ravel()
+                for state in physical_basis
+            ])
+            projector = isometry @ isometry.conj().T
+
+            catalog = two_qubit_clifford_catalog()
+            ideal_joint_generators = []
+
+            for logical_generator in catalog["generators"]:
+                # Act ideally inside the logical subspace and as identity outside.
+                physical_generator = Qobj(
+                    isometry @ logical_generator @ isometry.conj().T
+                    + np.eye(9) - projector,
+                    dims=[[3, 3], [3, 3]],
+                )
+
+                ideal_joint_generators.append(
+                    tensor(
+                        physical_generator,
+                        qeye(3),
+                        qeye(3),
+                    ).permute([0, 2, 1, 3])
+                )
+
+            primitive_durations = [
+                pulse_duration / 2,
+                pulse_duration / 2,
+                pulse_duration / 2,
+                pulse_duration / 2,
+                gate_duration,
+            ]
+
+            def ideal_builder(generator_index):
+                """Create an ideal primitive expressed through laboratory-frame endpoints."""
+                def build(start_time):
+                    """Return laboratory evolution corresponding to the ideal rotating-frame gate."""
+                    duration = primitive_durations[generator_index]
+                    start_frame = (
+                        -1j * h_trans * start_time
+                    ).expm()
+                    end_frame = (
+                        -1j * h_trans * (start_time + duration)
+                    ).expm()
+
+                    laboratory_propagator = (
+                        end_frame
+                        * ideal_joint_generators[generator_index]
+                        * start_frame.dag()
+                    )
+                    return laboratory_propagator, duration
+
+                return build
+
+            builders = {
+                index: ideal_builder(index)
+                for index in range(5)
+            }
 
         initial_joint = tensor(
             basis(3, 1).proj(),
@@ -2259,7 +2334,7 @@ def test_joas_full_finite_xy8_propagator(
             circuit_counter += 1
 
             print(
-                f"Starting physical RB circuit {circuit_counter}/4",
+                f"Starting {check_scope} circuit {circuit_counter}/4",
                 flush=True,
             )
 
@@ -2303,6 +2378,25 @@ def test_joas_full_finite_xy8_propagator(
         assert np.all(result["samples"] >= -1e-8)
         assert np.all(result["samples"] <= 1 + 1e-8)
 
+        np.testing.assert_allclose(
+            result["samples"][0],
+            1.0,
+            atol=1e-10,
+            rtol=0.0,
+        )
+        assert np.all(result["samples"] >= -1e-8)
+        assert np.all(result["samples"] <= 1 + 1e-8)
+
+        if check_scope == "ideal_rb_smoke":
+            np.testing.assert_allclose(
+                result["samples"],
+                1.0,
+                atol=1e-9,
+                rtol=0.0,
+            )
+
+        print("RB lengths =", result["lengths"])
+        print("Physical RB samples =", result["samples"])
         print("RB lengths =", result["lengths"])
         print("Physical RB samples =", result["samples"])
         print("Physical RB means =", result["mean"])
