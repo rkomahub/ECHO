@@ -1,6 +1,11 @@
 import numpy as np
 from qutip import Qobj, qeye
 
+from echo_spin.control.microwave import (
+    logical_axis_carrier_phase,
+    microwave_hamiltonian,
+)
+from echo_spin.control.pulses import sine_envelope
 from echo_spin.dynamics.propagators import time_dependent_propagator
 
 
@@ -133,3 +138,83 @@ def finite_pulse_intervals(
         )
 
     return intervals
+
+
+def logical_sine_pulse_propagator(
+    free_hamiltonian: Qobj,
+    control_operator: Qobj,
+    carrier: float,
+    transition_element: complex,
+    angle: float,
+    axis: str,
+    duration: float,
+    steps: int,
+    start_time: float = 0.0,
+) -> Qobj:
+    """Propagate a calibrated logical-axis sine pulse with absolute carrier timing."""
+    if (
+        not free_hamiltonian.isherm
+        or not control_operator.isherm
+        or free_hamiltonian.dims != control_operator.dims
+    ):
+        raise ValueError("Hamiltonian and control must be matching Hermitian operators.")
+
+    if not np.isfinite(carrier) or carrier <= 0:
+        raise ValueError("carrier must be finite and positive.")
+
+    if not np.isfinite(angle):
+        raise ValueError("angle must be finite.")
+
+    if not np.isfinite(duration) or duration <= 0:
+        raise ValueError("duration must be finite and positive.")
+
+    if not np.isfinite(start_time):
+        raise ValueError("start_time must be finite.")
+
+    if (
+        isinstance(steps, (bool, np.bool_))
+        or not isinstance(steps, (int, np.integer))
+        or steps <= 0
+    ):
+        raise ValueError("steps must be a positive integer.")
+
+    phase = logical_axis_carrier_phase(axis, transition_element)
+
+    peak_amplitude = (
+        angle * np.pi
+        / (
+            2 * np.sqrt(2.0)
+            * abs(transition_element) * duration
+        )
+    )
+    dt = duration / steps
+
+    def midpoint_hamiltonian(endpoint_time):
+        """Evaluate drift and the absolute-time carrier at the interval midpoint."""
+        time = endpoint_time - dt / 2
+
+        envelope = sine_envelope(
+            time=time - start_time,
+            duration=duration,
+            peak_amplitude=peak_amplitude,
+        )
+
+        microwave = microwave_hamiltonian(
+            time=time,
+            control=control_operator,
+            drives=[{
+                "omega": carrier,
+                "phase": phase,
+                "omega_x": envelope,
+                "omega_y": 0.0,
+            }],
+        )
+
+        return free_hamiltonian + microwave
+
+    return time_dependent_propagator(
+        hamiltonian=midpoint_hamiltonian,
+        t0=start_time,
+        t1=start_time + duration,
+        steps=steps,
+    )

@@ -24,6 +24,7 @@ from echo_spin.dynamics.sequences import (
     finite_pulse_intervals,
     finite_pulse_propagator,
     finite_pulse_sequence_propagator,
+    logical_sine_pulse_propagator,
 )
 from echo_spin.gates.gates import (
     average_gate_fidelity,
@@ -1040,6 +1041,95 @@ def test_joas_nv1_conditional_transition_shift():
         bare_frequency - coupling,
         abs=1e-10,
     )
+
+@pytest.mark.parametrize(
+    "splitting_mhz, angle_degrees, excited_state",
+    [
+        pytest.param(2867.27, 74.08, "+1", id="NV1"),
+        pytest.param(2865.42, 3.58, "-1", id="NV2"),
+    ],
+)
+@pytest.mark.parametrize("axis", ["x", "y"])
+@pytest.mark.parametrize("start_time", [0.0, 0.123])
+def test_physical_rb_half_pi_primitive(
+    splitting_mhz,
+    angle_degrees,
+    excited_state,
+    axis,
+    start_time,
+):
+    """Verify positive physical RB half-pi rotations at zero and delayed start times."""
+    angle = np.deg2rad(angle_degrees)
+    field = 2 * np.pi * 295.18 * np.array(
+        [np.sin(angle), 0.0, np.cos(angle)]
+    )
+
+    drift = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=2 * np.pi * splitting_mhz,
+        omega_e=field,
+    )
+
+    zero, one = electron_logical_states(
+        drift,
+        excited_state=excited_state,
+    )
+    sx, _, _ = spin_operators(1)
+
+    carrier = float(np.real(
+        one.dag() * drift * one
+        - zero.dag() * drift * zero
+    ))
+    element = complex(one.dag() * sx * zero)
+    duration = 0.1
+
+    logical_axis = (
+        sigmax().full() if axis == "x"
+        else sigmay().full()
+    )
+    target = (
+        np.eye(2) - 1j * logical_axis
+    ) / np.sqrt(2)
+
+    fidelities = []
+
+    for steps in [5000, 10000]:
+        lab_propagator = logical_sine_pulse_propagator(
+            free_hamiltonian=drift,
+            control_operator=sx,
+            carrier=carrier,
+            transition_element=element,
+            angle=np.pi / 2,
+            axis=axis,
+            duration=duration,
+            steps=steps,
+            start_time=start_time,
+        )
+
+        # Transform both endpoints into the same drift interaction picture.
+        interaction_propagator = (
+            (1j * drift * (start_time + duration)).expm()
+            * lab_propagator
+            * (-1j * drift * start_time).expm()
+        )
+
+        projected = project_operator(
+            interaction_propagator,
+            [zero, one],
+        ).full()
+
+        retained_weight = float(
+            np.linalg.norm(projected, ord="fro") ** 2
+        )
+        overlap = np.trace(target.conj().T @ projected)
+
+        fidelities.append(
+            float((retained_weight + abs(overlap) ** 2) / 6)
+        )
+
+    assert abs(fidelities[1] - fidelities[0]) < 1e-3
+    assert fidelities[1] > 0.99
 
 # -----------------------------------------------------------
 
