@@ -34,7 +34,7 @@ from echo_spin.gates.gates import (
     average_gate_fidelity,
     sqrt_zz_gate,
 )
-from echo_spin.models.joas import xy8_gate_schedule
+from echo_spin.models.joas import joas_rb_primitive_builders, xy8_gate_schedule
 from echo_spin.noise.dephasing import two_qubit_dephasing_channel
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian, nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
@@ -2444,3 +2444,36 @@ def test_joas_full_finite_xy8_propagator(
 
     print("Local-recovery repetitions =", local_counts)
     print("Local-recovery NV1 signal =", local_signal)
+
+    # ------------------------------------------------------------------
+    # 14. Randomized benchmarking
+    # ------------------------------------------------------------------
+
+    if drive_mode == "shared" and hyperfine_mode == "full":
+        builders = joas_rb_primitive_builders(
+            free_hamiltonian=h_free,
+            controls={1: control, 2: control},
+            carriers={1: omega_1, 2: omega_2},
+            # This model uses canonical Sx in the electronic eigenbasis.
+            transition_elements={
+                1: 1 / np.sqrt(2),
+                2: 1 / np.sqrt(2),
+            },
+            pi_pulse_duration=pulse_duration,
+            tau_1=tau_1,
+            tau_2=tau_2,
+            pulse_steps=pulse_steps,
+        )
+
+        rebuilt_lab, rebuilt_duration = builders[4](0.0)
+
+        assert rebuilt_duration == pytest.approx(
+            gate_duration, abs=1e-12
+        )
+
+        np.testing.assert_allclose(
+            rebuilt_lab.full(),
+            propagator_lab.full(),
+            atol=1e-9,
+            rtol=0.0,
+        )

@@ -152,12 +152,37 @@ def logical_sine_pulse_propagator(
     start_time: float = 0.0,
 ) -> Qobj:
     """Propagate a calibrated logical-axis sine pulse with absolute carrier timing."""
-    if (
-        not free_hamiltonian.isherm
-        or not control_operator.isherm
-        or free_hamiltonian.dims != control_operator.dims
-    ):
-        raise ValueError("Hamiltonian and control must be matching Hermitian operators.")
+    if free_hamiltonian.dims != control_operator.dims:
+        raise ValueError(
+            "Hamiltonian/control dimensions differ: "
+            f"{free_hamiltonian.dims} versus {control_operator.dims}."
+        )
+
+    for name, operator in [
+        ("free_hamiltonian", free_hamiltonian),
+        ("control_operator", control_operator),
+    ]:
+        if not operator.isoper:
+            raise ValueError(f"{name} must be a square operator.")
+
+        matrix = operator.full()
+
+        if not np.all(np.isfinite(matrix)):
+            raise ValueError(f"{name} must contain finite entries.")
+
+        hermiticity_defect = np.linalg.norm(
+            matrix - matrix.conj().T,
+            ord="fro",
+        )
+        scale = np.linalg.norm(matrix, ord="fro")
+        tolerance = 1e-10 + 1e-13 * scale
+
+        if hermiticity_defect > tolerance:
+            raise ValueError(
+                f"{name} is not sufficiently Hermitian: "
+                f"defect={hermiticity_defect:.3e}, "
+                f"tolerance={tolerance:.3e}."
+            )
 
     if not np.isfinite(carrier) or carrier <= 0:
         raise ValueError("carrier must be finite and positive.")
