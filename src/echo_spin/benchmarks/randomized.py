@@ -449,6 +449,7 @@ def timed_primitive_map(
     builders,
     frame_generator: Qobj,
     start_time: float = 0.0,
+    post_map=None,
 ):
     """Create a fresh circuit clock using laboratory propagators and one common rotating frame."""
     if (
@@ -506,6 +507,17 @@ def timed_primitive_map(
             * density_matrix
             * rotating_propagator.dag()
         )
+
+        if post_map is not None:
+            result = post_map(result, duration)
+
+            if (
+                not isinstance(result, Qobj)
+                or result.dims != density_matrix.dims
+            ):
+                raise ValueError(
+                    "post_map must preserve the state dimensions."
+                )
 
         clock = end_time
         return result

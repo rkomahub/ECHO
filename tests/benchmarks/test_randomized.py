@@ -11,10 +11,12 @@ from echo_spin.benchmarks.randomized import (
     save_two_qubit_rb_result,
     single_qubit_cliffords,
     single_qubit_rb_signal,
+    timed_primitive_map,
     two_qubit_clifford_catalog,
     two_qubit_native_gate_counts,
     two_qubit_rb_signal,
 )
+from echo_spin.noise.dephasing import diagonal_dephasing_channel
 
 
 def test_single_qubit_cliffords_map_pauli_axes():
@@ -330,3 +332,53 @@ def test_rb_archive_preserves_data_without_pickle(tmp_path):
         save_two_qubit_rb_result(
             path, result, metadata={"seed": 42}
         )
+
+
+def test_timed_primitive_dephasing_uses_elapsed_duration():
+    """Verify per-primitive damping, accumulated duration and preserved input loss."""
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial_density = 0.73 * plus.proj()
+    recorded_durations = []
+
+    def first_builder(start_time):
+        """Return an identity primitive lasting the first interval."""
+        return qeye(2), 0.2
+
+    def second_builder(start_time):
+        """Return an identity primitive lasting the second interval."""
+        return qeye(2), 0.3
+
+    def post_map(density_matrix, duration):
+        """Record duration and apply longitudinal dephasing without renormalizing."""
+        recorded_durations.append(duration)
+        return diagonal_dephasing_channel(
+            density_matrix=density_matrix,
+            time=duration,
+            operators=[sigmaz() / 2],
+            coherence_times=[2.0],
+        )
+
+    active_map = timed_primitive_map(
+        builders={0: first_builder, 1: second_builder},
+        frame_generator=0 * sigmaz(),
+        post_map=post_map,
+    )
+
+    actual = active_map(initial_density, 0)
+    actual = active_map(actual, 1)
+
+    coherence = np.exp(-0.5 / 2.0)
+    expected = 0.73 / 2 * np.array([
+        [1.0, coherence],
+        [coherence, 1.0],
+    ])
+
+    np.testing.assert_allclose(
+        actual.full(), expected,
+        atol=1e-12, rtol=0.0,
+    )
+    np.testing.assert_allclose(
+        recorded_durations, [0.2, 0.3],
+        atol=1e-12,
+    )
+    assert actual.tr() == pytest.approx(0.73, abs=1e-12)

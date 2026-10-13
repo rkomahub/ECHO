@@ -46,7 +46,10 @@ from echo_spin.gates.gates import (
     sqrt_zz_gate,
 )
 from echo_spin.models.joas import joas_rb_primitive_builders, xy8_gate_schedule
-from echo_spin.noise.dephasing import two_qubit_dephasing_channel
+from echo_spin.noise.dephasing import (
+    diagonal_dephasing_channel,
+    two_qubit_dephasing_channel,
+)
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian, nv_hamiltonian
 from echo_spin.nv.registers import nv_register_hamiltonian
 from echo_spin.spectroscopy.transitions import allowed_transitions
@@ -2250,6 +2253,21 @@ def test_joas_full_finite_xy8_propagator(
             os.environ.get("ECHO_RB_PULSE_STEPS", "5000")
         )
 
+        dephasing_setting = os.environ.get(
+            "ECHO_RB_DEPHASING", "0"
+        )
+
+        if dephasing_setting not in ("0", "1"):
+            raise ValueError("ECHO_RB_DEPHASING must be 0 or 1.")
+
+        rb_dephasing = dephasing_setting == "1"
+        rb_coherence_times = (454.0, 476.0)
+
+        if check_scope == "ideal_rb_smoke" and rb_dephasing:
+            raise ValueError(
+                "Keep dephasing disabled for the ideal-limit check."
+            )
+
         if (
             rb_lengths.size == 0
             or rb_lengths[0] != 0
@@ -2361,6 +2379,15 @@ def test_joas_full_finite_xy8_propagator(
 
         circuit_counter = 0
 
+        def post_primitive_dephasing(density_matrix, duration):
+            """Apply calibrated electronic dephasing while retaining the joint nuclear state."""
+            return diagonal_dephasing_channel(
+                density_matrix=density_matrix,
+                time=duration,
+                operators=[sz_e1_full, sz_e2_full],
+                coherence_times=rb_coherence_times,
+            )
+
         def primitive_factory():
             """Create a fresh clock for a newly prepared physical RB circuit."""
             nonlocal circuit_counter
@@ -2375,6 +2402,11 @@ def test_joas_full_finite_xy8_propagator(
             return timed_primitive_map(
                 builders=builders,
                 frame_generator=h_trans,
+                post_map=(
+                    post_primitive_dephasing
+                    if rb_dephasing
+                    else None
+                ),
             )
 
         def physical_readout(density_matrix):
@@ -2447,7 +2479,10 @@ def test_joas_full_finite_xy8_propagator(
                     "pulse_steps": rb_pulse_steps,
                     "drive_mode": drive_mode,
                     "hyperfine_mode": hyperfine_mode,
-                    "dephasing_included": False,
+                    "dephasing_included": rb_dephasing,
+                    "dephasing_application": "post_primitive",
+                    "coherence_times": list(rb_coherence_times),
+                    "relaxation_included": False,
                     "spam_included": False,
                     "pi_pulse_duration": float(pulse_duration),
                     "gate_duration": float(gate_duration),
@@ -2466,6 +2501,10 @@ def test_joas_full_finite_xy8_propagator(
                     "shared_control": control.full(),
                     "initial_density": initial_joint.full(),
                     "return_projector": return_projector.full(),
+                    "dephasing_operators": np.array([
+                        sz_e1_full.full(),
+                        sz_e2_full.full(),
+                    ]),
                 },
             )
 
