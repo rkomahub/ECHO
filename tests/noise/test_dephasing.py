@@ -3,11 +3,13 @@ import pytest
 from qutip import basis, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.core.basis import project_operator
 from echo_spin.decoupling.modulation import modulation_function
 from echo_spin.gates.gates import average_gate_fidelity, sqrt_zz_gate
 from echo_spin.noise.dephasing import (
     dephasing_channel,
     dephasing_hamiltonian,
+    diagonal_dephasing_channel,
     ensemble_dephasing_map,
     exponential_coherence,
     ornstein_uhlenbeck_noise,
@@ -1254,3 +1256,82 @@ def test_noise_ensemble_with_drift_recovers_zero_noise_evolution():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+def test_joint_diagonal_dephasing_matches_logical_channel():
+    """Verify logical coherence decay while preserving nuclear marginals and input loss."""
+    plus_one = (
+        basis(3, 1) + basis(3, 0)
+    ).unit()
+    plus_two = (
+        basis(3, 1) + basis(3, 2)
+    ).unit()
+
+    nuclear_one = (
+        basis(3, 0) + 1j * basis(3, 1)
+    ).unit().proj()
+    nuclear_two = sum(
+        probability * basis(3, index).proj()
+        for index, probability in enumerate([0.2, 0.3, 0.5])
+    )
+
+    initial_joint = 0.73 * tensor(
+        plus_one.proj(),
+        nuclear_one,
+        plus_two.proj(),
+        nuclear_two,
+    )
+
+    sz = basis(3, 0).proj() - basis(3, 2).proj()
+    identity = nuclear_one * 0 + sum(
+        basis(3, index).proj()
+        for index in range(3)
+    )
+
+    operators = [
+        tensor(sz, identity, identity, identity),
+        tensor(identity, identity, sz, identity),
+    ]
+
+    time = 0.7
+    coherence_times = (2.0, 5.0)
+
+    actual = diagonal_dephasing_channel(
+        density_matrix=initial_joint,
+        time=time,
+        operators=operators,
+        coherence_times=coherence_times,
+    )
+
+    physical_basis = [
+        tensor(basis(3, 1), basis(3, 1)),
+        tensor(basis(3, 1), basis(3, 2)),
+        tensor(basis(3, 0), basis(3, 1)),
+        tensor(basis(3, 0), basis(3, 2)),
+    ]
+
+    logical_result = project_operator(
+        actual.ptrace([0, 2]),
+        physical_basis,
+    )
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    expected = two_qubit_dephasing_channel(
+        density_matrix=0.73 * tensor(plus, plus).proj(),
+        time=time,
+        coherence_times=coherence_times,
+    )
+
+    np.testing.assert_allclose(
+        logical_result.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+    np.testing.assert_allclose(
+        actual.ptrace([1, 3]).full(),
+        0.73 * tensor(nuclear_one, nuclear_two).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert actual.tr() == pytest.approx(0.73, abs=1e-12)

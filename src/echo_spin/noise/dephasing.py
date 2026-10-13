@@ -393,3 +393,66 @@ def sampled_noise_ensemble_map(
         )
 
     return result / len(coefficients)
+
+
+def diagonal_dephasing_channel(
+    density_matrix: Qobj,
+    time: float,
+    operators,
+    coherence_times,
+) -> Qobj:
+    """Apply independent diagonal dephasing without resetting subsystems or renormalizing."""
+    if not np.isfinite(time) or time < 0:
+        raise ValueError("time must be finite and non-negative.")
+
+    operators = list(operators)
+
+    if np.iscomplexobj(coherence_times):
+        raise ValueError("coherence_times must be real.")
+
+    coherence_times = np.asarray(coherence_times, dtype=float)
+
+    if (
+        not operators
+        or coherence_times.shape != (len(operators),)
+        or np.any(np.isnan(coherence_times))
+        or np.any(coherence_times <= 0)
+    ):
+        raise ValueError(
+            "Provide one positive coherence time per operator."
+        )
+
+    damping = np.ones(density_matrix.shape, dtype=float)
+
+    for operator, coherence_time in zip(operators, coherence_times):
+        if not operator.isoper or operator.dims != density_matrix.dims:
+            raise ValueError(
+                "Noise operators must match the input operator dimensions."
+            )
+
+        matrix = operator.full()
+
+        if not np.all(np.isfinite(matrix)):
+            raise ValueError("Noise operators must contain finite entries.")
+
+        diagonal = np.diag(matrix)
+
+        if (
+            np.linalg.norm(
+                matrix - np.diag(diagonal), ord="fro"
+            ) > 1e-12
+            or np.max(np.abs(diagonal.imag)) > 1e-12
+        ):
+            raise ValueError("Noise operators must be real diagonal operators.")
+
+        values = diagonal.real
+        differences = values[:, None] - values[None, :]
+
+        damping *= np.exp(
+            -time / coherence_time * differences**2
+        )
+
+    return Qobj(
+        density_matrix.full() * damping,
+        dims=density_matrix.dims,
+    )
