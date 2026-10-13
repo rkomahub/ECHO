@@ -291,6 +291,25 @@ def random_two_qubit_clifford_sequence(length, rng) -> dict:
     for gate in gates:
         total = gate * total
 
+    recovery_matrix = total.dag().full()
+
+    # Identify recovery modulo global phase in the complete Clifford catalogue.
+    overlaps = np.einsum(
+        "nij,ij->n",
+        catalog["matrices"].conj(),
+        recovery_matrix,
+    ) / 4
+
+    recovery_index = int(np.argmax(np.abs(overlaps)))
+
+    if not np.isclose(
+        abs(overlaps[recovery_index]),
+        1.0,
+        atol=1e-10,
+        rtol=0.0,
+    ):
+        raise RuntimeError("Recovery was not found in the Clifford catalogue.")
+
     return {
         "indices": indices,
         "gates": gates,
@@ -299,4 +318,24 @@ def random_two_qubit_clifford_sequence(length, rng) -> dict:
             for index in indices
         ),
         "recovery": total.dag(),
+        "recovery_index": recovery_index,
+        "recovery_word": catalog["words"][recovery_index],
     }
+
+
+def two_qubit_native_gate_counts(word) -> tuple:
+    """Count single-qubit and entangling primitives in an unoptimized generator word."""
+    word = tuple(word)
+
+    for index in word:
+        if (
+            isinstance(index, (bool, np.bool_))
+            or not isinstance(index, (int, np.integer))
+            or not 0 <= index < 5
+        ):
+            raise ValueError("Generator indices must be integers from zero to four.")
+
+    return (
+        sum(index < 4 for index in word),
+        sum(index == 4 for index in word),
+    )

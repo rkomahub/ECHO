@@ -9,6 +9,7 @@ from echo_spin.benchmarks.randomized import (
     single_qubit_cliffords,
     single_qubit_rb_signal,
     two_qubit_clifford_catalog,
+    two_qubit_native_gate_counts,
 )
 
 
@@ -186,3 +187,44 @@ def test_two_qubit_random_sequence_words_and_recovery(length):
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize("length", [0, 1, 10])
+def test_two_qubit_recovery_native_word(length):
+    """Verify that compiled recovery cancels the ideal sequence modulo global phase."""
+    catalog = two_qubit_clifford_catalog()
+    sequence = random_two_qubit_clifford_sequence(
+        length,
+        np.random.default_rng(123),
+    )
+
+    total = np.eye(4, dtype=complex)
+
+    for gate in sequence["gates"]:
+        total = gate.full() @ total
+
+    recovery = np.eye(4, dtype=complex)
+
+    for index in sequence["recovery_word"]:
+        recovery = catalog["generators"][index] @ recovery
+
+    recovered = recovery @ total
+    global_phase = np.trace(recovered) / 4
+
+    assert abs(global_phase) == pytest.approx(1.0, abs=1e-12)
+
+    np.testing.assert_allclose(
+        recovered,
+        global_phase * np.eye(4),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_two_qubit_native_gate_counts():
+    """Verify explicit primitive counts without assuming article compiler averages."""
+    assert two_qubit_native_gate_counts(
+        [0, 0, 2, 4, 1, 4]
+    ) == (4, 2)
+
+    assert two_qubit_native_gate_counts(()) == (0, 0)
