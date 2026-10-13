@@ -4,9 +4,11 @@ from qutip import basis, qeye, sigmax, sigmay, sigmaz
 
 from echo_spin.benchmarks.randomized import (
     random_single_qubit_clifford_sequence,
+    random_two_qubit_clifford_sequence,
     rb_error_per_clifford,
     single_qubit_cliffords,
     single_qubit_rb_signal,
+    two_qubit_clifford_catalog,
 )
 
 
@@ -127,3 +129,60 @@ def test_rb_error_per_clifford_dimension_factor(qubits, expected_error):
         decay_parameter=0.97,
         qubits=qubits,
     ) == pytest.approx(expected_error, abs=1e-12)
+
+
+def test_two_qubit_clifford_catalog_size_and_unitarity():
+    """Verify full Clifford-group size and numerical unitarity of every representative."""
+    catalog = two_qubit_clifford_catalog()
+    matrices = catalog["matrices"]
+
+    assert matrices.shape == (11520, 4, 4)
+    assert len(catalog["words"]) == 11520
+
+    products = (
+        matrices.conj().transpose(0, 2, 1)
+        @ matrices
+    )
+
+    np.testing.assert_allclose(
+        products,
+        np.broadcast_to(np.eye(4), products.shape),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("length", [0, 1, 10])
+def test_two_qubit_random_sequence_words_and_recovery(length):
+    """Verify chronological native words and ideal recovery of sampled two-qubit Cliffords."""
+    catalog = two_qubit_clifford_catalog()
+    sequence = random_two_qubit_clifford_sequence(
+        length,
+        np.random.default_rng(42),
+    )
+
+    total = np.eye(4, dtype=complex)
+
+    for gate, word in zip(sequence["gates"], sequence["words"]):
+        reconstructed = np.eye(4, dtype=complex)
+
+        for generator_index in word:
+            reconstructed = (
+                catalog["generators"][generator_index]
+                @ reconstructed
+            )
+
+        np.testing.assert_allclose(
+            reconstructed,
+            gate.full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+        total = gate.full() @ total
+
+    np.testing.assert_allclose(
+        sequence["recovery"].full() @ total,
+        np.eye(4),
+        atol=1e-12,
+        rtol=0.0,
+    )

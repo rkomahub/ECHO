@@ -1,7 +1,10 @@
+from functools import lru_cache
+
 import numpy as np
-from qutip import qeye
+from qutip import Qobj, qeye
 
 from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.gates.gates import sqrt_zz_gate
 
 
 def single_qubit_cliffords() -> tuple:
@@ -160,3 +163,140 @@ def rb_error_per_clifford(decay_parameter: float, qubits: int) -> float:
         (1 - 2.0 ** (-int(qubits)))
         * (1 - decay_parameter)
     )
+
+
+@lru_cache(maxsize=1)
+def two_qubit_clifford_catalog() -> dict:
+    """Build all two-qubit Cliffords modulo global phase and retain chronological generator words."""
+    identity = np.eye(2, dtype=complex)
+    rx = single_qubit_rotation(np.pi / 2, "x").full()
+    ry = single_qubit_rotation(np.pi / 2, "y").full()
+
+    generators = np.array([
+        np.kron(rx, identity),
+        np.kron(ry, identity),
+        np.kron(identity, rx),
+        np.kron(identity, ry),
+        sqrt_zz_gate().dag().full(),
+    ])
+
+    paulis = [
+        identity,
+        np.array([[0, 1], [1, 0]], dtype=complex),
+        np.array([[0, -1j], [1j, 0]], dtype=complex),
+        np.diag([1, -1]).astype(complex),
+    ]
+    pauli_basis = np.array([
+        np.kron(first, second)
+        for first in paulis
+        for second in paulis
+    ])
+
+    # X1, Z1, X2, Z2 uniquely determine a Clifford modulo global phase.
+    defining_paulis = pauli_basis[[4, 12, 1, 3]]
+
+    def signature(unitary):
+        """Identify a Clifford through its four signed generator-Pauli images."""
+        transformed = (
+            unitary @ defining_paulis
+            @ unitary.conj().T
+        )
+        overlaps = np.einsum(
+            "aij,bji->ab",
+            pauli_basis,
+            transformed,
+        ).real / 4
+
+        positions = np.argmax(np.abs(overlaps), axis=0)
+        selected = overlaps[positions, np.arange(4)]
+
+        if not np.allclose(
+            np.abs(selected), 1.0,
+            atol=1e-10, rtol=0.0,
+        ):
+            raise RuntimeError("Generated operator is not Clifford.")
+
+        return tuple(
+            int(position + 1) * (1 if value > 0 else -1)
+            for position, value in zip(positions, selected)
+        )
+
+    matrices = [np.eye(4, dtype=complex)]
+    words = [()]
+    known = {signature(matrices[0])}
+    next_index = 0
+
+    while next_index < len(matrices):
+        current = matrices[next_index]
+        word = words[next_index]
+        next_index += 1
+
+        for generator_index, generator in enumerate(generators):
+            candidate = generator @ current
+            key = signature(candidate)
+
+            if key not in known:
+                known.add(key)
+                matrices.append(candidate)
+                words.append(word + (generator_index,))
+
+                if len(matrices) > 11520:
+                    raise RuntimeError("Two-qubit Clifford generation did not close.")
+
+    if len(matrices) != 11520:
+        raise RuntimeError("Expected 11520 two-qubit Cliffords.")
+
+    matrices = np.array(matrices)
+    matrices.setflags(write=False)
+    generators.setflags(write=False)
+
+    return {
+        "matrices": matrices,
+        "words": tuple(words),
+        "generators": generators,
+        "generator_labels": (
+            "RX1_pi_over_2",
+            "RY1_pi_over_2",
+            "RX2_pi_over_2",
+            "RY2_pi_over_2",
+            "sqrt_ZZ_dagger",
+        ),
+    }
+
+
+def random_two_qubit_clifford_sequence(length, rng) -> dict:
+    """Sample uniform two-qubit Cliffords with generator words and ideal recovery."""
+    if (
+        isinstance(length, (bool, np.bool_))
+        or not isinstance(length, (int, np.integer))
+        or length < 0
+    ):
+        raise ValueError("length must be a non-negative integer.")
+
+    catalog = two_qubit_clifford_catalog()
+    indices = rng.integers(
+        0, len(catalog["matrices"]), size=length
+    )
+
+    gates = tuple(
+        Qobj(
+            catalog["matrices"][int(index)],
+            dims=[[2, 2], [2, 2]],
+        )
+        for index in indices
+    )
+
+    total = qeye([2, 2])
+
+    for gate in gates:
+        total = gate * total
+
+    return {
+        "indices": indices,
+        "gates": gates,
+        "words": tuple(
+            catalog["words"][int(index)]
+            for index in indices
+        ),
+        "recovery": total.dag(),
+    }
