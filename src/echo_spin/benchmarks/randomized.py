@@ -579,6 +579,15 @@ def save_two_qubit_rb_result(
         ]
     }
 
+    for name in [
+        "readout_labels",
+        "readout_samples",
+        "readout_mean",
+        "readout_standard_error",
+    ]:
+        if name in result:
+            payload[name] = np.asarray(result[name])
+
     payload.update({
         "metadata_json": np.array(json.dumps(metadata, sort_keys=True)),
         "clifford_indices_json": np.array(

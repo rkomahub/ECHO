@@ -2385,6 +2385,57 @@ def test_joas_full_finite_xy8_propagator(
             qeye(3),
         )
 
+        ground_one = basis(3, 1).proj()
+        excited_one = basis(3, 0).proj()
+        ground_two = basis(3, 1).proj()
+        excited_two = basis(3, 2).proj()
+
+        logical_one = ground_one + excited_one
+        logical_two = ground_two + excited_two
+        z_one = ground_one - excited_one
+        z_two = ground_two - excited_two
+        identity = qeye(3)
+
+        readout_operators = {
+            "nv1_ground_return": tensor(
+                ground_one, identity, identity, identity
+            ),
+            "nv2_ground_return": tensor(
+                identity, identity, ground_two, identity
+            ),
+            "joint_logical_survival": tensor(
+                logical_one, identity, logical_two, identity
+            ),
+            "nv1_logical_z": tensor(
+                z_one, identity, logical_two, identity
+            ),
+            "nv2_logical_z": tensor(
+                logical_one, identity, z_two, identity
+            ),
+            "logical_zz": tensor(
+                z_one, identity, z_two, identity
+            ),
+            "joint_ground_return": return_projector,
+        }
+
+        # Exact identity, including states outside the logical subspace.
+        reconstructed_return = (
+            readout_operators["joint_logical_survival"]
+            + readout_operators["nv1_logical_z"]
+            + readout_operators["nv2_logical_z"]
+            + readout_operators["logical_zz"]
+        ) / 4
+
+        np.testing.assert_allclose(
+            reconstructed_return.full(),
+            return_projector.full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+        readout_labels = list(readout_operators)
+        recorded_readouts = []
+
         circuit_counter = 0
 
         def post_primitive_dephasing(density_matrix, duration):
@@ -2427,6 +2478,18 @@ def test_joas_full_finite_xy8_propagator(
                 (return_projector * density_matrix).tr()
             ))
 
+            values = [
+                float(np.real(
+                    (operator * density_matrix).tr()
+                ))
+                for operator in readout_operators.values()
+            ]
+            recorded_readouts.append(values)
+
+            assert values[-1] == pytest.approx(
+                probability, abs=1e-10
+            )
+
             print(
                 f"Physical circuit return={probability:.8f}",
                 flush=True,
@@ -2443,6 +2506,33 @@ def test_joas_full_finite_xy8_propagator(
             readout=physical_readout,
             include_entangler=rb_include_entangler,
         )
+
+        result["readout_labels"] = np.array(readout_labels)
+        result["readout_samples"] = np.asarray(
+            recorded_readouts
+        ).reshape(
+            len(rb_lengths),
+            rb_sequences,
+            len(readout_labels),
+        )
+        result["readout_mean"] = (
+            result["readout_samples"].mean(axis=1)
+        )
+        result["readout_standard_error"] = (
+            result["readout_samples"].std(axis=1, ddof=1)
+            / np.sqrt(rb_sequences)
+        )
+
+        if check_scope == "ideal_rb_smoke":
+            np.testing.assert_allclose(
+                result["readout_samples"],
+                1.0,
+                atol=1e-9,
+                rtol=0.0,
+            )
+
+        print("Readout labels =", result["readout_labels"])
+        print("Readout samples =", result["readout_samples"])
 
         np.testing.assert_allclose(
             result["samples"][0],
