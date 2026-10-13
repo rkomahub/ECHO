@@ -168,9 +168,14 @@ def rb_error_per_clifford(decay_parameter: float, qubits: int) -> float:
     )
 
 
-@lru_cache(maxsize=1)
-def two_qubit_clifford_catalog() -> dict:
-    """Build all two-qubit Cliffords modulo global phase and retain chronological generator words."""
+@lru_cache(maxsize=4)
+def two_qubit_clifford_catalog(include_entangler=True) -> dict:
+    """Build the full or local two-qubit Clifford group with native generator words."""
+    if not isinstance(include_entangler, (bool, np.bool_)):
+        raise ValueError("include_entangler must be boolean.")
+
+    expected_size = 11520 if include_entangler else 576
+
     identity = np.eye(2, dtype=complex)
     rx = single_qubit_rotation(np.pi / 2, "x").full()
     ry = single_qubit_rotation(np.pi / 2, "y").full()
@@ -182,6 +187,9 @@ def two_qubit_clifford_catalog() -> dict:
         np.kron(identity, ry),
         sqrt_zz_gate().dag().full(),
     ])
+
+    if not include_entangler:
+        generators = generators[:4]
 
     paulis = [
         identity,
@@ -243,11 +251,11 @@ def two_qubit_clifford_catalog() -> dict:
                 matrices.append(candidate)
                 words.append(word + (generator_index,))
 
-                if len(matrices) > 11520:
-                    raise RuntimeError("Two-qubit Clifford generation did not close.")
+                if len(matrices) > expected_size:
+                    raise RuntimeError("Clifford generation did not close.")
 
-    if len(matrices) != 11520:
-        raise RuntimeError("Expected 11520 two-qubit Cliffords.")
+    if len(matrices) != expected_size:
+        raise RuntimeError(f"Expected {expected_size} Cliffords.")
 
     matrices = np.array(matrices)
     matrices.setflags(write=False)
@@ -263,12 +271,17 @@ def two_qubit_clifford_catalog() -> dict:
             "RX2_pi_over_2",
             "RY2_pi_over_2",
             "sqrt_ZZ_dagger",
-        ),
+        )[:len(generators)],
+        "clifford_family": "full" if include_entangler else "local",
     }
 
 
-def random_two_qubit_clifford_sequence(length, rng) -> dict:
-    """Sample uniform two-qubit Cliffords with generator words and ideal recovery."""
+def random_two_qubit_clifford_sequence(
+    length,
+    rng,
+    include_entangler=True,
+) -> dict:
+    """Sample the selected Clifford family with matching native recovery."""
     if (
         isinstance(length, (bool, np.bool_))
         or not isinstance(length, (int, np.integer))
@@ -276,7 +289,9 @@ def random_two_qubit_clifford_sequence(length, rng) -> dict:
     ):
         raise ValueError("length must be a non-negative integer.")
 
-    catalog = two_qubit_clifford_catalog()
+    catalog = two_qubit_clifford_catalog(
+        include_entangler=include_entangler,
+    )
     indices = rng.integers(
         0, len(catalog["matrices"]), size=length
     )
@@ -323,6 +338,7 @@ def random_two_qubit_clifford_sequence(length, rng) -> dict:
         "recovery": total.dag(),
         "recovery_index": recovery_index,
         "recovery_word": catalog["words"][recovery_index],
+        "clifford_family": catalog["clifford_family"],
     }
 
 
