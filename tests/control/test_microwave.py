@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
-from qutip import basis, jmat, qeye, sigmax, sigmay, sigmaz, tensor
+from qutip import Qobj, basis, jmat, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.control.microwave import (
     control_amplitude,
     control_hamiltonian,
     control_operator,
     linear_drive_qubit_hamiltonian,
+    logical_axis_carrier_phase,
     microwave_coefficient,
     microwave_hamiltonian,
 )
@@ -461,4 +462,46 @@ def test_pi_pulse_detuning_gate_fidelity(detuning_ratio):
     assert average_fidelity == pytest.approx(
         expected_fidelity,
         abs=1e-12,
+    )
+
+
+@pytest.mark.parametrize("axis", ["x", "y"])
+@pytest.mark.parametrize("matrix_element_phase", [0.0, 0.37, -0.8])
+def test_logical_carrier_phase_produces_positive_rotation(
+    axis,
+    matrix_element_phase,
+):
+    """Verify positive logical pi-over-two rotations independently of eigenstate phase."""
+    element = 0.7 * np.exp(1j * matrix_element_phase)
+
+    carrier_phase = logical_axis_carrier_phase(
+        axis=axis,
+        transition_element=element,
+    )
+
+    # Addressed resonant RWA coupling in logical basis (|0>, |1>).
+    lower_axis_element = (
+        element / abs(element)
+        * np.exp(-1j * carrier_phase)
+    )
+
+    logical_axis = Qobj(
+        [
+            [0.0, np.conjugate(lower_axis_element)],
+            [lower_axis_element, 0.0],
+        ],
+        dims=[[2], [2]],
+    )
+
+    actual = (-1j * np.pi / 4 * logical_axis).expm()
+    expected = single_qubit_rotation(
+        angle=np.pi / 2,
+        axis=axis,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected.full(),
+        atol=1e-12,
+        rtol=0.0,
     )

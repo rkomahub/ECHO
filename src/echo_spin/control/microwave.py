@@ -174,3 +174,24 @@ def linear_drive_qubit_hamiltonian(
             y_coefficient,
         ],
     )
+
+
+def logical_axis_carrier_phase(
+    axis: str,
+    transition_element: complex,
+) -> float:
+    """Return the cosine-carrier phase for a positive logical X or Y rotation."""
+    if axis not in ("x", "y"):
+        raise ValueError("axis must be 'x' or 'y'.")
+
+    element = complex(transition_element)
+
+    if not np.isfinite(element) or abs(element) == 0:
+        raise ValueError("transition_element must be finite and non-zero.")
+
+    phase = np.angle(element)
+
+    if axis == "y":
+        phase -= np.pi / 2
+
+    return float(phase)
