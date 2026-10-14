@@ -24,7 +24,7 @@ def unitary_step(hamiltonian, duration):
     )
 
 
-def analyze_archive(path, static_order=1):
+def analyze_archive(path, static_order=1, electronic_levels=2):
     """Compare a nuclear-memory-preserving RWA gate with the Joas reference."""
     with np.load(path, allow_pickle=False) as archive:
         metadata = json.loads(archive["metadata_json"].item())
@@ -48,7 +48,10 @@ def analyze_archive(path, static_order=1):
     ):
         raise ValueError("Provide a shared-drive, full-hyperfine archive.")
 
-    # Nuclear-pair index first, then logical electron state.
+    # Ground and addressed excited states come first in each electronic basis.
+    electron_one_levels = [1, 0] if electronic_levels == 2 else [1, 0, 2]
+    electron_two_levels = [1, 2] if electronic_levels == 2 else [1, 2, 0]
+
     embeddings = [
         np.column_stack([
             tensor(
@@ -57,13 +60,39 @@ def analyze_archive(path, static_order=1):
                 basis(3, e2),
                 basis(3, n2),
             ).full().ravel()
-            for e1 in [1, 0]
-            for e2 in [1, 2]
+            for e1 in electron_one_levels
+            for e2 in electron_two_levels
         ])
         for n1 in range(3)
         for n2 in range(3)
     ]
+
     embedding = np.column_stack(embeddings)
+    electron_dimension = electronic_levels**2
+    joint_dimension = 9 * electron_dimension
+
+    logical_indices = [
+        first * electronic_levels + second
+        for first in [0, 1]
+        for second in [0, 1]
+    ]
+
+    logical_embedding = np.eye(
+        electron_dimension,
+        dtype=complex,
+    )[:, logical_indices]
+
+    joint_logical_embedding = np.kron(
+        np.eye(9),
+        logical_embedding,
+    )
+
+    print(
+        "Electronic levels per NV =",
+        electronic_levels,
+        "; joint dimension =",
+        joint_dimension,
+    )
 
     if static_order == 2:
         corrected = second_order_secular_hamiltonian(free, frame)
@@ -122,7 +151,7 @@ def analyze_archive(path, static_order=1):
 
     def build_gate(steps):
         """Propagate the RWA sequence through explicit midpoint contractions."""
-        propagator = np.eye(36, dtype=complex)
+        propagator = np.eye(joint_dimension, dtype=complex)
         dt = duration / steps
 
         for index, (_, nv, axis) in enumerate(schedule):
@@ -153,8 +182,14 @@ def analyze_archive(path, static_order=1):
     counts = [0, 1, 2, 4, 8, 16]
 
     def gate_metrics(propagator):
-        """Evaluate mixed-nuclear fidelity and memory-preserving return signals."""
-        blocks = propagator.reshape(9, 4, 9, 4)
+        """Evaluate logical metrics while allowing discarded electronic population to return."""
+        projected = explicit_matrix_product(
+            joint_logical_embedding.conj().T,
+            propagator,
+            joint_logical_embedding,
+        )
+
+        blocks = projected.reshape(9, 4, 9, 4)
         survival_weight = 0.0
         overlap_weight = 0.0
 
@@ -163,29 +198,50 @@ def analyze_archive(path, static_order=1):
                 kraus = blocks[output, :, initial_environment, :] / 3
                 survival_weight += np.linalg.norm(kraus, "fro") ** 2
                 overlap_weight += abs(
-                    np.trace(explicit_matrix_product(target.conj().T, kraus))
+                    np.trace(
+                        explicit_matrix_product(target.conj().T, kraus)
+                    )
                 ) ** 2
 
         fidelity = (survival_weight + overlap_weight) / 20
         survival = survival_weight / 4
 
-        density = np.kron(np.eye(9) / 9, initial)
+        electronic_initial = explicit_matrix_product(
+            logical_embedding,
+            initial,
+            logical_embedding.conj().T,
+        )
+
+        density = np.kron(np.eye(9) / 9, electronic_initial)
         signals = []
 
         for count in range(max(counts) + 1):
             if count in counts:
                 electrons = np.einsum(
                     "aiaj->ij",
-                    density.reshape(9, 4, 9, 4),
+                    density.reshape(
+                        9, electron_dimension,
+                        9, electron_dimension,
+                    ),
                 )
+
+                logical_density = explicit_matrix_product(
+                    logical_embedding.conj().T,
+                    electrons,
+                    logical_embedding,
+                )
+
                 recovery = np.linalg.matrix_power(
-                    target.conj().T, count,
+                    target.conj().T,
+                    count,
                 )
+
                 recovered = explicit_matrix_product(
                     recovery,
-                    electrons,
+                    logical_density,
                     recovery.conj().T,
                 )
+
                 signals.append(
                     float(
                         np.trace(
@@ -245,5 +301,16 @@ if __name__ == "__main__":
         choices=[1, 2],
         default=1,
     )
+    parser.add_argument(
+        "--electronic-levels",
+        type=int,
+        choices=[2, 3],
+        default=2,
+    )
     arguments = parser.parse_args()
-    analyze_archive(arguments.archive, arguments.static_order)
+    analyze_archive(
+        arguments.archive,
+        arguments.static_order,
+        arguments.electronic_levels,
+    )
+
