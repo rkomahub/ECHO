@@ -5,6 +5,7 @@ from qutip import Qobj, basis, tensor
 from echo_spin.models.effective import (
     conditional_two_qubit_hamiltonians,
     projected_unitary_kraus,
+    secular_hamiltonian,
     two_qubit_hamiltonian_reduction,
 )
 
@@ -504,3 +505,41 @@ def test_conditional_hamiltonians_detect_sector_mixing():
 
     for conditional in result["hamiltonians"]:
         assert conditional.norm() < 1e-12
+
+
+def test_secular_hamiltonian_preserves_nuclear_dynamics():
+    """Retain nuclear dynamics within electronic sectors and remove fast electronic mixing."""
+    from qutip import qeye, sigmax, sigmaz
+
+    electronic_excitation = basis(2, 1).proj()
+    generator = 10.0 * tensor(electronic_excitation, qeye(2))
+
+    retained = (
+        0.3 * tensor(qeye(2), sigmax())
+        + 0.2 * tensor(sigmaz(), sigmaz())
+    )
+
+    hamiltonian = retained + 0.7 * tensor(sigmax(), sigmaz())
+    reduced = secular_hamiltonian(hamiltonian, generator)
+
+    np.testing.assert_allclose(
+        reduced.full(),
+        retained.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    # Independently average over one full period of the rotating terms.
+    averaged = 0 * hamiltonian
+    period = 2 * np.pi / 10.0
+
+    for time in np.arange(32) * period / 32:
+        rotation = (1j * generator * time).expm()
+        averaged += rotation * hamiltonian * rotation.dag() / 32
+
+    np.testing.assert_allclose(
+        reduced.full(),
+        averaged.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )

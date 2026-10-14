@@ -211,3 +211,46 @@ def conditional_two_qubit_hamiltonians(
             )
         ),
     }
+
+
+def secular_hamiltonian(
+    hamiltonian: Qobj,
+    frame_generator: Qobj,
+    frequency_tolerance: float = 1e-8,
+) -> Qobj:
+    """Retain Hamiltonian terms stationary under the specified frame generator."""
+    if (
+        not hamiltonian.isoper
+        or not frame_generator.isoper
+        or hamiltonian.dims != frame_generator.dims
+    ):
+        raise ValueError("Provide matching Hamiltonian and frame operators.")
+
+    if not np.isfinite(frequency_tolerance) or frequency_tolerance < 0:
+        raise ValueError("frequency_tolerance must be finite and non-negative.")
+
+    matrices = [hamiltonian.full(), frame_generator.full()]
+
+    for matrix in matrices:
+        if (
+            not np.all(np.isfinite(matrix))
+            or not np.allclose(
+                matrix,
+                matrix.conj().T,
+                atol=1e-10,
+                rtol=1e-12,
+            )
+        ):
+            raise ValueError("Operators must be finite and Hermitian.")
+
+    frequencies, eigenvectors = np.linalg.eigh(matrices[1])
+    transformed = eigenvectors.conj().T @ matrices[0] @ eigenvectors
+
+    stationary = (
+        np.abs(frequencies[:, None] - frequencies[None, :])
+        <= frequency_tolerance
+    )
+
+    reduced = eigenvectors @ (transformed * stationary) @ eigenvectors.conj().T
+
+    return Qobj(reduced, dims=hamiltonian.dims)
