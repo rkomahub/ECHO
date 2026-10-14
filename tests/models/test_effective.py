@@ -2,7 +2,10 @@ import numpy as np
 import pytest
 from qutip import Qobj, basis, tensor
 
-from echo_spin.models.effective import two_qubit_hamiltonian_reduction
+from echo_spin.models.effective import (
+    projected_unitary_kraus,
+    two_qubit_hamiltonian_reduction,
+)
 
 
 def logical_basis():
@@ -211,3 +214,216 @@ def test_joas_electron_reduction_in_rotating_frame():
         "Discarded coupling norm =",
         result["discarded_coupling_norm"],
     )
+
+def test_joas_shared_control_reduction_detects_leakage():
+    """Recover logical microwave amplitudes while detecting discarded-level coupling."""
+    from echo_spin.core.operators import spin_operators
+
+    sx, _, _ = spin_operators(1)
+    identity = Qobj(np.eye(3))
+
+    states = [
+        tensor(basis(3, first), basis(3, second))
+        for first in [1, 0]
+        for second in [1, 2]
+    ]
+
+    shared_control = (
+        tensor(sx, identity)
+        + tensor(identity, sx)
+    )
+
+    result = two_qubit_hamiltonian_reduction(
+        shared_control,
+        states,
+    )
+
+    coefficients = result["pauli_coefficients"]
+
+    assert np.isclose(coefficients["XI"], 1 / np.sqrt(2))
+    assert np.isclose(coefficients["IX"], 1 / np.sqrt(2))
+
+    for label, value in coefficients.items():
+        if label not in {"XI", "IX"}:
+            assert abs(value) < 1e-12
+
+    assert np.isclose(result["discarded_coupling_norm"], 1.0)
+
+
+def test_joas_selective_control_reduction_preserves_dynamics():
+    """Preserve logical dynamics when controls exclude the discarded transitions."""
+    identity = Qobj(np.eye(3))
+
+    nv1_transition = basis(3, 0) * basis(3, 1).dag()
+    nv2_transition = basis(3, 2) * basis(3, 1).dag()
+
+    control_1 = (
+        nv1_transition + nv1_transition.dag()
+    ) / np.sqrt(2)
+
+    control_2 = (
+        nv2_transition + nv2_transition.dag()
+    ) / np.sqrt(2)
+
+    selective_control = (
+        tensor(control_1, identity)
+        + tensor(identity, control_2)
+    )
+
+    states = [
+        tensor(basis(3, first), basis(3, second))
+        for first in [1, 0]
+        for second in [1, 2]
+    ]
+
+    result = two_qubit_hamiltonian_reduction(
+        selective_control,
+        states,
+    )
+
+    assert result["discarded_coupling_norm"] < 1e-12
+
+    embedding = np.column_stack([
+        state.full().ravel()
+        for state in states
+    ])
+
+    # The parameter is integrated control amplitude, not a calibrated pulse duration.
+    for pulse_area in [0.2, np.pi / np.sqrt(2)]:
+        full_evolution = (
+            -1j * selective_control * pulse_area
+        ).expm().full()
+
+        reduced_evolution = (
+            -1j * result["hamiltonian"] * pulse_area
+        ).expm().full()
+
+        np.testing.assert_allclose(
+            embedding.conj().T @ full_evolution @ embedding,
+            reduced_evolution,
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+
+def test_projected_unitary_kraus_environment_dephasing():
+    """Recover dephasing induced by tracing out an initially mixed environment."""
+    from qutip import qeye, sigmax, sigmaz
+
+    angle = 0.3
+    propagator = (
+        -1j * angle * tensor(sigmaz(), sigmaz())
+    ).expm()
+
+    embeddings = [
+        np.kron(np.eye(2), basis(2, index).full())
+        for index in [0, 1]
+    ]
+
+    kraus = projected_unitary_kraus(
+        propagator,
+        embeddings,
+        environment_probabilities=[0.5, 0.5],
+        logical_dimensions=(2,),
+    )
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    density = plus.proj()
+    output = sum(
+        operator * density * operator.dag()
+        for operator in kraus
+    )
+
+    completeness = sum(
+        operator.dag() * operator
+        for operator in kraus
+    )
+
+    np.testing.assert_allclose(
+        completeness.full(),
+        qeye(2).full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert np.isclose(
+        (output * sigmax()).tr().real,
+        np.cos(2 * angle),
+    )
+
+
+def test_projected_unitary_kraus_preserves_leakage():
+    """Keep logical population loss without renormalizing the reduced channel."""
+    angle = 0.4
+    transition = basis(3, 2) * basis(3, 1).dag()
+    propagator = (
+        -1j * angle * (transition + transition.dag())
+    ).expm()
+
+    embedding = np.column_stack([
+        basis(3, 0).full().ravel(),
+        basis(3, 1).full().ravel(),
+    ])
+
+    kraus = projected_unitary_kraus(
+        propagator,
+        [embedding],
+        environment_probabilities=[1.0],
+        logical_dimensions=(2,),
+    )
+
+    density = basis(2, 1).proj()
+    output = sum(
+        operator * density * operator.dag()
+        for operator in kraus
+    )
+
+    assert np.isclose(output.tr().real, np.cos(angle) ** 2)
+
+
+def test_reduced_channel_composition_discards_environment_memory():
+    """Distinguish repeated joint evolution from a freshly reset environment channel."""
+    from qutip import qeye, sigmax, sigmaz
+
+    angle = 0.3
+    propagator = (
+        -1j * angle * tensor(sigmaz(), sigmaz())
+    ).expm()
+
+    embeddings = [
+        np.kron(np.eye(2), basis(2, index).full())
+        for index in [0, 1]
+    ]
+
+    kraus = projected_unitary_kraus(
+        propagator,
+        embeddings,
+        environment_probabilities=[0.5, 0.5],
+        logical_dimensions=(2,),
+    )
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial = plus.proj()
+
+    def apply_channel(density):
+        """Apply the extracted single-operation logical channel."""
+        return sum(
+            operator * density * operator.dag()
+            for operator in kraus
+        )
+
+    reset_output = apply_channel(apply_channel(initial))
+
+    joint_initial = tensor(initial, qeye(2) / 2)
+    repeated = propagator * propagator
+    joint_output = repeated * joint_initial * repeated.dag()
+    retained_output = joint_output.ptrace(0)
+
+    reset_coherence = float((reset_output * sigmax()).tr().real)
+    retained_coherence = float((retained_output * sigmax()).tr().real)
+
+    assert np.isclose(reset_coherence, np.cos(2 * angle) ** 2)
+    assert np.isclose(retained_coherence, np.cos(4 * angle))
+    assert not np.isclose(reset_coherence, retained_coherence)
+
+    print(f"\nReset-environment coherence = {reset_coherence:.8f}")
+    print(f"Retained-environment coherence = {retained_coherence:.8f}")

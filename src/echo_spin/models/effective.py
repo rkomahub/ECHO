@@ -78,3 +78,65 @@ def two_qubit_hamiltonian_reduction(
             np.linalg.norm(discarded_coupling, ord=2)
         ),
     }
+
+
+def projected_unitary_kraus(
+    propagator: Qobj,
+    embeddings,
+    environment_probabilities,
+    logical_dimensions=(2, 2),
+) -> tuple:
+    """Extract a logical channel for a specified initially uncorrelated environment."""
+    matrices = [np.asarray(value, dtype=complex) for value in embeddings]
+    probabilities = np.asarray(environment_probabilities, dtype=float)
+    dimensions = list(logical_dimensions)
+    logical_dimension = int(np.prod(dimensions))
+    unitary = propagator.full()
+
+    if (
+        not propagator.isoper
+        or not np.all(np.isfinite(unitary))
+        or np.linalg.norm(
+            unitary.conj().T @ unitary - np.eye(unitary.shape[0]),
+            ord="fro",
+        ) > 1e-8
+    ):
+        raise ValueError("propagator must be a finite unitary operator.")
+
+    if not matrices or any(
+        matrix.shape != (unitary.shape[0], logical_dimension)
+        or not np.all(np.isfinite(matrix))
+        for matrix in matrices
+    ):
+        raise ValueError("Provide matching finite logical embedding matrices.")
+
+    combined = np.column_stack(matrices)
+
+    if not np.allclose(
+        combined.conj().T @ combined,
+        np.eye(combined.shape[1]),
+        atol=1e-10,
+        rtol=0.0,
+    ):
+        raise ValueError("The combined embeddings must be orthonormal.")
+
+    if (
+        probabilities.shape != (len(matrices),)
+        or not np.all(np.isfinite(probabilities))
+        or np.any(probabilities < 0)
+        or not np.isclose(
+            probabilities.sum(), 1.0,
+            atol=1e-12, rtol=0.0,
+        )
+    ):
+        raise ValueError("Environment probabilities must be normalized.")
+
+    return tuple(
+        Qobj(
+            np.sqrt(probability)
+            * output.conj().T @ unitary @ initial,
+            dims=[dimensions, dimensions],
+        )
+        for initial, probability in zip(matrices, probabilities)
+        for output in matrices
+    )
