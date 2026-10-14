@@ -45,6 +45,7 @@ from echo_spin.gates.gates import (
     average_gate_fidelity,
     sqrt_zz_gate,
 )
+from echo_spin.models.effective import projected_unitary_kraus
 from echo_spin.models.joas import joas_rb_primitive_builders, xy8_gate_schedule
 from echo_spin.noise.dephasing import (
     diagonal_dephasing_channel,
@@ -2867,6 +2868,61 @@ def test_joas_full_finite_xy8_propagator(
         f"Independent Kraus check: "
         f"survival={kraus_average_survival:.8f}, "
         f"fidelity={kraus_average_fidelity:.8f}"
+    )
+
+    # Validate the reusable reduction against the independent full-model channel.
+    reduced_kraus = projected_unitary_kraus(
+        propagator=propagator,
+        embeddings=nuclear_embeddings,
+        environment_probabilities=np.full(9, 1 / 9),
+    )
+
+    reduced_survival_weight = sum(
+        float((operator.dag() * operator).tr().real)
+        for operator in reduced_kraus
+    )
+
+    reduced_target_overlap = sum(
+        abs((target.dag() * operator).tr()) ** 2
+        for operator in reduced_kraus
+    )
+
+    reduced_survival = reduced_survival_weight / dimension
+    reduced_fidelity = (
+        reduced_survival_weight + reduced_target_overlap
+    ) / (dimension * (dimension + 1))
+
+    np.testing.assert_allclose(
+        [reduced_survival, reduced_fidelity],
+        [average_survival, fidelity],
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    # A complex superposition checks the output state as well as scalar metrics.
+    probe = (
+        logical_states[0]
+        + 1j * logical_states[1]
+        - logical_states[2]
+        + logical_states[3]
+    ).unit().proj()
+
+    reduced_output = sum(
+        operator * probe * operator.dag()
+        for operator in reduced_kraus
+    )
+
+    np.testing.assert_allclose(
+        reduced_output.full(),
+        logical_dynamical_map(probe).full(),
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    print(
+        f"Reusable logical channel: survival={reduced_survival:.8f}, "
+        f"fidelity={reduced_fidelity:.8f}, "
+        f"Kraus operators={len(reduced_kraus)}"
     )
 
     t2_nv1 = 454.0  # microseconds
