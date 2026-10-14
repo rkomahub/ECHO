@@ -4,6 +4,38 @@ import numpy as np
 from qutip import Qobj, qeye, sigmax, sigmay, sigmaz, tensor
 
 
+def explicit_matrix_product(*matrices):
+    """Multiply finite matrices through explicit contractions without BLAS matmul."""
+    if len(matrices) < 2:
+        raise ValueError("Provide at least two matrices.")
+
+    result = np.asarray(matrices[0])
+
+    for matrix in matrices[1:]:
+        matrix = np.asarray(matrix)
+
+        if (
+            result.ndim != 2
+            or matrix.ndim != 2
+            or result.shape[1] != matrix.shape[0]
+            or not np.all(np.isfinite(result))
+            or not np.all(np.isfinite(matrix))
+        ):
+            raise ValueError("Provide compatible finite matrices.")
+
+        result = np.einsum(
+            "ik,kj->ij",
+            result,
+            matrix,
+            optimize=False,
+        )
+
+        if not np.all(np.isfinite(result)):
+            raise FloatingPointError("Matrix contraction produced nonfinite entries.")
+
+    return result
+
+
 def two_qubit_hamiltonian_reduction(
     hamiltonian: Qobj,
     logical_basis,
@@ -244,14 +276,23 @@ def secular_hamiltonian(
             raise ValueError("Operators must be finite and Hermitian.")
 
     frequencies, eigenvectors = np.linalg.eigh(matrices[1])
-    transformed = eigenvectors.conj().T @ matrices[0] @ eigenvectors
+
+    transformed = explicit_matrix_product(
+        eigenvectors.conj().T,
+        matrices[0],
+        eigenvectors,
+    )
 
     stationary = (
         np.abs(frequencies[:, None] - frequencies[None, :])
         <= frequency_tolerance
     )
 
-    reduced = eigenvectors @ (transformed * stationary) @ eigenvectors.conj().T
+    reduced = explicit_matrix_product(
+        eigenvectors,
+        transformed * stationary,
+        eigenvectors.conj().T,
+    )
 
     return Qobj(reduced, dims=hamiltonian.dims)
 
@@ -296,7 +337,12 @@ def resonant_control_operator(
             raise ValueError("Operators must be finite and Hermitian.")
 
     frequencies, eigenvectors = np.linalg.eigh(generator_matrix)
-    transformed = eigenvectors.conj().T @ control_matrix @ eigenvectors
+
+    transformed = explicit_matrix_product(
+        eigenvectors.conj().T,
+        control_matrix,
+        eigenvectors,
+    )
 
     gaps = frequencies[:, None] - frequencies[None, :]
     resonant = np.abs(gaps - carrier) <= frequency_tolerance
@@ -308,6 +354,10 @@ def resonant_control_operator(
     ) / np.sqrt(2)
 
     return Qobj(
-        eigenvectors @ rotating_control @ eigenvectors.conj().T,
+        explicit_matrix_product(
+            eigenvectors,
+            rotating_control,
+            eigenvectors.conj().T,
+        ),
         dims=control.dims,
     )

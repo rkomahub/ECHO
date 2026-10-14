@@ -4,11 +4,31 @@ from qutip import Qobj, basis, tensor
 
 from echo_spin.models.effective import (
     conditional_two_qubit_hamiltonians,
+    explicit_matrix_product,
     projected_unitary_kraus,
     resonant_control_operator,
     secular_hamiltonian,
     two_qubit_hamiltonian_reduction,
 )
+
+
+def test_explicit_matrix_product_complex_chain():
+    """Recover a hand-calculated complex matrix product."""
+    first = np.array([[1, 1j], [2, -1]], dtype=complex)
+    second = np.array([[1, 2], [-1j, 3]], dtype=complex)
+    third = np.diag([2, 3])
+
+    expected = np.array([
+        [4, 6 + 9j],
+        [4 + 2j, 3],
+    ])
+
+    np.testing.assert_allclose(
+        explicit_matrix_product(first, second, third),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
 
 
 def logical_basis():
