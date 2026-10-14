@@ -254,3 +254,60 @@ def secular_hamiltonian(
     reduced = eigenvectors @ (transformed * stationary) @ eigenvectors.conj().T
 
     return Qobj(reduced, dims=hamiltonian.dims)
+
+
+def resonant_control_operator(
+    control: Qobj,
+    frame_generator: Qobj,
+    carrier: float,
+    phase: float = 0.0,
+    frequency_tolerance: float = 1e-8,
+) -> Qobj:
+    """Return the resonant cosine-drive operator per unit microwave envelope."""
+    if (
+        not control.isoper
+        or not frame_generator.isoper
+        or control.dims != frame_generator.dims
+    ):
+        raise ValueError("Provide matching control and frame operators.")
+
+    if not np.isfinite(carrier) or carrier <= 0:
+        raise ValueError("carrier must be finite and positive.")
+
+    if not np.isfinite(phase):
+        raise ValueError("phase must be finite.")
+
+    if not np.isfinite(frequency_tolerance) or frequency_tolerance < 0:
+        raise ValueError("frequency_tolerance must be finite and non-negative.")
+
+    control_matrix = control.full()
+    generator_matrix = frame_generator.full()
+
+    for matrix in [control_matrix, generator_matrix]:
+        if (
+            not np.all(np.isfinite(matrix))
+            or not np.allclose(
+                matrix,
+                matrix.conj().T,
+                atol=1e-10,
+                rtol=1e-12,
+            )
+        ):
+            raise ValueError("Operators must be finite and Hermitian.")
+
+    frequencies, eigenvectors = np.linalg.eigh(generator_matrix)
+    transformed = eigenvectors.conj().T @ control_matrix @ eigenvectors
+
+    gaps = frequencies[:, None] - frequencies[None, :]
+    resonant = np.abs(gaps - carrier) <= frequency_tolerance
+    raising = transformed * resonant
+
+    rotating_control = (
+        np.exp(-1j * phase) * raising
+        + np.exp(1j * phase) * raising.conj().T
+    ) / np.sqrt(2)
+
+    return Qobj(
+        eigenvectors @ rotating_control @ eigenvectors.conj().T,
+        dims=control.dims,
+    )

@@ -5,6 +5,7 @@ from qutip import Qobj, basis, tensor
 from echo_spin.models.effective import (
     conditional_two_qubit_hamiltonians,
     projected_unitary_kraus,
+    resonant_control_operator,
     secular_hamiltonian,
     two_qubit_hamiltonian_reduction,
 )
@@ -536,6 +537,53 @@ def test_secular_hamiltonian_preserves_nuclear_dynamics():
     for time in np.arange(32) * period / 32:
         rotation = (1j * generator * time).expm()
         averaged += rotation * hamiltonian * rotation.dag() / 32
+
+    np.testing.assert_allclose(
+        reduced.full(),
+        averaged.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize("phase", [0.0, np.pi / 2])
+def test_resonant_control_matches_carrier_average(phase):
+    """Recover resonant amplitude and phase while rejecting an off-resonant transition."""
+    from echo_spin.core.operators import spin_operators
+
+    sx, _, _ = spin_operators(1)
+    carrier = 10.0
+    generator = Qobj(np.diag([carrier, 0.0, 3 * carrier]))
+
+    reduced = resonant_control_operator(
+        control=sx,
+        frame_generator=generator,
+        carrier=carrier,
+        phase=phase,
+    )
+
+    expected = np.zeros((3, 3), dtype=complex)
+    expected[0, 1] = 0.5 * np.exp(-1j * phase)
+    expected[1, 0] = np.conjugate(expected[0, 1])
+
+    np.testing.assert_allclose(
+        reduced.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    averaged = 0 * sx
+    period = 2 * np.pi / carrier
+
+    for time in np.arange(64) * period / 64:
+        rotation = (1j * generator * time).expm()
+        laboratory_control = (
+            np.sqrt(2) * np.cos(carrier * time + phase) * sx
+        )
+        averaged += (
+            rotation * laboratory_control * rotation.dag() / 64
+        )
 
     np.testing.assert_allclose(
         reduced.full(),
