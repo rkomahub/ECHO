@@ -3098,6 +3098,130 @@ def test_joas_full_finite_xy8_propagator(
     print("Repetitions =", benchmark_counts)
     print("Ideal-recovery return signal =", return_signal)
 
+    # Compare repeated logical-channel use with retained joint-system evolution.
+    initial_logical_density = tensor(plus, plus).proj()
+    reduced_density = initial_logical_density.copy()
+    reduced_return_signal = []
+    reduced_survival_signal = []
+
+    requested_counts = set(benchmark_counts.tolist())
+
+    for count in range(int(benchmark_counts.max()) + 1):
+        if count in requested_counts:
+            recovery = target.dag() ** count
+            recovered = (
+                recovery * reduced_density * recovery.dag()
+            )
+
+            reduced_return_signal.append(
+                float(
+                    (initial_logical_density * recovered).tr().real
+                )
+            )
+            reduced_survival_signal.append(
+                float(reduced_density.tr().real)
+            )
+
+        if count < benchmark_counts.max():
+            reduced_density = sum(
+                operator * reduced_density * operator.dag()
+                for operator in reduced_kraus
+            )
+
+    reduced_return_signal = np.asarray(reduced_return_signal)
+    reduced_survival_signal = np.asarray(reduced_survival_signal)
+
+    # The initial state and the first gate must agree with the exact reference.
+    np.testing.assert_allclose(
+        reduced_return_signal[:2],
+        return_signal[:2],
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    assert np.all(reduced_return_signal >= -1e-10)
+    assert np.all(
+        reduced_return_signal <= reduced_survival_signal + 1e-10
+    )
+
+    differences = reduced_return_signal - return_signal
+
+    print("Repeated reduced-channel return =", reduced_return_signal)
+    print("Reduced-channel logical survival =", reduced_survival_signal)
+    print("Reduced minus retained-reference return =", differences)
+    print(
+        "Maximum absolute return discrepancy =",
+        float(np.max(np.abs(differences))),
+    )
+
+    # Retain nuclear memory while projecting electrons after each gate.
+    joint_embedding = np.column_stack(nuclear_embeddings)
+
+    # Columns are ordered as nuclear-pair index, then logical electron state.
+    retained_gate = Qobj(
+        joint_embedding.conj().T
+        @ propagator.full()
+        @ joint_embedding,
+        dims=[[9, 2, 2], [9, 2, 2]],
+    )
+
+    retained_density = tensor(
+        qeye(9) / 9,
+        initial_logical_density,
+    )
+
+    retained_return_signal = []
+    retained_survival_signal = []
+
+    for count in range(int(benchmark_counts.max()) + 1):
+        if count in requested_counts:
+            electron_density = retained_density.ptrace([1, 2])
+            recovery = target.dag() ** count
+            recovered = (
+                recovery * electron_density * recovery.dag()
+            )
+
+            retained_return_signal.append(
+                float(
+                    (initial_logical_density * recovered).tr().real
+                )
+            )
+            retained_survival_signal.append(
+                float(retained_density.tr().real)
+            )
+
+        if count < benchmark_counts.max():
+            retained_density = (
+                retained_gate
+                * retained_density
+                * retained_gate.dag()
+            )
+
+    retained_return_signal = np.asarray(retained_return_signal)
+    retained_survival_signal = np.asarray(retained_survival_signal)
+
+    np.testing.assert_allclose(
+        retained_return_signal[:2],
+        return_signal[:2],
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    assert np.all(retained_return_signal >= -1e-10)
+    assert np.all(
+        retained_return_signal <= retained_survival_signal + 1e-10
+    )
+
+    print("Retained-nuclei reduced return =", retained_return_signal)
+    print(
+        "Retained-nuclei reduction minus full reference =",
+        retained_return_signal - return_signal,
+    )
+    print(
+        "Reset channel minus retained-nuclei reduction =",
+        reduced_return_signal - retained_return_signal,
+    )
+
     def local_benchmark_readout(density_matrix, count):
         """Measure locally recovered NV1 logical Z for even gate counts."""
         return (
