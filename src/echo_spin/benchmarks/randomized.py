@@ -817,3 +817,47 @@ def estimate_entangling_gate_error(
         "entangling_fidelity": float(survival),
         "standard_error": float(standard_error),
     }
+
+
+def extract_native_gate_error(
+    error_per_clifford,
+    known_errors,
+    known_counts,
+    target_count,
+) -> float:
+    """Infer one primitive error from calibrated contributions of other primitives."""
+    epc = float(error_per_clifford)
+    errors = np.asarray(known_errors, dtype=float)
+    counts = np.asarray(known_counts, dtype=float)
+    target_count = float(target_count)
+
+    if not np.isfinite(epc) or not 0 <= epc < 1:
+        raise ValueError("error_per_clifford must lie in [0, 1).")
+
+    if errors.ndim != 1 or counts.shape != errors.shape:
+        raise ValueError("known_errors and known_counts must be matching vectors.")
+
+    if (
+        not np.all(np.isfinite(errors))
+        or np.any(errors < 0)
+        or np.any(errors >= 1)
+    ):
+        raise ValueError("Known errors must be finite and lie in [0, 1).")
+
+    if not np.all(np.isfinite(counts)) or np.any(counts < 0):
+        raise ValueError("Known counts must be finite and non-negative.")
+
+    if not np.isfinite(target_count) or target_count <= 0:
+        raise ValueError("target_count must be finite and positive.")
+
+    log_survival = (
+        np.log1p(-epc)
+        - np.dot(counts, np.log1p(-errors))
+    ) / target_count
+
+    if log_survival > 1e-12:
+        raise ValueError(
+            "EPC is below the contribution predicted by the known errors."
+        )
+
+    return float(-np.expm1(min(log_survival, 0.0)))

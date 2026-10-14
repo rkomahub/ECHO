@@ -7,6 +7,7 @@ from qutip import Qobj, basis, qeye, sigmax, sigmay, sigmaz, tensor
 from echo_spin.benchmarks.randomized import (
     estimate_entangling_gate_error,
     extract_entangling_gate_error,
+    extract_native_gate_error,
     fit_rb_decay,
     random_single_qubit_clifford_sequence,
     random_two_qubit_clifford_sequence,
@@ -631,3 +632,36 @@ def test_local_rb_runner_and_archive(tmp_path):
             archive["catalog_words_json"].item()
         )) == 576
         assert archive["generators"].shape == (4, 4, 4)
+
+
+def test_extract_native_gate_error_distinct_calibrations():
+    """Recover a target error with unequal calibrated primitive errors."""
+    known_errors = np.array([0.003, 0.009])
+    known_counts = np.array([2.5, 3.5])
+    target_count = 1.8
+    target_error = 0.04
+
+    survival = (
+        np.prod((1 - known_errors) ** known_counts)
+        * (1 - target_error) ** target_count
+    )
+
+    inferred = extract_native_gate_error(
+        error_per_clifford=1 - survival,
+        known_errors=known_errors,
+        known_counts=known_counts,
+        target_count=target_count,
+    )
+
+    assert np.isclose(inferred, target_error, atol=1e-12, rtol=0.0)
+
+
+def test_extract_native_gate_error_inconsistent_budget():
+    """Reject a measured error below the calibrated known contribution."""
+    with pytest.raises(ValueError, match="below"):
+        extract_native_gate_error(
+            error_per_clifford=0.001,
+            known_errors=[0.01],
+            known_counts=[2.0],
+            target_count=1.0,
+        )
