@@ -3,6 +3,7 @@ import pytest
 from qutip import Qobj, basis, tensor
 
 from echo_spin.models.effective import (
+    conditional_two_qubit_hamiltonians,
     projected_unitary_kraus,
     two_qubit_hamiltonian_reduction,
 )
@@ -427,3 +428,79 @@ def test_reduced_channel_composition_discards_environment_memory():
 
     print(f"\nReset-environment coherence = {reset_coherence:.8f}")
     print(f"Retained-environment coherence = {retained_coherence:.8f}")
+
+
+def test_conditional_hamiltonians_preserve_static_environment_memory():
+    """Recover exact conditioned dynamics when the environment sectors are conserved."""
+    from qutip import qeye, sigmax, sigmaz
+
+    coupling = 0.3
+    hamiltonian = coupling * tensor(sigmaz(), sigmaz(), qeye(2))
+
+    embeddings = [
+        np.kron(basis(2, index).full(), np.eye(4))
+        for index in [0, 1]
+    ]
+
+    result = conditional_two_qubit_hamiltonians(
+        hamiltonian,
+        embeddings,
+    )
+
+    assert result["sector_mixing_norm"] < 1e-12
+    assert result["discarded_coupling_norm"] < 1e-12
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    initial = tensor(plus.proj(), basis(2, 0).proj())
+    time = 2.0
+
+    conditional_output = 0 * initial
+
+    for conditional in result["hamiltonians"]:
+        evolution = (-1j * conditional * time).expm()
+        conditional_output += (
+            0.5 * evolution * initial * evolution.dag()
+        )
+
+    joint_initial = tensor(qeye(2) / 2, initial)
+    evolution = (-1j * hamiltonian * time).expm()
+    exact_output = (
+        evolution * joint_initial * evolution.dag()
+    ).ptrace([1, 2])
+
+    np.testing.assert_allclose(
+        conditional_output.full(),
+        exact_output.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    coherence = (
+        conditional_output * tensor(sigmax(), qeye(2))
+    ).tr().real
+
+    assert np.isclose(coherence, np.cos(2 * coupling * time))
+
+
+def test_conditional_hamiltonians_detect_sector_mixing():
+    """Detect environment transitions omitted by a fixed-sector approximation."""
+    from qutip import qeye, sigmax
+
+    coupling = 0.07
+    hamiltonian = coupling * tensor(sigmax(), qeye(2), qeye(2))
+
+    embeddings = [
+        np.kron(basis(2, index).full(), np.eye(4))
+        for index in [0, 1]
+    ]
+
+    result = conditional_two_qubit_hamiltonians(
+        hamiltonian,
+        embeddings,
+    )
+
+    assert np.isclose(result["sector_mixing_norm"], coupling)
+    assert result["discarded_coupling_norm"] < 1e-12
+
+    for conditional in result["hamiltonians"]:
+        assert conditional.norm() < 1e-12

@@ -140,3 +140,74 @@ def projected_unitary_kraus(
         for initial, probability in zip(matrices, probabilities)
         for output in matrices
     )
+
+
+def conditional_two_qubit_hamiltonians(
+    hamiltonian: Qobj,
+    embeddings,
+) -> dict:
+    """Extract sector-conditioned Hamiltonians and diagnose omitted couplings."""
+    matrices = [np.asarray(value, dtype=complex) for value in embeddings]
+
+    if not matrices or any(
+        matrix.shape != (hamiltonian.shape[0], 4)
+        or not np.all(np.isfinite(matrix))
+        for matrix in matrices
+    ):
+        raise ValueError("Provide finite embedding matrices with four columns.")
+
+    combined = np.column_stack(matrices)
+
+    if not np.allclose(
+        combined.conj().T @ combined,
+        np.eye(combined.shape[1]),
+        atol=1e-10,
+        rtol=0.0,
+    ):
+        raise ValueError("The combined embeddings must be orthonormal.")
+
+    reductions = []
+
+    for matrix in matrices:
+        states = [
+            Qobj(
+                matrix[:, column:column + 1],
+                dims=[
+                    hamiltonian.dims[0],
+                    [1] * len(hamiltonian.dims[0]),
+                ],
+            )
+            for column in range(4)
+        ]
+
+        reductions.append(
+            two_qubit_hamiltonian_reduction(hamiltonian, states)
+        )
+
+    full = hamiltonian.full()
+    projected = combined.conj().T @ full @ combined
+    block_diagonal = np.zeros_like(projected)
+
+    for index, reduction in enumerate(reductions):
+        block = slice(4 * index, 4 * (index + 1))
+        block_diagonal[block, block] = reduction["hamiltonian"].full()
+
+    return {
+        "hamiltonians": tuple(
+            reduction["hamiltonian"]
+            for reduction in reductions
+        ),
+        "pauli_coefficients": tuple(
+            reduction["pauli_coefficients"]
+            for reduction in reductions
+        ),
+        "sector_mixing_norm": float(
+            np.linalg.norm(projected - block_diagonal, ord=2)
+        ),
+        "discarded_coupling_norm": float(
+            np.linalg.norm(
+                full @ combined - combined @ projected,
+                ord=2,
+            )
+        ),
+    }

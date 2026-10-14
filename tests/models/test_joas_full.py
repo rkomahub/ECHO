@@ -45,7 +45,10 @@ from echo_spin.gates.gates import (
     average_gate_fidelity,
     sqrt_zz_gate,
 )
-from echo_spin.models.effective import projected_unitary_kraus
+from echo_spin.models.effective import (
+    conditional_two_qubit_hamiltonians,
+    projected_unitary_kraus,
+)
 from echo_spin.models.joas import joas_rb_primitive_builders, xy8_gate_schedule
 from echo_spin.noise.dephasing import (
     diagonal_dephasing_channel,
@@ -1772,6 +1775,10 @@ def test_joas_nv2_isolated_finite_microwave_pi_pulse():
             "shared", "full", "ideal_rb_smoke",
             id="ideal_rb_smoke",
         ),
+        pytest.param(
+            "shared", "full", "conditional_reduction",
+            id="conditional_reduction",
+        ),
     ],
 )
 def test_joas_full_finite_xy8_propagator(
@@ -2004,6 +2011,80 @@ def test_joas_full_finite_xy8_propagator(
         omega_1 * sz_e1_full**2
         + omega_2 * sz_e2_full**2
     )
+
+    if check_scope == "conditional_reduction":
+        # Embed logical electrons for each bare nuclear product state.
+        embeddings = [
+            np.column_stack([
+                tensor(
+                    basis(3, electron_one),
+                    basis(3, nuclear_one),
+                    basis(3, electron_two),
+                    basis(3, nuclear_two),
+                ).full().ravel()
+                for electron_one in [1, 0]
+                for electron_two in [1, 2]
+            ])
+            for nuclear_one in range(3)
+            for nuclear_two in range(3)
+        ]
+
+        conditioned = conditional_two_qubit_hamiltonians(
+            hamiltonian=h_free,
+            embeddings=embeddings,
+        )
+
+        frame = conditional_two_qubit_hamiltonians(
+            hamiltonian=h_trans,
+            embeddings=embeddings,
+        )
+
+        print("\nNuclear indices: carrier-referenced coefficients in MHz")
+        print("                 ZI             IZ             ZZ")
+
+        for index, (coefficients, frame_coefficients) in enumerate(
+            zip(
+                conditioned["pauli_coefficients"],
+                frame["pauli_coefficients"],
+            )
+        ):
+            nuclear_indices = divmod(index, 3)
+
+            values = [
+                (
+                    coefficients[label]
+                    - frame_coefficients[label]
+                ) / (2 * np.pi)
+                for label in ["ZI", "IZ", "ZZ"]
+            ]
+
+            print(
+                f"{nuclear_indices}: "
+                f"{values[0]: .8f}  "
+                f"{values[1]: .8f}  "
+                f"{values[2]: .8f}"
+            )
+
+            # Local hyperfine terms cannot generate a two-electron ZZ term.
+            assert coefficients["ZZ"] == pytest.approx(
+                -coupling / 4,
+                abs=1e-9,
+            )
+
+        assert len(conditioned["hamiltonians"]) == 9
+
+        print(
+            "Nuclear-sector mixing norm / (2*pi) =",
+            conditioned["sector_mixing_norm"] / (2 * np.pi),
+            "MHz",
+        )
+        print(
+            "Discarded-electron coupling norm / (2*pi) =",
+            conditioned["discarded_coupling_norm"] / (2 * np.pi),
+            "MHz",
+        )
+
+        return
 
     # ------------------------------------------------------------------
     # 7. XY8 timing and microwave pulse
