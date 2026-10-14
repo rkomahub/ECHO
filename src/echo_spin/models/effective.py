@@ -297,6 +297,65 @@ def secular_hamiltonian(
     return Qobj(reduced, dims=hamiltonian.dims)
 
 
+def second_order_secular_hamiltonian(
+    hamiltonian: Qobj,
+    frame_generator: Qobj,
+    frequency_tolerance: float = 1e-8,
+) -> dict:
+    """Include leading static virtual-transition shifts between frame sectors."""
+    leading = secular_hamiltonian(
+        hamiltonian,
+        frame_generator,
+        frequency_tolerance,
+    )
+
+    frequencies, vectors = np.linalg.eigh(frame_generator.full())
+
+    transformed = explicit_matrix_product(
+        vectors.conj().T,
+        hamiltonian.full(),
+        vectors,
+    )
+
+    gaps = frequencies[:, None] - frequencies[None, :]
+    stationary = np.abs(gaps) <= frequency_tolerance
+    off_sector = transformed * ~stationary
+
+    # Anti-Hermitian generator that cancels the first-order off-sector coupling.
+    transformation = np.zeros_like(transformed)
+    np.divide(
+        off_sector,
+        gaps,
+        out=transformation,
+        where=~stationary,
+    )
+
+    correction = 0.5 * (
+        explicit_matrix_product(transformation, off_sector)
+        - explicit_matrix_product(off_sector, transformation)
+    )
+    correction *= stationary
+
+    physical_correction = explicit_matrix_product(
+        vectors,
+        correction,
+        vectors.conj().T,
+    )
+
+    return {
+        "hamiltonian": (
+            leading
+            + Qobj(physical_correction, dims=hamiltonian.dims)
+        ),
+        "correction_norm": float(
+            np.linalg.norm(physical_correction, ord=2)
+        ),
+        "transformation_norm": float(
+            np.linalg.norm(transformation, ord=2)
+        ),
+    }
+
+
 def resonant_control_operator(
     control: Qobj,
     frame_generator: Qobj,

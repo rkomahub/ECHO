@@ -7,6 +7,7 @@ from echo_spin.models.effective import (
     explicit_matrix_product,
     projected_unitary_kraus,
     resonant_control_operator,
+    second_order_secular_hamiltonian,
     secular_hamiltonian,
     two_qubit_hamiltonian_reduction,
 )
@@ -237,6 +238,7 @@ def test_joas_electron_reduction_in_rotating_frame():
         "Discarded coupling norm =",
         result["discarded_coupling_norm"],
     )
+
 
 def test_joas_shared_control_reduction_detects_leakage():
     """Recover logical microwave amplitudes while detecting discarded-level coupling."""
@@ -564,6 +566,44 @@ def test_secular_hamiltonian_preserves_nuclear_dynamics():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+def test_second_order_secular_recovers_virtual_energy_shifts():
+    """Recover the signs and magnitudes of perturbative two-level energy shifts."""
+    gap = 10.0
+    coupling = 0.2
+
+    generator = Qobj(np.diag([0.0, gap]))
+    hamiltonian = Qobj(np.array([
+        [0.0, coupling],
+        [coupling, gap],
+    ]))
+
+    result = second_order_secular_hamiltonian(
+        hamiltonian,
+        generator,
+    )
+
+    expected = np.diag([
+        -coupling**2 / gap,
+        gap + coupling**2 / gap,
+    ])
+
+    np.testing.assert_allclose(
+        result["hamiltonian"].full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        result["hamiltonian"].eigenenergies(),
+        hamiltonian.eigenenergies(),
+        atol=2e-6,
+        rtol=0.0,
+    )
+
+    assert np.isclose(result["transformation_norm"], coupling / gap)
 
 
 @pytest.mark.parametrize("phase", [0.0, np.pi / 2])

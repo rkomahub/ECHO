@@ -9,6 +9,7 @@ from echo_spin.gates.gates import sqrt_zz_gate
 from echo_spin.models.effective import (
     explicit_matrix_product,
     resonant_control_operator,
+    second_order_secular_hamiltonian,
     secular_hamiltonian,
 )
 from echo_spin.models.joas import xy8_gate_schedule
@@ -23,7 +24,7 @@ def unitary_step(hamiltonian, duration):
     )
 
 
-def analyze_archive(path):
+def analyze_archive(path, static_order=1):
     """Compare a nuclear-memory-preserving RWA gate with the Joas reference."""
     with np.load(path, allow_pickle=False) as archive:
         metadata = json.loads(archive["metadata_json"].item())
@@ -64,7 +65,23 @@ def analyze_archive(path):
     ]
     embedding = np.column_stack(embeddings)
 
-    secular = secular_hamiltonian(free, frame)
+    if static_order == 2:
+        corrected = second_order_secular_hamiltonian(free, frame)
+        secular = corrected["hamiltonian"]
+
+        print(
+            "Static correction norm / (2*pi) =",
+            corrected["correction_norm"] / (2 * np.pi),
+            "MHz",
+        )
+        print(
+            "Perturbative transformation norm =",
+            corrected["transformation_norm"],
+        )
+    else:
+        secular = secular_hamiltonian(free, frame)
+
+    print("Static approximation order =", static_order)
 
     drift = explicit_matrix_product(
         embedding.conj().T,
@@ -222,5 +239,11 @@ def analyze_archive(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("archive")
+    parser.add_argument(
+        "--static-order",
+        type=int,
+        choices=[1, 2],
+        default=1,
+    )
     arguments = parser.parse_args()
-    analyze_archive(arguments.archive)
+    analyze_archive(arguments.archive, arguments.static_order)
