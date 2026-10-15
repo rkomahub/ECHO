@@ -283,3 +283,76 @@ def test_operator_basis_round_trip_with_complex_states():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+def test_project_operator_assigns_logical_tensor_dimensions():
+    """Preserve selected matrix elements while assigning two-qubit dimensions."""
+    matrix = np.diag(np.arange(6, dtype=float)).astype(complex)
+    matrix[0, 5] = 0.3j
+    matrix[5, 0] = -0.3j
+
+    selected = [0, 2, 3, 5]
+    states = [basis(6, index) for index in selected]
+
+    projected = project_operator(
+        Qobj(matrix),
+        states,
+        logical_dimensions=[2, 2],
+    )
+
+    assert projected.dims == [[2, 2], [2, 2]]
+    np.testing.assert_allclose(
+        projected.full(),
+        matrix[np.ix_(selected, selected)],
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+@pytest.mark.parametrize(
+    "states",
+    [
+        [],
+        [2 * basis(3, 0)],
+        [basis(3, 0), basis(3, 0)],
+        [
+            basis(3, 0),
+            (basis(3, 0) + basis(3, 1)).unit(),
+        ],
+        [basis(2, 0)],
+        [basis(3, 0).proj()],
+    ],
+    ids=[
+        "empty",
+        "unnormalized",
+        "duplicate",
+        "nonorthogonal",
+        "incompatible-dimension",
+        "not-a-ket",
+    ],
+)
+def test_project_operator_rejects_invalid_basis(states):
+    """Reject basis states that cannot define an orthonormal subspace."""
+    with pytest.raises(ValueError):
+        project_operator(Qobj(np.eye(3)), states)
+
+
+@pytest.mark.parametrize(
+    "dimensions",
+    [
+        [],
+        [2, 3],
+        [0, 4],
+        [-1, 4],
+        [2.0, 2],
+        [True, 4],
+    ],
+)
+def test_project_operator_rejects_invalid_logical_dimensions(dimensions):
+    """Reject invalid tensor factors or a mismatched logical dimension."""
+    with pytest.raises(ValueError):
+        project_operator(
+            Qobj(np.eye(4)),
+            [basis(4, index) for index in range(4)],
+            logical_dimensions=dimensions,
+        )

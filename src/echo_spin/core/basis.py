@@ -175,14 +175,85 @@ def product_basis(
 def project_operator(
     operator: Qobj,
     basis_states: list[Qobj],
+    logical_dimensions: list[int] = None,
 ) -> Qobj:
-    """Project an operator onto a subspace spanned by basis states."""
+    """Represent an operator in an orthonormal subspace with optional tensor dimensions."""
+    if not isinstance(operator, Qobj) or not operator.isoper:
+        raise ValueError("operator must be a square quantum operator.")
+
+    if not basis_states:
+        raise ValueError("At least one basis state must be provided.")
+
+    for state in basis_states:
+        if not isinstance(state, Qobj) or not state.isket:
+            raise ValueError("Each basis state must be a ket.")
+
+        if (
+            state.shape[0] != operator.shape[0]
+            or state.dims[0] != operator.dims[0]
+            or state.dims != basis_states[0].dims
+        ):
+            raise ValueError(
+                "Basis states must have matching physical dimensions."
+            )
+
+        if not np.all(np.isfinite(state.full())):
+            raise ValueError("Basis states must contain finite values.")
+
+    gram = np.array([
+        [state_i.overlap(state_j) for state_j in basis_states]
+        for state_i in basis_states
+    ], dtype=complex)
+
+    dimension = len(basis_states)
+
+    if not np.allclose(
+        gram,
+        np.eye(dimension),
+        atol=1e-10,
+        rtol=0.0,
+    ):
+        raise ValueError("Basis states must be normalized and orthogonal.")
+
+    if logical_dimensions is None:
+        dimensions = [dimension]
+    else:
+        if (
+            not isinstance(logical_dimensions, (list, tuple))
+            or not logical_dimensions
+            or any(
+                isinstance(value, (bool, np.bool_))
+                or not isinstance(value, (int, np.integer))
+                or value <= 0
+                for value in logical_dimensions
+            )
+        ):
+            raise ValueError(
+                "logical_dimensions must contain positive integers."
+            )
+
+        dimensions = [int(value) for value in logical_dimensions]
+
+        # Use Python integers to avoid fixed-width integer overflow.
+        logical_size = 1
+        for value in dimensions:
+            logical_size *= value
+
+        if logical_size != dimension:
+            raise ValueError(
+                "The product of logical_dimensions must equal "
+                "the number of basis states."
+            )
+
     matrix = np.array([
         [
-            (state_i.dag() * operator * state_j)
+            state_i.overlap(operator * state_j)
             for state_j in basis_states
         ]
         for state_i in basis_states
     ], dtype=complex)
 
-    return Qobj(matrix)
+    return Qobj(
+        matrix,
+        dims=[dimensions, dimensions],
+    )
