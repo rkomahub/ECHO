@@ -59,12 +59,12 @@ def test_finite_pi_pulse_on_nv1_converges_to_ideal_rotation():
     )
 
     x1 = two_qubit_rotation(
-        qubit=1,  # NV1 in the Joas reduced-basis convention
+        qubit=0,  # NV1 is the left tensor factor.
         angle=np.pi,
         axis="x",
     )
 
-    x1_operator = tensor(qeye(2), sigmax())
+    x1_operator = tensor(sigmax(), qeye(2))
 
     peak_amplitude = sine_pi_pulse_amplitude(duration)
 
@@ -107,12 +107,12 @@ def test_finite_pi_pulse_on_nv2_converges_to_ideal_rotation():
     )
 
     x2 = two_qubit_rotation(
-        qubit=0,  # NV2 in the Joas reduced-basis convention
+        qubit=1,  # NV2 is the right tensor factor.
         angle=np.pi,
         axis="x",
     )
 
-    x2_operator = tensor(sigmax(), qeye(2))
+    x2_operator = tensor(qeye(2), sigmax())
 
     peak_amplitude = sine_pi_pulse_amplitude(duration)
 
@@ -175,9 +175,9 @@ def test_finite_joas_sequence_converges_to_sqrt_zz():
         abs=1e-12,
     )
 
-    # Joas reduced-basis convention.
-    x1_operator = tensor(qeye(2), sigmax())
-    x2_operator = tensor(sigmax(), qeye(2))
+    # NV1 is the left tensor factor; NV2 is the right tensor factor.
+    x1_operator = tensor(sigmax(), qeye(2))
+    x2_operator = tensor(qeye(2), sigmax())
 
     peak_amplitude = sine_pi_pulse_amplitude(
         pulse_duration
@@ -285,11 +285,7 @@ def test_finite_xy8_joas_gate_converges_to_sqrt_zz():
     pulse_propagators = []
 
     for _, nv, phase in schedule:
-        if nv == 1:
-            qubit = 1
-        else:
-            qubit = 0
-
+        qubit = nv - 1
         if phase == "x":
             pauli = sigmax()
         else:

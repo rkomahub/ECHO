@@ -84,6 +84,36 @@ def test_driven_hamiltonian_adds_microwave_term():
         expected.full(),
     )
 
+def test_reduced_hamiltonian_matches_tensor_order_migration():
+    """Preserve the legacy reduced Hamiltonian under a tensor-factor swap."""
+    delta_1 = 0.31
+    delta_2 = -0.17
+    coupling = 0.08
+
+    legacy = np.diag([
+        delta_1,
+        0.0,
+        delta_1 + delta_2 - coupling,
+        delta_2,
+    ])
+
+    # Swapping tensor factors maps (00, 01, 10, 11) to (00, 10, 01, 11).
+    permutation = [0, 2, 1, 3]
+    expected = legacy[np.ix_(permutation, permutation)]
+
+    actual = reduced_free_hamiltonian(
+        delta_1=delta_1,
+        delta_2=delta_2,
+        coupling=coupling,
+    )
+
+    np.testing.assert_allclose(
+        actual.full(),
+        expected,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
 # ----------------------------------------------------------------------------------
 
 def test_joas_two_pulse_toggling_hamiltonians():
@@ -98,17 +128,9 @@ def test_joas_two_pulse_toggling_hamiltonians():
         coupling=g,
     )
 
-    x1 = two_qubit_rotation(
-    qubit=1,
-    angle=np.pi,
-    axis="x",
-    )
-
-    x2 = two_qubit_rotation(
-        qubit=0,
-        angle=np.pi,
-        axis="x",
-    )
+    # NV1 is the left tensor factor; NV2 is the right tensor factor.
+    x1 = two_qubit_rotation(0, np.pi, "x")
+    x2 = two_qubit_rotation(1, np.pi, "x")
 
     hamiltonians = toggling_hamiltonians(
         free_hamiltonian=free,
@@ -118,32 +140,32 @@ def test_joas_two_pulse_toggling_hamiltonians():
     expected = [
         np.diag([
             delta_1,
-            0,
             delta_1 + delta_2 - g,
+            0.0,
             delta_2,
         ]),
         np.diag([
-            0,
-            delta_1,
+            0.0,
             delta_2,
+            delta_1,
             delta_1 + delta_2 - g,
         ]),
         np.diag([
             delta_2,
+            0.0,
             delta_1 + delta_2 - g,
-            0,
             delta_1,
         ]),
         np.diag([
             delta_1 + delta_2 - g,
+            delta_1,
             delta_2,
-            delta_1,
-            0,
+            0.0,
         ]),
         np.diag([
             delta_1,
-            0,
             delta_1 + delta_2 - g,
+            0.0,
             delta_2,
         ]),
     ]
@@ -199,11 +221,9 @@ def test_joas_two_pulse_gate_refocuses_detunings():
         coupling=g,
     )
 
-    # Joas reduced-basis convention:
-    # NV1 -> ECHO qubit 1
-    # NV2 -> ECHO qubit 0
-    x1 = two_qubit_rotation(1, np.pi, "x")
-    x2 = two_qubit_rotation(0, np.pi, "x")
+    # NV1 is the left tensor factor; NV2 is the right tensor factor.
+    x1 = two_qubit_rotation(0, np.pi, "x")
+    x2 = two_qubit_rotation(1, np.pi, "x")
 
     hamiltonians = toggling_hamiltonians(
         free_hamiltonian=free,
@@ -242,8 +262,9 @@ def test_joas_two_pulse_gate_is_independent_of_detunings():
     tau_1 = 1.0
     tau_2 = 0.2
 
-    x1 = two_qubit_rotation(1, np.pi, "x")
-    x2 = two_qubit_rotation(0, np.pi, "x")
+    # NV1 is the left tensor factor; NV2 is the right tensor factor.
+    x1 = two_qubit_rotation(0, np.pi, "x")
+    x2 = two_qubit_rotation(1, np.pi, "x")
 
     durations = two_pulse_gate_durations(
         tau_1=tau_1,
@@ -303,11 +324,9 @@ def test_joas_two_pulse_sequence_generates_sqrt_zz():
         coupling=g,
     )
 
-    # Joas reduced-basis convention:
-    # NV1 -> ECHO qubit 1
-    # NV2 -> ECHO qubit 0
-    x1 = two_qubit_rotation(1, np.pi, "x")
-    x2 = two_qubit_rotation(0, np.pi, "x")
+    # NV1 is the left tensor factor; NV2 is the right tensor factor.
+    x1 = two_qubit_rotation(0, np.pi, "x")
+    x2 = two_qubit_rotation(1, np.pi, "x")
 
     hamiltonians = toggling_hamiltonians(
         free_hamiltonian=free,
@@ -395,12 +414,18 @@ def test_xy8_gate_pulses_respects_nv_order(nv_order):
         )
 
 
-def test_xy8_gate_pulses_preserves_legacy_default():
-    """Preserve the existing NV2-left ordering when no order is supplied."""
+def test_xy8_gate_pulses_defaults_to_nv1_left():
+    """Use NV1-left ordering when no explicit tensor order is supplied."""
     default = xy8_gate_pulses(0.8, 0.19)
-    legacy = xy8_gate_pulses(0.8, 0.19, nv_order=(2, 1))
+    explicit = xy8_gate_pulses(
+        0.8,
+        0.19,
+        nv_order=(1, 2),
+    )
 
-    for actual, expected in zip(default, legacy):
+    assert len(default) == len(explicit) == 16
+
+    for actual, expected in zip(default, explicit):
         np.testing.assert_allclose(
             actual.full(),
             expected.full(),

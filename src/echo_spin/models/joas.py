@@ -51,12 +51,12 @@ def reduced_free_hamiltonian(
     delta_2: float,
     coupling: float,
 ) -> Qobj:
-    """Reduced two-qubit free Hamiltonian used in the Joas gate model."""
+    """Return the reduced Joas Hamiltonian with NV1 left and NV2 right."""
     return Qobj(
         np.diag([
             delta_1,
-            0.0,
             delta_1 + delta_2 - coupling,
+            0.0,
             delta_2,
         ]),
         dims=[[2, 2], [2, 2]],
@@ -195,7 +195,7 @@ def xy8_gate_pulses(
     tau_1: float,
     tau_2: float,
     n_pi: int = 8,
-    nv_order: tuple[int, int] = (2, 1),
+    nv_order: tuple[int, int] = (1, 2),
 ):
     """Return ideal XY8 pulses with NV labels ordered from left to right."""
     if (
