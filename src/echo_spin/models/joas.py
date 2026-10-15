@@ -195,13 +195,24 @@ def xy8_gate_pulses(
     tau_1: float,
     tau_2: float,
     n_pi: int = 8,
+    nv_order: tuple[int, int] = (2, 1),
 ):
-    """Return chronological ideal pi pulses for complete Joas XY8 cycles."""
+    """Return ideal XY8 pulses with NV labels ordered from left to right."""
+    if (
+        not isinstance(nv_order, tuple)
+        or nv_order not in ((1, 2), (2, 1))
+    ):
+        raise ValueError("nv_order must be (1, 2) or (2, 1).")
+
     schedule = xy8_gate_schedule(tau_1, tau_2, n_pi)
+    nv_to_qubit = {
+        nv: index
+        for index, nv in enumerate(nv_order)
+    }
 
     return [
         two_qubit_rotation(
-            qubit=1 if nv == 1 else 0,
+            qubit=nv_to_qubit[nv],
             angle=np.pi,
             axis=phase,
         )

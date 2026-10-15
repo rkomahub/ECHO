@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from qutip import Qobj, qeye
+from qutip import Qobj, qeye, tensor
 
 from echo_spin.control.rotations import two_qubit_rotation
 from echo_spin.decoupling.modulation import effective_zz_coupling
@@ -362,6 +362,51 @@ def test_joas_sequence_timing():
     )
 
 # ----------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("nv_order", [(1, 2), (2, 1)])
+def test_xy8_gate_pulses_respects_nv_order(nv_order):
+    """Apply each scheduled pulse to its explicitly specified NV tensor factor."""
+    schedule = xy8_gate_schedule(0.8, 0.19)
+    pulses = xy8_gate_pulses(
+        0.8,
+        0.19,
+        nv_order=nv_order,
+    )
+
+    paulis = {
+        "x": Qobj([[0, 1], [1, 0]]),
+        "y": Qobj([[0, -1j], [1j, 0]]),
+    }
+
+    for (_, nv, axis), pulse in zip(schedule, pulses):
+        rotation = -1j * paulis[axis]
+
+        expected = (
+            tensor(rotation, qeye(2))
+            if nv == nv_order[0]
+            else tensor(qeye(2), rotation)
+        )
+
+        np.testing.assert_allclose(
+            pulse.full(),
+            expected.full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+
+def test_xy8_gate_pulses_preserves_legacy_default():
+    """Preserve the existing NV2-left ordering when no order is supplied."""
+    default = xy8_gate_pulses(0.8, 0.19)
+    legacy = xy8_gate_pulses(0.8, 0.19, nv_order=(2, 1))
+
+    for actual, expected in zip(default, legacy):
+        np.testing.assert_allclose(
+            actual.full(),
+            expected.full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
 
 def test_xy8_gate_times_rejects_invalid_tau_2():
     """The XY8 gate times reject tau_2 > tau_1 / 2."""
