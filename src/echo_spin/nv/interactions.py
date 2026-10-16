@@ -7,6 +7,7 @@ from echo_spin.core.basis import (
 )
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
+from echo_spin.nv.frames import validate_local_frame
 
 
 def dipolar_interaction(
@@ -15,64 +16,82 @@ def dipolar_interaction(
     site_j: int,
     coupling: float,
     direction,
+    frame_i=None,
+    frame_j=None,
 ) -> Qobj:
-    """Construct the magnetic dipole-dipole interaction between two spins.
-
-    Parameters
-    ----------
-    system : SpinSystem
-        Composite spin system.
-    site_i, site_j : int
-        Sites of the interacting spins.
-    coupling : float
-        Dipolar coupling strength.
-    direction : sequence of float
-        Nonzero vector joining the spins, normalized internally.
-    """
+    """Construct dipolar coupling between spins represented in their local frames."""
     if site_i == site_j:
         raise ValueError("Dipolar interaction requires two different sites.")
 
+    for site in (site_i, site_j):
+        if (
+            isinstance(site, (bool, np.bool_))
+            or not isinstance(site, (int, np.integer))
+            or not 0 <= site < system.number_of_spins
+        ):
+            raise ValueError("Interacting sites must be valid spin indices.")
+
+    if np.iscomplexobj(coupling):
+        raise ValueError("coupling must be a finite real scalar.")
+
+    coupling_array = np.asarray(coupling, dtype=float)
+    if coupling_array.shape != () or not np.isfinite(coupling_array):
+        raise ValueError("coupling must be a finite real scalar.")
+
+    if np.iscomplexobj(direction):
+        raise ValueError("direction must be real.")
+
     direction = np.asarray(direction, dtype=float)
+    if direction.shape != (3,) or not np.all(np.isfinite(direction)):
+        raise ValueError("direction must contain three finite components.")
 
-    if direction.shape != (3,):
-        raise ValueError("direction must contain three Cartesian components.")
-
-    norm = np.linalg.norm(direction)
-
-    if norm == 0.0:
+    # Normalize safely even when the supplied vector has very large components.
+    scale = float(np.max(np.abs(direction)))
+    if scale == 0.0:
         raise ValueError("direction must be non-zero.")
 
-    r_hat = direction / norm
+    scaled_direction = direction / scale
+    r_hat = scaled_direction / np.linalg.norm(scaled_direction)
 
-    spin_i = system.spins[site_i]
-    spin_j = system.spins[site_j]
+    rotation_i = (
+        np.eye(3) if frame_i is None else validate_local_frame(frame_i)
+    )
+    rotation_j = (
+        np.eye(3) if frame_j is None else validate_local_frame(frame_j)
+    )
 
-    ops_i = [
-        embed_operator(op, site_i, system)
-        for op in spin_operators(spin_i)
+    # direction is expressed in the common laboratory frame.
+    geometric_tensor = np.eye(3) - 3.0 * np.outer(r_hat, r_hat)
+
+    # Local tensor: A_ab = sum_mu,nu R_i[mu,a] T[mu,nu] R_j[nu,b].
+    local_tensor = np.einsum(
+        "ma,mn,nb->ab",
+        rotation_i,
+        geometric_tensor,
+        rotation_j,
+        optimize=False,
+    )
+
+    operators_i = [
+        embed_operator(operator, site_i, system)
+        for operator in spin_operators(system.spins[site_i])
     ]
-    ops_j = [
-        embed_operator(op, site_j, system)
-        for op in spin_operators(spin_j)
+    operators_j = [
+        embed_operator(operator, site_j, system)
+        for operator in spin_operators(system.spins[site_j])
     ]
 
-    scalar_product = sum(
-        op_i * op_j
-        for op_i, op_j in zip(ops_i, ops_j)
-    )
-    projection_i = sum(
-        component * operator
-        for component, operator in zip(r_hat, ops_i)
-    )
-    projection_j = sum(
-        component * operator
-        for component, operator in zip(r_hat, ops_j)
-    )
+    interaction = 0.0 * operators_i[0]
 
-    return coupling * (
-        scalar_product
-        - 3 * projection_i * projection_j
-    )
+    for a in range(3):
+        for b in range(3):
+            interaction += (
+                local_tensor[a, b]
+                * operators_i[a]
+                * operators_j[b]
+            )
+
+    return float(coupling_array) * interaction
 
 
 def dipolar_geometry(

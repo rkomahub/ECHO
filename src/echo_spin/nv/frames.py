@@ -128,3 +128,31 @@ def local_frame_from_axis(
     y_axis = np.cross(z_axis, x_axis)
 
     return np.column_stack((x_axis, y_axis, z_axis))
+
+
+def validate_local_frame(frame) -> np.ndarray:
+    """Validate a right-handed local-to-laboratory frame with axes as columns."""
+    if np.iscomplexobj(frame):
+        raise ValueError("local_frame must be real.")
+
+    try:
+        matrix = np.asarray(frame, dtype=float)
+    except (TypeError, ValueError) as error:
+        raise ValueError("local_frame must contain real numbers.") from error
+
+    if matrix.shape != (3, 3) or not np.all(np.isfinite(matrix)):
+        raise ValueError("local_frame must be a finite 3x3 matrix.")
+
+    gram = np.einsum("ia,ib->ab", matrix, matrix, optimize=False)
+
+    if (
+        not np.allclose(gram, np.eye(3), atol=1e-10, rtol=0.0)
+        or not np.isclose(
+            np.linalg.det(matrix), 1.0, atol=1e-10, rtol=0.0
+        )
+    ):
+        raise ValueError(
+            "local_frame must be right-handed and orthonormal."
+        )
+
+    return matrix.copy()

@@ -1,9 +1,10 @@
 from collections.abc import Sequence
 
 import numpy as np
-from qutip import Qobj
+from qutip import Qobj, qeye
 
 from echo_spin.core.system import SpinSystem
+from echo_spin.nv.frames import validate_local_frame
 from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import (
     dipolar_geometry,
@@ -18,6 +19,7 @@ def nv_register_hamiltonian(
     dipolar_directions=None,
     positions=None,
     coupling_prefactor=None,
+    local_frames=None,
 ) -> Qobj:
     """Construct the Hamiltonian of a register of non-interacting NV centers.
 
@@ -40,6 +42,15 @@ def nv_register_hamiltonian(
         Hamiltonian of the complete NV register.
     """
     number_of_nv = len(nv_parameters)
+
+    if local_frames is not None:
+        if len(local_frames) != number_of_nv:
+            raise ValueError("Provide one local frame per NV.")
+
+        local_frames = [
+            validate_local_frame(frame)
+            for frame in local_frames
+        ]
 
     if system.number_of_spins != 2 * number_of_nv:
         raise ValueError(
@@ -99,6 +110,7 @@ def nv_register_hamiltonian(
             system=system,
             couplings=dipolar_couplings,
             directions=dipolar_directions,
+            local_frames=local_frames,
         )
 
     return hamiltonian
@@ -107,26 +119,38 @@ def nv_dipolar_interaction(
     system: SpinSystem,
     couplings,
     directions,
+    local_frames=None,
 ) -> Qobj:
-    """Construct all pairwise electronic dipolar interactions in an NV register.
+    """Construct pairwise electronic dipolar interactions in local NV frames.
 
     Parameters
     ----------
     system : SpinSystem
-        NV register ordered as electron, nucleus, electron, nucleus, ...
+        Register ordered as electron, nucleus, electron, nucleus, ...
     couplings : array-like
-        NxN matrix containing the dipolar coupling J_ij.
+        (N, N) array of distance-dependent dipolar prefactors in
+        angular-frequency units. Only entries i < j are used.
     directions : array-like
-        NxNx3 array containing the relative direction vectors r_ij.
+        (N, N, 3) array of laboratory-frame pair directions.
+        Nonzero-coupling directions are normalized internally.
+    local_frames : sequence of array-like, optional
+        One right-handed orthonormal 3x3 matrix per NV, with local
+        axes as laboratory-coordinate columns. Defaults to identities.
 
     Returns
     -------
     Qobj
-        Sum of all pairwise electronic dipolar interactions.
+        Sum of electronic pair interactions on the full register.
+
+    Notes
+    -----
+    Each pair uses the tensor R_i.T (I - 3 r_hat r_hat.T) R_j.
+    Local Hamiltonians and controls must use the same local frames.
+    No secular or logical-subspace approximation is applied.
     """
-    if system.number_of_spins % 2 != 0:
+    if system.number_of_spins == 0 or system.number_of_spins % 2 != 0:
         raise ValueError(
-            "An NV register must contain two spin subsystems per NV center."
+            "An NV register requires electron-nucleus subsystem pairs."
         )
 
     number_of_nv = system.number_of_spins // 2
@@ -134,30 +158,49 @@ def nv_dipolar_interaction(
     couplings = np.asarray(couplings, dtype=float)
     directions = np.asarray(directions, dtype=float)
 
-    if couplings.shape != (number_of_nv, number_of_nv):
+    if (
+        couplings.shape != (number_of_nv, number_of_nv)
+        or not np.all(np.isfinite(couplings))
+    ):
+        raise ValueError("couplings must be a finite array of shape (N, N).")
+
+    if (
+        directions.shape != (number_of_nv, number_of_nv, 3)
+        or not np.all(np.isfinite(directions))
+    ):
         raise ValueError(
-            "couplings must have shape (N, N)."
+            "directions must be a finite array of shape (N, N, 3)."
         )
 
-    if directions.shape != (number_of_nv, number_of_nv, 3):
-        raise ValueError(
-            "directions must have shape (N, N, 3)."
-        )
+    if local_frames is None:
+        frames = [np.eye(3) for _ in range(number_of_nv)]
+    else:
+        if len(local_frames) != number_of_nv:
+            raise ValueError("Provide one local frame per NV.")
 
-    interaction = 0
+        frames = [
+            validate_local_frame(frame)
+            for frame in local_frames
+        ]
 
-    """Loop over all unique pairs of NV centers."""
+    interaction = 0.0 * qeye(
+        [int(2 * spin + 1) for spin in system.spins]
+    )
+
     for i in range(number_of_nv):
         for j in range(i + 1, number_of_nv):
-            electron_i = 2 * i
-            electron_j = 2 * j
+            # A zero coupling needs no direction or pair construction.
+            if couplings[i, j] == 0.0:
+                continue
 
             interaction += dipolar_interaction(
                 system=system,
-                site_i=electron_i,
-                site_j=electron_j,
+                site_i=2 * i,
+                site_j=2 * j,
                 coupling=couplings[i, j],
                 direction=directions[i, j],
+                frame_i=frames[i],
+                frame_j=frames[j],
             )
 
     return interaction
