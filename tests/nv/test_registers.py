@@ -3,6 +3,7 @@ import pytest
 
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
+from echo_spin.nv.frames import local_frame_from_axis, rotation_matrix
 from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import dipolar_interaction
 from echo_spin.nv.registers import (
@@ -376,3 +377,60 @@ def test_register_preserves_nv_specific_strain():
         assert (
             actual - unstrained - expected_change
         ).norm() < 1e-12
+
+
+def test_register_field_interaction_and_control_share_frames():
+    """Preserve the register and shared microwave control under a laboratory rotation."""
+    system = SpinSystem([1, 1, 1, 1])
+    positions = np.array([[0, 0, 0], [1, 2, 3]], dtype=float)
+    frames = [
+        local_frame_from_axis([1, 1, 1], [1, 0, 0]),
+        local_frame_from_axis([1, -1, -1], [1, 0, 0]),
+    ]
+    field = np.array([0.2, -0.1, 1.0])
+    polarization = np.array([1.0, 0.0, 0.0])
+
+    def build(lab_rotation):
+        """Assemble local Hamiltonians and a shared laboratory-polarized control."""
+        parameters = []
+        control = 0 * embed_operator(spin_operators(1)[0], 0, system)
+        rotated_frames = [lab_rotation @ frame for frame in frames]
+
+        for i, frame in enumerate(rotated_frames):
+            local_field = frame.T @ (lab_rotation @ field)
+            local_polarization = frame.T @ (lab_rotation @ polarization)
+
+            # Synthetic angular-frequency coefficients for a consistency test.
+            parameters.append({
+                "D": 10.0,
+                "E": 0.02,
+                "omega_e": 2.0 * local_field,
+                "Q": -0.1,
+                "omega_n": -0.01 * local_field,
+                "A": np.diag([0.02, 0.02, 0.03]),
+            })
+
+            for component, operator in zip(
+                local_polarization, spin_operators(1)
+            ):
+                control += component * embed_operator(
+                    operator, 2 * i, system
+                )
+
+        hamiltonian = nv_register_hamiltonian(
+            system=system,
+            nv_parameters=parameters,
+            positions=positions @ lab_rotation.T,
+            coupling_prefactor=0.2,
+            local_frames=rotated_frames,
+        )
+        return hamiltonian, control
+
+    original = build(np.eye(3))
+    rotated = build(rotation_matrix("y", 0.53))
+
+    for expected, actual in zip(original, rotated):
+        np.testing.assert_allclose(
+            actual.full(), expected.full(),
+            atol=1e-12, rtol=0.0,
+        )
