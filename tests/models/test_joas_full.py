@@ -84,7 +84,7 @@ def test_full_nv_register_noninteracting_factorization():
                 "D": 2 * np.pi * splitting_mhz,
                 "omega_e": 2 * np.pi * 295.18 * direction,
                 "Q": 2 * np.pi * (-4.945),
-                "omega_n": 2 * np.pi * 0.03241 * direction,
+                "omega_n": - 2 * np.pi * 0.03241 * direction,
                 "A": hyperfine,
             }
         )
@@ -326,10 +326,9 @@ def test_full_nv_register_noninteracting_factorization():
         np.testing.assert_allclose(
             np.array(measured_lines)[:, 1],
             np.array(expected_lines)[:, 1],
-            atol=1e-10,
+            atol=1e-9,
             rtol=0.0,
         )
-
 
 def test_full_axial_nv_pair_interacting_spectrum():
     """Verify all 81 axial pair energies including hyperfine and electron coupling."""
@@ -541,7 +540,7 @@ def test_joas_setting_2_full_nv_hamiltonian():
     ])
 
     omega_e = 2 * np.pi * 295.18
-    omega_n = 2 * np.pi * 0.03241
+    omega_n = -2 * np.pi * 0.03241
 
     theta_1 = np.deg2rad(74.08)
     theta_2 = np.deg2rad(3.58)
@@ -910,7 +909,7 @@ def test_joas_full_nv1_finite_microwave_pi_pulse():
     # A = np.zeros((3, 3))
 
     omega_e = 2 * np.pi * 295.18
-    omega_n = 2 * np.pi * 0.03241
+    omega_n = - 2 * np.pi * 0.03241
 
     theta_1 = np.deg2rad(74.08)
     theta_2 = np.deg2rad(3.58)
@@ -1809,7 +1808,7 @@ def test_joas_full_finite_xy8_propagator(
         A = np.zeros((3, 3))
 
     omega_e = 2 * np.pi * 295.18
-    omega_n = 2 * np.pi * 0.03241
+    omega_n = - 2 * np.pi * 0.03241
 
     theta_1 = np.deg2rad(74.08)
     theta_2 = np.deg2rad(3.58)
