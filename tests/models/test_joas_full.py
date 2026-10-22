@@ -2873,6 +2873,43 @@ def test_joas_full_finite_xy8_propagator(
 
     print("full Joas average gate fidelity =", fidelity)
 
+    # Convert the G_minus reference into G_plus using ideal local Z corrections.
+    correction = Qobj(
+        np.diag([1.0, -1.0, -1.0, 1.0]),
+        dims=[[2, 2], [2, 2]],
+    )
+    corrected_target = sqrt_zz_gate()
+
+    def corrected_logical_map(operator):
+        """Apply the reference gate followed by ideal local Z corrections."""
+        output = logical_dynamical_map(operator)
+        return correction * output * correction.dag()
+
+    np.testing.assert_allclose(
+        (correction * target).full(),
+        corrected_target.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    corrected_fidelity = average_gate_fidelity(
+        dynamical_map=corrected_logical_map,
+        target=corrected_target,
+        basis_states=logical_states,
+    )
+
+    np.testing.assert_allclose(
+        corrected_fidelity,
+        fidelity,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    print(
+        "G_plus fidelity with ideal local Z corrections =",
+        corrected_fidelity,
+    )
+
     average_survival = float(np.mean(survivals))
 
     # Leakage limits the average fidelity attainable in the logical subspace.
