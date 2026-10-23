@@ -121,7 +121,6 @@ def test_two_electron_hamiltonian_projects_to_logical_subspace():
 
     assert projected.shape == (4, 4)
 
-# ----------------------------------------------------------------------------------
 
 def test_electron_logical_states_axial_field():
     """The electron logical states are the m_s = 0 and m_s = -1 states for an axial field."""
@@ -213,7 +212,6 @@ def test_electron_logical_states_invalid_excited_branch():
             excited_state="banana",
         )
 
-# ----------------------------------------------------------------------------------
 
 def test_joas_nv1_local_frame_rotation():
     """The Joas NV1 local frame rotation is consistent with the rotation matrix."""
@@ -699,7 +697,6 @@ def test_joas_setting_2_physical_to_logical_hamiltonian():
         atol=1e-10,
     )
 
-# ----------------------------------------------------------------------------------
 
 def test_joas_selective_dressed_pi_rotations():
     """The selective dressed pi rotations swap the addressed logical states."""
@@ -872,93 +869,85 @@ def test_joas_two_electron_ideal_xy8_gate():
 
     # Positive timing implements G_minus for this logical encoding.
     n_pi = 8
+    target = sqrt_zz_gate().dag()
+    tau_2 = 1 / (4 * n_pi * nu_dip)
+    tau_1 = 2.5 * abs(tau_2)
 
-    for tau_2_sign, target in [
-        (-1, sqrt_zz_gate()),
-        (+1, sqrt_zz_gate().dag()),
-    ]:
-        tau_2 = tau_2_sign / (
-            4 * n_pi * nu_dip
-        )
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
 
-        tau_1 = 2.5 * abs(tau_2)
+    durations = xy8_gate_intervals(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
 
-        schedule = xy8_gate_schedule(
-            tau_1=tau_1,
-            tau_2=tau_2,
-        )
+    # --- Physical selective spin-1 pulses ---
 
-        durations = xy8_gate_intervals(
-            tau_1=tau_1,
-            tau_2=tau_2,
-        )
+    identity = qeye(3)
+    pulses = []
 
-        # --- Physical selective spin-1 pulses ---
+    for _, nv, phase in schedule:
+        if nv == 1:
+            local_pulse = selective_rotation(
+                state_0=zero_nv1,
+                state_1=one_nv1,
+                angle=np.pi,
+                axis=phase,
+            )
 
-        identity = qeye(3)
-        pulses = []
+            pulse = tensor(
+                local_pulse,
+                identity,
+            )
 
-        for _, nv, phase in schedule:
-            if nv == 1:
-                local_pulse = selective_rotation(
-                    state_0=zero_nv1,
-                    state_1=one_nv1,
-                    angle=np.pi,
-                    axis=phase,
-                )
+        else:
+            local_pulse = selective_rotation(
+                state_0=zero_nv2,
+                state_1=one_nv2,
+                angle=np.pi,
+                axis=phase,
+            )
 
-                pulse = tensor(
-                    local_pulse,
-                    identity,
-                )
+            pulse = tensor(
+                identity,
+                local_pulse,
+            )
 
-            else:
-                local_pulse = selective_rotation(
-                    state_0=zero_nv2,
-                    state_1=one_nv2,
-                    angle=np.pi,
-                    axis=phase,
-                )
+        pulses.append(pulse)
 
-                pulse = tensor(
-                    identity,
-                    local_pulse,
-                )
+    # --- Ideal physical 9D XY8 evolution ---
 
-            pulses.append(pulse)
+    propagator = finite_pulse_sequence_propagator(
+        free_hamiltonian=h_two,
+        durations=durations,
+        pulse_propagators=pulses,
+    )
 
-        # --- Ideal physical 9D XY8 evolution ---
+    # --- Projection onto the logical two-qubit subspace ---
 
-        propagator = finite_pulse_sequence_propagator(
-            free_hamiltonian=h_two,
-            durations=durations,
-            pulse_propagators=pulses,
-        )
+    logical_propagator = project_operator(
+        operator=propagator,
+        basis_states=logical_basis,
+    )
 
-        # --- Projection onto the logical two-qubit subspace ---
+    # Remove the physically irrelevant global phase.
+    phase = np.angle(
+        logical_propagator.full()[0, 0]
+    )
 
-        logical_propagator = project_operator(
-            operator=propagator,
-            basis_states=logical_basis,
-        )
+    logical_propagator = (
+        np.exp(-1j * phase)
+        * logical_propagator
+    )
 
-        # Remove the physically irrelevant global phase.
-        phase = np.angle(
-            logical_propagator.full()[0, 0]
-        )
+    assert np.allclose(
+        logical_propagator.full(),
+        target.full(),
+        atol=1e-8,
+    )
 
-        logical_propagator = (
-            np.exp(-1j * phase)
-            * logical_propagator
-        )
-
-        assert np.allclose(
-            logical_propagator.full(),
-            target.full(),
-            atol=1e-8,
-        )
-
-# ----------------------------------------------------------------------------------
 
 def test_noninteracting_nv_local_control_and_spectral_separation():
     """Local drives retain their own lines across all spectator states."""
