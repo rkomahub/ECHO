@@ -8,6 +8,7 @@ from echo_spin.core.basis import (
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
 from echo_spin.nv.frames import validate_local_frame
+from echo_spin.nv.geometry import validate_positions
 
 
 def dipolar_interaction(
@@ -217,3 +218,49 @@ def relative_operator_residual(
         raise ValueError("Cannot normalize by a zero operator.")
 
     return residual.norm("fro") / norm
+
+
+def register_dipolar_tensors(
+    positions,
+    local_frames,
+    coupling_prefactor: float,
+) -> np.ndarray:
+    """Return local dipolar tensors in rad/us for site positions in metres."""
+    positions = validate_positions(positions)
+    number_of_nv = len(positions)
+
+    if len(local_frames) != number_of_nv:
+        raise ValueError("Provide one local frame per NV.")
+
+    frames = [validate_local_frame(frame) for frame in local_frames]
+
+    if np.iscomplexobj(coupling_prefactor):
+        raise ValueError("coupling_prefactor must be a finite real scalar.")
+
+    prefactor = np.asarray(coupling_prefactor, dtype=float)
+    if prefactor.shape != () or not np.isfinite(prefactor):
+        raise ValueError("coupling_prefactor must be a finite real scalar.")
+
+    couplings, directions = dipolar_geometry(
+        positions, float(prefactor)
+    )
+    tensors = np.zeros((number_of_nv, number_of_nv, 3, 3))
+
+    for i in range(number_of_nv):
+        for j in range(i + 1, number_of_nv):
+            direction = directions[i, j]
+            geometry = np.eye(3) - 3.0 * np.outer(direction, direction)
+            local_tensor = np.einsum(
+                "ma,mn,nb->ab",
+                frames[i],
+                geometry,
+                frames[j],
+                optimize=False,
+            )
+            tensors[i, j] = couplings[i, j] * local_tensor
+            tensors[j, i] = tensors[i, j].T
+
+    if not np.all(np.isfinite(tensors)):
+        raise ValueError("Dipolar tensors must contain finite values.")
+
+    return tensors
