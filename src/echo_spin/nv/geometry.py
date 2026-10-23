@@ -2,6 +2,8 @@ from itertools import product
 
 import numpy as np
 
+from echo_spin.nv.frames import local_frame_from_axis
+
 
 def validate_positions(positions) -> np.ndarray:
     """Return a copy of distinct finite laboratory positions in metres."""
@@ -69,3 +71,25 @@ def lattice_positions(
         )
 
     return validate_positions(positions)
+
+
+def register_local_frames(
+    positions,
+    nv_axes,
+    transverse_references,
+) -> np.ndarray:
+    """Construct one local-to-laboratory frame per position in site order."""
+    positions = validate_positions(positions)
+    expected_shape = positions.shape
+
+    for name, vectors in (
+        ("nv_axes", nv_axes),
+        ("transverse_references", transverse_references),
+    ):
+        if np.asarray(vectors).shape != expected_shape:
+            raise ValueError(f"{name} must have shape {expected_shape}.")
+
+    return np.stack([
+        local_frame_from_axis(axis, reference)
+        for axis, reference in zip(nv_axes, transverse_references)
+    ])
