@@ -1,0 +1,1711 @@
+import os
+from datetime import datetime, timezone
+from pathlib import Path
+
+import numpy as np
+import pytest
+from qutip import Qobj, basis, qeye, sigmax, tensor
+
+from echo_spin.benchmarks.randomized import (
+    save_two_qubit_rb_result,
+    timed_primitive_map,
+    two_qubit_clifford_catalog,
+    two_qubit_rb_signal,
+)
+from echo_spin.benchmarks.repetitive import logical_repetitive_return_signal
+from echo_spin.control.microwave import (
+    control_operator,
+    microwave_hamiltonian,
+)
+from echo_spin.control.pulses import centered_sine_envelope
+from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.core.basis import (
+    basis_unitary,
+    dressed_spin_one_basis,
+)
+from echo_spin.core.operators import (
+    embed_operator,
+    spin_operators,
+)
+from echo_spin.core.system import SpinSystem
+from echo_spin.dynamics.propagators import (
+    logical_electron_nuclear_dynamical_map,
+    rotating_frame_propagator,
+    time_dependent_propagator,
+)
+from echo_spin.dynamics.sequences import (
+    finite_pulse_intervals,
+    finite_pulse_sequence_propagator,
+)
+from echo_spin.gates.gates import (
+    average_gate_fidelity,
+    sqrt_zz_gate,
+)
+from echo_spin.models.effective import (
+    conditional_two_qubit_hamiltonians,
+    projected_unitary_kraus,
+)
+from echo_spin.models.joas import joas_rb_primitive_builders, xy8_gate_schedule
+from echo_spin.noise.dephasing import (
+    diagonal_dephasing_channel,
+    two_qubit_dephasing_channel,
+)
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
+from echo_spin.nv.registers import nv_register_hamiltonian
+
+
+@pytest.mark.parametrize(
+    "drive_mode, hyperfine_mode, check_scope",
+    [
+        pytest.param("shared", "full", "gate", id="shared"),
+        pytest.param("selective", "full", "gate", id="selective"),
+        pytest.param(
+            "qubit_selective", "full", "gate",
+            id="qubit_selective",
+        ),
+        pytest.param(
+            "qubit_selective", "off", "gate",
+            id="qubit_selective_no_hyperfine",
+        ),
+        pytest.param(
+            "shared", "full", "native_half_pi",
+            id="native_half_pi",
+        ),
+        pytest.param(
+            "shared", "full", "rb_circuit_smoke",
+            id="rb_circuit_smoke",
+        ),
+        pytest.param(
+            "shared", "full", "physical_rb_smoke",
+            id="physical_rb_smoke",
+            marks=pytest.mark.skipif(
+                os.environ.get("ECHO_RUN_PHYSICAL_RB") != "1",
+                reason="Physical RB experiment requires explicit opt-in.",
+            ),
+        ),
+        pytest.param(
+            "shared", "full", "ideal_rb_smoke",
+            id="ideal_rb_smoke",
+        ),
+        pytest.param(
+            "shared", "full", "conditional_reduction",
+            id="conditional_reduction",
+        ),
+    ],
+)
+def test_joas_full_finite_xy8_propagator(
+    drive_mode,
+    hyperfine_mode,
+    check_scope,
+):
+    """Validate full-register gate evolution or its physical RB half-pi primitives."""
+    # ------------------------------------------------------------------
+    # 1. Full two-NV system
+    # ------------------------------------------------------------------
+
+    system = SpinSystem([1, 1, 1, 1])
+    electron_system = SpinSystem([1])
+
+    D_1 = 2 * np.pi * 2867.27
+    D_2 = 2 * np.pi * 2865.42
+
+    Q = 2 * np.pi * (-4.945)
+
+    A = 2 * np.pi * np.diag([
+        -2.62,
+        -2.62,
+        -2.162,
+    ])
+
+    if hyperfine_mode == "off":
+        A = np.zeros((3, 3))
+
+    omega_e = 2 * np.pi * 295.18
+    omega_n = - 2 * np.pi * 0.03241
+
+    theta_1 = np.deg2rad(74.08)
+    theta_2 = np.deg2rad(3.58)
+
+    omega_e_1 = omega_e * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_e_2 = omega_e * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    omega_n_1 = omega_n * np.array([
+        np.sin(theta_1),
+        0.0,
+        np.cos(theta_1),
+    ])
+
+    omega_n_2 = omega_n * np.array([
+        np.sin(theta_2),
+        0.0,
+        np.cos(theta_2),
+    ])
+
+    # ------------------------------------------------------------------
+    # 2. Full static Hamiltonian
+    # ------------------------------------------------------------------
+
+    h_nv = nv_register_hamiltonian(
+        system=system,
+        nv_parameters=[
+            {
+                "D": D_1,
+                "omega_e": omega_e_1,
+                "Q": Q,
+                "omega_n": omega_n_1,
+                "A": A,
+            },
+            {
+                "D": D_2,
+                "omega_e": omega_e_2,
+                "Q": Q,
+                "omega_n": omega_n_2,
+                "A": A,
+            },
+        ],
+    )
+
+    # ------------------------------------------------------------------
+    # 3. Transform to the electronic eigenbasis
+    # ------------------------------------------------------------------
+
+    h_e1 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_1,
+        omega_e=omega_e_1,
+    )
+
+    h_e2 = electronic_nv_hamiltonian(
+        system=electron_system,
+        electron_site=0,
+        D=D_2,
+        omega_e=omega_e_2,
+    )
+
+    basis_e1 = dressed_spin_one_basis(h_e1)
+    basis_e2 = dressed_spin_one_basis(h_e2)
+
+    t_e1 = basis_unitary(basis_e1)
+    t_e2 = basis_unitary(basis_e2)
+
+    transformation = tensor(
+        t_e1,
+        qeye(3),
+        t_e2,
+        qeye(3),
+    )
+
+    h_nv_transformed = (
+        transformation.dag()
+        * h_nv
+        * transformation
+    )
+
+    # ------------------------------------------------------------------
+    # 4. Effective NV-NV interaction
+    # ------------------------------------------------------------------
+
+    sx, _, sz = spin_operators(1)
+
+    sz_e1_full = embed_operator(
+        sz,
+        site=0,
+        system=system,
+    )
+
+    sz_e2_full = embed_operator(
+        sz,
+        site=2,
+        system=system,
+    )
+
+    nu_dip = 0.11261
+    coupling = 2 * np.pi * nu_dip
+
+    h_free = (
+        h_nv_transformed
+        + coupling * sz_e1_full * sz_e2_full
+    )
+
+    # ------------------------------------------------------------------
+    # 5. Full microwave control operator
+    # ------------------------------------------------------------------
+
+    sx_e1_full = embed_operator(
+        sx,
+        site=0,
+        system=system,
+    )
+
+    sx_e2_full = embed_operator(
+        sx,
+        site=2,
+        system=system,
+    )
+
+    ix, _, _ = spin_operators(1)
+
+    ix_n1_full = embed_operator(
+        ix,
+        site=1,
+        system=system,
+    )
+
+    ix_n2_full = embed_operator(
+        ix,
+        site=3,
+        system=system,
+    )
+
+    gamma_ratio = 3.076272e-3 / (-28.02495)
+
+    control = control_operator(
+        electronic_x_operators=[
+            sx_e1_full,
+            sx_e2_full,
+        ],
+        nuclear_x_operators=[
+            ix_n1_full,
+            ix_n2_full,
+        ],
+        gamma_ratio=gamma_ratio,
+    )
+
+    # Keep nuclear coupling identical in both comparison cases.
+    nuclear_control = gamma_ratio * (
+        ix_n1_full + ix_n2_full
+    )
+
+    selective_controls = {
+        1: sx_e1_full + nuclear_control,
+        2: sx_e2_full + nuclear_control,
+    }
+
+    # Logical levels in the electronic eigenbasis used by this test.
+    logical_projector_one = (
+        basis(3, 1).proj() + basis(3, 0).proj()
+    )
+    logical_projector_two = (
+        basis(3, 1).proj() + basis(3, 2).proj()
+    )
+
+    qubit_selective_controls = {
+        1: embed_operator(
+            logical_projector_one * sx * logical_projector_one,
+            site=0,
+            system=system,
+        ) + nuclear_control,
+        2: embed_operator(
+            logical_projector_two * sx * logical_projector_two,
+            site=2,
+            system=system,
+        ) + nuclear_control,
+    }
+
+    # ------------------------------------------------------------------
+    # 6. Joas rotating frame
+    # ------------------------------------------------------------------
+
+    omega_1 = 2 * np.pi * 2990.8
+    omega_2 = 2 * np.pi * 2571.0
+
+    h_trans = (
+        omega_1 * sz_e1_full**2
+        + omega_2 * sz_e2_full**2
+    )
+
+    if check_scope == "conditional_reduction":
+        # Embed logical electrons for each bare nuclear product state.
+        embeddings = [
+            np.column_stack([
+                tensor(
+                    basis(3, electron_one),
+                    basis(3, nuclear_one),
+                    basis(3, electron_two),
+                    basis(3, nuclear_two),
+                ).full().ravel()
+                for electron_one in [1, 0]
+                for electron_two in [1, 2]
+            ])
+            for nuclear_one in range(3)
+            for nuclear_two in range(3)
+        ]
+
+        conditioned = conditional_two_qubit_hamiltonians(
+            hamiltonian=h_free,
+            embeddings=embeddings,
+        )
+
+        frame = conditional_two_qubit_hamiltonians(
+            hamiltonian=h_trans,
+            embeddings=embeddings,
+        )
+
+        print("\nNuclear indices: carrier-referenced coefficients in MHz")
+        print("                 ZI             IZ             ZZ")
+
+        for index, (coefficients, frame_coefficients) in enumerate(
+            zip(
+                conditioned["pauli_coefficients"],
+                frame["pauli_coefficients"],
+            )
+        ):
+            nuclear_indices = divmod(index, 3)
+
+            values = [
+                (
+                    coefficients[label]
+                    - frame_coefficients[label]
+                ) / (2 * np.pi)
+                for label in ["ZI", "IZ", "ZZ"]
+            ]
+
+            print(
+                f"{nuclear_indices}: "
+                f"{values[0]: .8f}  "
+                f"{values[1]: .8f}  "
+                f"{values[2]: .8f}"
+            )
+
+            # Local hyperfine terms cannot generate a two-electron ZZ term.
+            assert coefficients["ZZ"] == pytest.approx(
+                -coupling / 4,
+                abs=1e-9,
+            )
+
+        assert len(conditioned["hamiltonians"]) == 9
+
+        print(
+            "Nuclear-sector mixing norm / (2*pi) =",
+            conditioned["sector_mixing_norm"] / (2 * np.pi),
+            "MHz",
+        )
+        print(
+            "Discarded-electron coupling norm / (2*pi) =",
+            conditioned["discarded_coupling_norm"] / (2 * np.pi),
+            "MHz",
+        )
+
+        return
+
+    # ------------------------------------------------------------------
+    # 7. XY8 timing and microwave pulse
+    # ------------------------------------------------------------------
+
+    n_pi = 8
+
+    # Optimized Joas pulse spacing.
+    tau_1 = 0.8  # microseconds
+
+    # Ideal interaction time for the measured dipolar coupling.
+    tau_2 = 1 / (
+        4 * n_pi * nu_dip
+    )
+
+    schedule = xy8_gate_schedule(
+        tau_1=tau_1,
+        tau_2=tau_2,
+    )
+
+    gate_duration = n_pi * tau_1
+
+    # Optimized Joas microwave Rabi frequency.
+    rabi_frequency = 23.7  # MHz
+    pulse_duration = 1 / (2 * rabi_frequency)
+
+    peak_amplitude = (
+        np.pi**2
+        / (2 * pulse_duration)
+    )
+
+    if check_scope == "native_half_pi":
+        physical_basis = [
+            tensor(basis(3, 1), basis(3, 1)),
+            tensor(basis(3, 1), basis(3, 2)),
+            tensor(basis(3, 0), basis(3, 1)),
+            tensor(basis(3, 0), basis(3, 2)),
+        ]
+
+        qubit_basis = [
+            tensor(basis(2, i), basis(2, j))
+            for i in range(2)
+            for j in range(2)
+        ]
+
+        start_time = 0.123
+
+        for primitive_index, nv, axis in [
+            (0, 1, "x"),
+            (1, 1, "y"),
+            (2, 2, "x"),
+            (3, 2, "y"),
+        ]:
+            rotation = single_qubit_rotation(
+                angle=np.pi / 2,
+                axis=axis,
+            )
+            ideal_primitive = (
+                tensor(rotation, qeye(2))
+                if nv == 1
+                else tensor(qeye(2), rotation)
+            )
+
+            measurements = []
+
+            for steps in [5000, 10000]:
+                builders = joas_rb_primitive_builders(
+                    free_hamiltonian=h_free,
+                    controls={1: control, 2: control},
+                    carriers={1: omega_1, 2: omega_2},
+                    transition_elements={
+                        1: 1 / np.sqrt(2),
+                        2: 1 / np.sqrt(2),
+                    },
+                    pi_pulse_duration=pulse_duration,
+                    tau_1=tau_1,
+                    tau_2=tau_2,
+                    pulse_steps=steps,
+                )
+
+                lab_primitive, duration = builders[primitive_index](
+                    start_time
+                )
+
+                rotating_primitive = (
+                    (1j * h_trans * (start_time + duration)).expm()
+                    * lab_primitive
+                    * (-1j * h_trans * start_time).expm()
+                )
+
+                def primitive_map(density_matrix):
+                    """Apply the physical primitive with freshly prepared mixed nuclei."""
+                    return logical_electron_nuclear_dynamical_map(
+                        density_matrix=density_matrix,
+                        propagator=rotating_primitive,
+                        logical_basis=physical_basis,
+                        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+                    )
+
+                survival = float(np.mean([
+                    np.real(primitive_map(state.proj()).tr())
+                    for state in qubit_basis
+                ]))
+
+                fidelity = average_gate_fidelity(
+                    dynamical_map=primitive_map,
+                    target=ideal_primitive,
+                    basis_states=qubit_basis,
+                )
+
+                assert -1e-10 <= fidelity <= survival + 1e-10
+                assert -1e-10 <= survival <= 1 + 1e-10
+
+                measurements.append([survival, fidelity])
+
+            np.testing.assert_allclose(
+                measurements[0],
+                measurements[1],
+                atol=1e-4,
+                rtol=0.0,
+            )
+
+            print(
+                f"NV{nv} positive {axis.upper()} half-pi: "
+                f"survival={measurements[1][0]:.8f}, "
+                f"fidelity={measurements[1][1]:.8f}"
+            )
+
+        return
+
+    if check_scope == "rb_circuit_smoke":
+        zero_one = basis(3, 1)
+        plus_two = (
+            basis(3, 1) + basis(3, 2)
+        ).unit()
+
+        initial_electron = tensor(
+            zero_one,
+            plus_two,
+        ).proj()
+
+        initial_joint = tensor(
+            zero_one.proj(),
+            qeye(3) / 3,
+            plus_two.proj(),
+            qeye(3) / 3,
+        )
+
+        logical_projector = tensor(
+            basis(3, 1).proj() + basis(3, 0).proj(),
+            basis(3, 1).proj() + basis(3, 2).proj(),
+        )
+
+        measurements = []
+
+        for steps in [5000, 10000]:
+            builders = joas_rb_primitive_builders(
+                free_hamiltonian=h_free,
+                controls={1: control, 2: control},
+                carriers={1: omega_1, 2: omega_2},
+                transition_elements={
+                    1: 1 / np.sqrt(2),
+                    2: 1 / np.sqrt(2),
+                },
+                pi_pulse_duration=pulse_duration,
+                tau_1=tau_1,
+                tau_2=tau_2,
+                pulse_steps=steps,
+            )
+
+            recorded_starts = []
+            original_builder = builders[0]
+
+            def recorded_builder(start_time):
+                """Record absolute timing while building the physical NV1 X primitive."""
+                recorded_starts.append(start_time)
+                return original_builder(start_time)
+
+            builders[0] = recorded_builder
+
+            active_map = timed_primitive_map(
+                builders=builders,
+                frame_generator=h_trans,
+            )
+
+            state = initial_joint.copy()
+
+            # First Clifford, then its three-pulse compiled recovery.
+            for generator_index in [0, 0, 0, 0]:
+                state = active_map(state, generator_index)
+
+            np.testing.assert_allclose(
+                recorded_starts,
+                np.arange(4) * pulse_duration / 2,
+                atol=1e-12,
+                rtol=0.0,
+            )
+
+            reduced_electron = state.ptrace([0, 2])
+
+            survival = float(np.real(
+                (logical_projector * reduced_electron).tr()
+            ))
+            return_probability = float(np.real(
+                (initial_electron * reduced_electron).tr()
+            ))
+
+            assert state.tr() == pytest.approx(1.0, abs=1e-9)
+            assert (
+                state - state.dag()
+            ).norm("fro") < 1e-9
+            assert -1e-9 <= return_probability <= survival + 1e-9
+            assert survival <= 1 + 1e-9
+
+            measurements.append(
+                [survival, return_probability]
+            )
+
+        np.testing.assert_allclose(
+            measurements[0],
+            measurements[1],
+            atol=1e-4,
+            rtol=0.0,
+        )
+
+        print(
+            "Physical Clifford plus compiled recovery: "
+            f"survival={measurements[1][0]:.8f}, "
+            f"return={measurements[1][1]:.8f}"
+        )
+
+        return
+
+    if check_scope in ("physical_rb_smoke", "ideal_rb_smoke"):
+        rb_lengths = np.array([
+            int(value)
+            for value in os.environ.get(
+                "ECHO_RB_LENGTHS", "0,1"
+            ).split(",")
+        ])
+        rb_sequences = int(
+            os.environ.get("ECHO_RB_SEQUENCES", "2")
+        )
+        rb_seed = int(
+            os.environ.get("ECHO_RB_SEED", "42")
+        )
+        rb_pulse_steps = int(
+            os.environ.get("ECHO_RB_PULSE_STEPS", "5000")
+        )
+        rb_family = os.environ.get("ECHO_RB_FAMILY", "full")
+
+        if rb_family not in ("full", "local"):
+            raise ValueError("ECHO_RB_FAMILY must be full or local.")
+
+        rb_include_entangler = rb_family == "full"
+
+        dephasing_setting = os.environ.get(
+            "ECHO_RB_DEPHASING", "0"
+        )
+
+        if dephasing_setting not in ("0", "1"):
+            raise ValueError("ECHO_RB_DEPHASING must be 0 or 1.")
+
+        rb_dephasing = dephasing_setting == "1"
+        rb_coherence_times = (454.0, 476.0)
+
+        if check_scope == "ideal_rb_smoke" and rb_dephasing:
+            raise ValueError(
+                "Keep dephasing disabled for the ideal-limit check."
+            )
+
+        if (
+            rb_lengths.size == 0
+            or rb_lengths[0] != 0
+            or np.any(rb_lengths < 0)
+            or rb_sequences < 2
+            or rb_pulse_steps <= 0
+        ):
+            raise ValueError(
+                "Start lengths at zero, use non-negative lengths, "
+                "at least two sequences and positive pulse steps."
+            )
+
+        total_circuits = len(rb_lengths) * rb_sequences
+
+        builders = joas_rb_primitive_builders(
+            free_hamiltonian=h_free,
+            controls={1: control, 2: control},
+            carriers={1: omega_1, 2: omega_2},
+            transition_elements={
+                1: 1 / np.sqrt(2),
+                2: 1 / np.sqrt(2),
+            },
+            pi_pulse_duration=pulse_duration,
+            tau_1=tau_1,
+            tau_2=tau_2,
+            pulse_steps=rb_pulse_steps,
+        )
+
+        if check_scope == "ideal_rb_smoke":
+            physical_basis = [
+                tensor(basis(3, 1), basis(3, 1)),
+                tensor(basis(3, 1), basis(3, 2)),
+                tensor(basis(3, 0), basis(3, 1)),
+                tensor(basis(3, 0), basis(3, 2)),
+            ]
+
+            isometry = np.column_stack([
+                state.full().ravel()
+                for state in physical_basis
+            ])
+            projector = isometry @ isometry.conj().T
+
+            catalog = two_qubit_clifford_catalog(
+                include_entangler=rb_include_entangler,
+            )
+            ideal_joint_generators = []
+
+            for logical_generator in catalog["generators"]:
+                # Act ideally inside the logical subspace and as identity outside.
+                physical_generator = Qobj(
+                    isometry @ logical_generator @ isometry.conj().T
+                    + np.eye(9) - projector,
+                    dims=[[3, 3], [3, 3]],
+                )
+
+                ideal_joint_generators.append(
+                    tensor(
+                        physical_generator,
+                        qeye(3),
+                        qeye(3),
+                    ).permute([0, 2, 1, 3])
+                )
+
+            primitive_durations = [
+                pulse_duration / 2,
+                pulse_duration / 2,
+                pulse_duration / 2,
+                pulse_duration / 2,
+                gate_duration,
+            ]
+
+            def ideal_builder(generator_index):
+                """Create an ideal primitive expressed through laboratory-frame endpoints."""
+                def build(start_time):
+                    """Return laboratory evolution corresponding to the ideal rotating-frame gate."""
+                    duration = primitive_durations[generator_index]
+                    start_frame = (
+                        -1j * h_trans * start_time
+                    ).expm()
+                    end_frame = (
+                        -1j * h_trans * (start_time + duration)
+                    ).expm()
+
+                    laboratory_propagator = (
+                        end_frame
+                        * ideal_joint_generators[generator_index]
+                        * start_frame.dag()
+                    )
+                    return laboratory_propagator, duration
+
+                return build
+
+            builders = {
+                index: ideal_builder(index)
+                for index in range(len(ideal_joint_generators))
+            }
+
+        initial_joint = tensor(
+            basis(3, 1).proj(),
+            qeye(3) / 3,
+            basis(3, 1).proj(),
+            qeye(3) / 3,
+        )
+
+        return_projector = tensor(
+            basis(3, 1).proj(),
+            qeye(3),
+            basis(3, 1).proj(),
+            qeye(3),
+        )
+
+        ground_one = basis(3, 1).proj()
+        excited_one = basis(3, 0).proj()
+        ground_two = basis(3, 1).proj()
+        excited_two = basis(3, 2).proj()
+
+        logical_one = ground_one + excited_one
+        logical_two = ground_two + excited_two
+        z_one = ground_one - excited_one
+        z_two = ground_two - excited_two
+        identity = qeye(3)
+
+        readout_operators = {
+            "nv1_ground_return": tensor(
+                ground_one, identity, identity, identity
+            ),
+            "nv2_ground_return": tensor(
+                identity, identity, ground_two, identity
+            ),
+            "joint_logical_survival": tensor(
+                logical_one, identity, logical_two, identity
+            ),
+            "nv1_logical_z": tensor(
+                z_one, identity, logical_two, identity
+            ),
+            "nv2_logical_z": tensor(
+                logical_one, identity, z_two, identity
+            ),
+            "logical_zz": tensor(
+                z_one, identity, z_two, identity
+            ),
+            "joint_ground_return": return_projector,
+        }
+
+        # Exact identity, including states outside the logical subspace.
+        reconstructed_return = (
+            readout_operators["joint_logical_survival"]
+            + readout_operators["nv1_logical_z"]
+            + readout_operators["nv2_logical_z"]
+            + readout_operators["logical_zz"]
+        ) / 4
+
+        np.testing.assert_allclose(
+            reconstructed_return.full(),
+            return_projector.full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+        readout_labels = list(readout_operators)
+        recorded_readouts = []
+
+        circuit_counter = 0
+
+        def post_primitive_dephasing(density_matrix, duration):
+            """Apply calibrated electronic dephasing while retaining the joint nuclear state."""
+            return diagonal_dephasing_channel(
+                density_matrix=density_matrix,
+                time=duration,
+                operators=[sz_e1_full, sz_e2_full],
+                coherence_times=rb_coherence_times,
+            )
+
+        def primitive_factory():
+            """Create a fresh clock for a newly prepared physical RB circuit."""
+            nonlocal circuit_counter
+            circuit_counter += 1
+
+            print(
+                f"Starting {check_scope} circuit "
+                f"{circuit_counter}/{total_circuits}",
+                flush=True,
+            )
+
+            return timed_primitive_map(
+                builders=builders,
+                frame_generator=h_trans,
+                post_map=(
+                    post_primitive_dephasing
+                    if rb_dephasing
+                    else None
+                ),
+            )
+
+        def physical_readout(density_matrix):
+            """Measure joint electron ground-state return while retaining nuclear normalization."""
+            assert density_matrix.tr() == pytest.approx(
+                1.0, abs=1e-8
+            )
+
+            probability = float(np.real(
+                (return_projector * density_matrix).tr()
+            ))
+
+            values = [
+                float(np.real(
+                    (operator * density_matrix).tr()
+                ))
+                for operator in readout_operators.values()
+            ]
+            recorded_readouts.append(values)
+
+            assert values[-1] == pytest.approx(
+                probability, abs=1e-10
+            )
+
+            print(
+                f"Physical circuit return={probability:.8f}",
+                flush=True,
+            )
+            return probability
+
+        result = two_qubit_rb_signal(
+            initial_density=initial_joint,
+            lengths=rb_lengths,
+            sequences_per_length=rb_sequences,
+            rng=np.random.default_rng(rb_seed),
+            primitive_map=None,
+            primitive_map_factory=primitive_factory,
+            readout=physical_readout,
+            include_entangler=rb_include_entangler,
+        )
+
+        result["readout_labels"] = np.array(readout_labels)
+        result["readout_samples"] = np.asarray(
+            recorded_readouts
+        ).reshape(
+            len(rb_lengths),
+            rb_sequences,
+            len(readout_labels),
+        )
+        result["readout_mean"] = (
+            result["readout_samples"].mean(axis=1)
+        )
+        result["readout_standard_error"] = (
+            result["readout_samples"].std(axis=1, ddof=1)
+            / np.sqrt(rb_sequences)
+        )
+
+        if check_scope == "ideal_rb_smoke":
+            np.testing.assert_allclose(
+                result["readout_samples"],
+                1.0,
+                atol=1e-9,
+                rtol=0.0,
+            )
+
+        print("Readout labels =", result["readout_labels"])
+        print("Readout samples =", result["readout_samples"])
+
+        np.testing.assert_allclose(
+            result["samples"][0],
+            1.0,
+            atol=1e-10,
+            rtol=0.0,
+        )
+        assert np.all(result["samples"] >= -1e-8)
+        assert np.all(result["samples"] <= 1 + 1e-8)
+
+        np.testing.assert_allclose(
+            result["samples"][0],
+            1.0,
+            atol=1e-10,
+            rtol=0.0,
+        )
+        assert np.all(result["samples"] >= -1e-8)
+        assert np.all(result["samples"] <= 1 + 1e-8)
+
+        if check_scope == "ideal_rb_smoke":
+            np.testing.assert_allclose(
+                result["samples"],
+                1.0,
+                atol=1e-9,
+                rtol=0.0,
+            )
+
+        if check_scope == "physical_rb_smoke":
+            timestamp = datetime.now(timezone.utc).strftime(
+                "%Y%m%dT%H%M%S_%fZ"
+            )
+            result_path = (
+                Path("results/data")
+                / f"joas_physical_rb_{timestamp}.npz"
+            )
+
+            saved_path = save_two_qubit_rb_result(
+                path=result_path,
+                result=result,
+                metadata={
+                    "seed": rb_seed,
+                    "sequences_per_length": rb_sequences,
+                    "pulse_steps": rb_pulse_steps,
+                    "drive_mode": drive_mode,
+                    "hyperfine_mode": hyperfine_mode,
+                    "dephasing_included": rb_dephasing,
+                    "dephasing_application": "post_primitive",
+                    "coherence_times": list(rb_coherence_times),
+                    "relaxation_included": False,
+                    "spam_included": False,
+                    "pi_pulse_duration": float(pulse_duration),
+                    "gate_duration": float(gate_duration),
+                    "tau_1": float(tau_1),
+                    "tau_2": float(tau_2),
+                    "carriers": [float(omega_1), float(omega_2)],
+                    "transition_elements": [
+                        float(1 / np.sqrt(2)),
+                        float(1 / np.sqrt(2)),
+                    ],
+                    "subsystem_order": ["e1", "n1", "e2", "n2"],
+                    "clifford_family": rb_family,
+                },
+                model_arrays={
+                    "free_hamiltonian": h_free.full(),
+                    "frame_generator": h_trans.full(),
+                    "shared_control": control.full(),
+                    "initial_density": initial_joint.full(),
+                    "return_projector": return_projector.full(),
+                    "dephasing_operators": np.array([
+                        sz_e1_full.full(),
+                        sz_e2_full.full(),
+                    ]),
+                },
+            )
+
+            print("Saved physical RB result:", saved_path)
+
+        print("RB lengths =", result["lengths"])
+        print("Physical RB samples =", result["samples"])
+        print("RB lengths =", result["lengths"])
+        print("Physical RB samples =", result["samples"])
+        print("Physical RB means =", result["mean"])
+        print("Clifford indices =", result["clifford_indices"])
+        print("Native counts excluding recovery =", result["gate_counts"])
+        print("Recovery native counts =", result["recovery_counts"])
+
+        return
+
+    # ------------------------------------------------------------------
+    # 8. Finite pulse propagators
+    # ------------------------------------------------------------------
+
+    pulse_propagators = []
+    pulse_centers = []
+
+    # 5000 steps over ~21 ns gives a finer resolution than
+    # the 100 steps/ns used in the Joas numerical simulation.
+    pulse_steps = 5000
+
+    for center, nv, axis in schedule:
+        frequency = (
+            omega_1
+            if nv == 1
+            else omega_2
+        )
+
+        phase = (
+            0.0
+            if axis == "x"
+            else np.pi / 2
+        )
+
+        start_time = center - pulse_duration / 2
+
+        if drive_mode == "shared":
+            pulse_control = control
+        elif drive_mode == "selective":
+            pulse_control = selective_controls[nv]
+        else:
+            pulse_control = qubit_selective_controls[nv]
+
+        def pulse_hamiltonian(time):
+            """Return the full laboratory-frame Hamiltonian during this pulse."""
+            envelope = centered_sine_envelope(
+                time=time,
+                center=center,
+                duration=pulse_duration,
+                peak_amplitude=peak_amplitude,
+            )
+
+            drives = [{
+                "omega": frequency,
+                "phase": phase,
+                "omega_x": envelope,
+                "omega_y": 0.0,
+            }]
+
+            microwave = microwave_hamiltonian(
+                time=time,
+                control=pulse_control,
+                drives=drives,
+            )
+
+            return h_free + microwave
+
+        dt = pulse_duration / pulse_steps
+
+        def midpoint_pulse_hamiltonian(endpoint_time):
+            """Evaluate this pulse Hamiltonian at the integration interval midpoint."""
+            return pulse_hamiltonian(endpoint_time - dt / 2)
+
+        pulse_propagator = time_dependent_propagator(
+            hamiltonian=midpoint_pulse_hamiltonian,
+            t0=start_time,
+            t1=start_time + pulse_duration,
+            steps=pulse_steps,
+        )
+
+        pulse_propagators.append(
+            pulse_propagator
+        )
+        pulse_centers.append(center)
+
+    # ------------------------------------------------------------------
+    # 9. Exact free-evolution intervals
+    # ------------------------------------------------------------------
+
+    free_intervals = finite_pulse_intervals(
+        pulse_centers=pulse_centers,
+        pulse_duration=pulse_duration,
+        total_duration=gate_duration,
+    )
+
+    # ------------------------------------------------------------------
+    # 10. Complete laboratory-frame sequence
+    # ------------------------------------------------------------------
+
+    propagator_lab = finite_pulse_sequence_propagator(
+        free_hamiltonian=h_free,
+        durations=free_intervals,
+        pulse_propagators=pulse_propagators,
+    )
+
+    propagator = rotating_frame_propagator(
+        propagator=propagator_lab,
+        generator=h_trans,
+        time=gate_duration,
+    )
+
+    assert propagator.shape == (81, 81)
+
+    # ------------------------------------------------------------------
+    # 11. Logical basis and logical-state survival
+    # ------------------------------------------------------------------
+
+    logical_electron_basis = [
+        tensor(basis(3, 1), basis(3, 1)),  # |00>
+        tensor(basis(3, 1), basis(3, 2)),  # |01>
+        tensor(basis(3, 0), basis(3, 1)),  # |10>
+        tensor(basis(3, 0), basis(3, 2)),  # |11>
+    ]
+
+    logical_states = [
+        tensor(basis(2, 0), basis(2, 0)),
+        tensor(basis(2, 0), basis(2, 1)),
+        tensor(basis(2, 1), basis(2, 0)),
+        tensor(basis(2, 1), basis(2, 1)),
+    ]
+
+    nuclear_state = qeye(3) / 3
+
+    survivals = []
+
+    for state in logical_states:
+        result = logical_electron_nuclear_dynamical_map(
+            density_matrix=state.proj(),
+            propagator=propagator,
+            logical_basis=logical_electron_basis,
+            nuclear_states=[
+                nuclear_state,
+                nuclear_state,
+            ],
+        )
+
+        survival = float(np.real(result.tr()))
+        survivals.append(survival)
+
+    print("logical survivals =", survivals)
+
+    assert all(
+        0.0 <= survival <= 1.0 + 1e-10
+        for survival in survivals
+    )
+
+    # ------------------------------------------------------------------
+    # 12. Average logical gate fidelity
+    # ------------------------------------------------------------------
+
+    def logical_dynamical_map(density_matrix):
+        return logical_electron_nuclear_dynamical_map(
+            density_matrix=density_matrix,
+            propagator=propagator,
+            logical_basis=logical_electron_basis,
+            nuclear_states=[
+                nuclear_state,
+                nuclear_state,
+            ],
+        )
+
+    target = sqrt_zz_gate().dag()
+
+    fidelity = average_gate_fidelity(
+        dynamical_map=logical_dynamical_map,
+        target=target,
+        basis_states=logical_states,
+    )
+
+    print("full Joas average gate fidelity =", fidelity)
+
+    # Convert the G_minus reference into G_plus using ideal local Z corrections.
+    correction = Qobj(
+        np.diag([1.0, -1.0, -1.0, 1.0]),
+        dims=[[2, 2], [2, 2]],
+    )
+    corrected_target = sqrt_zz_gate()
+
+    def corrected_logical_map(operator):
+        """Apply the reference gate followed by ideal local Z corrections."""
+        output = logical_dynamical_map(operator)
+        return correction * output * correction.dag()
+
+    np.testing.assert_allclose(
+        (correction * target).full(),
+        corrected_target.full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    corrected_fidelity = average_gate_fidelity(
+        dynamical_map=corrected_logical_map,
+        target=corrected_target,
+        basis_states=logical_states,
+    )
+
+    np.testing.assert_allclose(
+        corrected_fidelity,
+        fidelity,
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+    print(
+        "G_plus fidelity with ideal local Z corrections =",
+        corrected_fidelity,
+    )
+
+    average_survival = float(np.mean(survivals))
+
+    # Leakage limits the average fidelity attainable in the logical subspace.
+    assert 0.0 <= fidelity <= average_survival + 1e-10
+
+    # Embed the four electron logical states for each of nine nuclear inputs.
+    nuclear_embeddings = []
+
+    for nuclear_one_index in range(3):
+        for nuclear_two_index in range(3):
+            columns = [
+                tensor(
+                    electron_state,
+                    basis(3, nuclear_one_index),
+                    basis(3, nuclear_two_index),
+                ).permute([0, 2, 1, 3]).full().ravel()
+                for electron_state in logical_electron_basis
+            ]
+
+            nuclear_embeddings.append(
+                np.column_stack(columns)
+            )
+
+    full_unitary = propagator.full()
+    target_matrix = target.full()
+
+    kraus_survival_weight = 0.0
+    kraus_target_overlap = 0.0
+
+    for input_embedding in nuclear_embeddings:
+        evolved_embedding = full_unitary @ input_embedding
+
+        for output_embedding in nuclear_embeddings:
+            # Each maximally mixed nuclear input has probability 1/9.
+            kraus = (
+                output_embedding.conj().T
+                @ evolved_embedding
+            ) / 3
+
+            kraus_survival_weight += float(
+                np.linalg.norm(kraus, ord="fro") ** 2
+            )
+            kraus_target_overlap += float(
+                abs(np.trace(
+                    target_matrix.conj().T @ kraus
+                )) ** 2
+            )
+
+    dimension = len(logical_electron_basis)
+
+    kraus_average_survival = (
+        kraus_survival_weight / dimension
+    )
+    kraus_average_fidelity = (
+        kraus_survival_weight + kraus_target_overlap
+    ) / (dimension * (dimension + 1))
+
+    np.testing.assert_allclose(
+        kraus_average_survival,
+        average_survival,
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        kraus_average_fidelity,
+        fidelity,
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    print(
+        f"Independent Kraus check: "
+        f"survival={kraus_average_survival:.8f}, "
+        f"fidelity={kraus_average_fidelity:.8f}"
+    )
+
+    # Validate the reusable reduction against the independent full-model channel.
+    reduced_kraus = projected_unitary_kraus(
+        propagator=propagator,
+        embeddings=nuclear_embeddings,
+        environment_probabilities=np.full(9, 1 / 9),
+    )
+
+    reduced_survival_weight = sum(
+        float((operator.dag() * operator).tr().real)
+        for operator in reduced_kraus
+    )
+
+    reduced_target_overlap = sum(
+        abs((target.dag() * operator).tr()) ** 2
+        for operator in reduced_kraus
+    )
+
+    reduced_survival = reduced_survival_weight / dimension
+    reduced_fidelity = (
+        reduced_survival_weight + reduced_target_overlap
+    ) / (dimension * (dimension + 1))
+
+    np.testing.assert_allclose(
+        [reduced_survival, reduced_fidelity],
+        [average_survival, fidelity],
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    # A complex superposition checks the output state as well as scalar metrics.
+    probe = (
+        logical_states[0]
+        + 1j * logical_states[1]
+        - logical_states[2]
+        + logical_states[3]
+    ).unit().proj()
+
+    reduced_output = sum(
+        operator * probe * operator.dag()
+        for operator in reduced_kraus
+    )
+
+    np.testing.assert_allclose(
+        reduced_output.full(),
+        logical_dynamical_map(probe).full(),
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    print(
+        f"Reusable logical channel: survival={reduced_survival:.8f}, "
+        f"fidelity={reduced_fidelity:.8f}, "
+        f"Kraus operators={len(reduced_kraus)}"
+    )
+
+    t2_nv1 = 454.0  # microseconds
+    t2_nv2 = 476.0  # microseconds
+
+    def dynamical_map_with_dephasing(density_matrix):
+        """Apply logical gate evolution followed by pure dephasing."""
+        evolved_density = logical_dynamical_map(
+            density_matrix
+        )
+
+        return two_qubit_dephasing_channel(
+            density_matrix=evolved_density,
+            time=gate_duration,
+            coherence_times=(t2_nv1, t2_nv2),
+        )
+
+    fidelity_with_dephasing = average_gate_fidelity(
+        dynamical_map=dynamical_map_with_dephasing,
+        target=target,
+        basis_states=logical_states,
+    )
+
+    print(
+        "full Joas average gate fidelity with dephasing =",
+        fidelity_with_dephasing,
+    )
+
+    assert 0.0 <= fidelity_with_dephasing <= 1.0
+    assert fidelity_with_dephasing < fidelity
+
+    # ------------------------------------------------------------------
+    # 13. Nuclear-state-resolved fidelity diagnostic
+    # ------------------------------------------------------------------
+
+    # Resolve all nine nuclear preparations underlying the mixed-state result.
+    resolved_fidelities = []
+    resolved_dephased_fidelities = []
+
+    for nuclear_one_index in range(3):
+        for nuclear_two_index in range(3):
+            nuclear_preparation = [
+                basis(3, nuclear_one_index).proj(),
+                basis(3, nuclear_two_index).proj(),
+            ]
+
+            def nuclear_dynamical_map(density_matrix):
+                """Apply the full gate for the current pure nuclear preparation."""
+                return logical_electron_nuclear_dynamical_map(
+                    density_matrix=density_matrix,
+                    propagator=propagator,
+                    logical_basis=logical_electron_basis,
+                    nuclear_states=nuclear_preparation,
+                )
+
+            resolved_fidelity = average_gate_fidelity(
+                dynamical_map=nuclear_dynamical_map,
+                target=target,
+                basis_states=logical_states,
+            )
+
+            resolved_fidelities.append(resolved_fidelity)
+
+            def nuclear_map_with_dephasing(density_matrix):
+                """Apply the nuclear-resolved gate followed by the existing dephasing model."""
+                evolved = nuclear_dynamical_map(density_matrix)
+
+                return two_qubit_dephasing_channel(
+                    density_matrix=evolved,
+                    time=gate_duration,
+                    coherence_times=(t2_nv1, t2_nv2),
+                )
+
+            resolved_dephased_fidelity = average_gate_fidelity(
+                dynamical_map=nuclear_map_with_dephasing,
+                target=target,
+                basis_states=logical_states,
+            )
+
+            resolved_dephased_fidelities.append(
+                resolved_dephased_fidelity
+            )
+
+            print(
+                f"Nuclear indices "
+                f"({nuclear_one_index}, {nuclear_two_index}): "
+                f"fidelity with dephasing = "
+                f"{resolved_dephased_fidelity:.8f}"
+            )
+
+            print(
+                f"Nuclear indices "
+                f"({nuclear_one_index}, {nuclear_two_index}): "
+                f"fidelity = {resolved_fidelity:.8f}"
+            )
+
+            assert -1e-10 <= resolved_fidelity <= 1.0 + 1e-10
+
+    # Independent maximally mixed nuclei are the equal mixture of nine pairs.
+    np.testing.assert_allclose(
+        fidelity,
+        np.mean(resolved_fidelities),
+        atol=1e-9,
+        rtol=0.0,
+    )
+
+    np.testing.assert_allclose(
+        fidelity_with_dephasing,
+        np.mean(resolved_dephased_fidelities),
+        atol=1e-9,
+        rtol=0.0,
+    )
+
+    # Index 4 corresponds to the initial product preparation mI1=mI2=0.
+    print(
+        "Initial mI=(0,0): "
+        f"fidelity={resolved_fidelities[4]:.8f}, "
+        f"fidelity with dephasing="
+        f"{resolved_dephased_fidelities[4]:.8f}"
+    )
+
+    if hyperfine_mode == "off":
+        # Without hyperfine coupling, nuclear preparation cannot affect the gate.
+        np.testing.assert_allclose(
+            resolved_fidelities,
+            fidelity,
+            atol=1e-9,
+            rtol=0.0,
+        )
+
+        # Logical-selective drive and diagonal electronic drift preserve the subspace.
+        np.testing.assert_allclose(
+            survivals,
+            1.0,
+            atol=1e-9,
+            rtol=0.0,
+        )
+
+    print(f"Average logical survival = {average_survival:.8f}")
+    print(f"Mixed-nuclear gate fidelity = {fidelity:.8f}")
+    print(
+        "Nuclear-resolved fidelity range = "
+        f"{min(resolved_fidelities):.8f} to "
+        f"{max(resolved_fidelities):.8f}"
+    )
+    print(
+        f"Drive mode={drive_mode}, hyperfine={hyperfine_mode}: "
+        f"survival={average_survival:.8f}, "
+        f"fidelity={fidelity:.8f}, "
+        f"fidelity with dephasing={fidelity_with_dephasing:.8f}"
+    )
+
+    # ------------------------------------------------------------------
+    # 14. Repetitive benchmarking
+    # ------------------------------------------------------------------
+
+    plus = (basis(2, 0) + basis(2, 1)).unit()
+    benchmark_counts = np.array([0, 1, 2, 4, 8, 16])
+
+    return_signal = logical_repetitive_return_signal(
+        initial_density=tensor(plus, plus).proj(),
+        propagator=propagator,
+        logical_basis=logical_electron_basis,
+        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+        target=target,
+        repetitions=benchmark_counts,
+    )
+
+    assert return_signal[0] == pytest.approx(1.0, abs=1e-12)
+    assert np.all(return_signal >= -1e-10)
+    assert np.all(return_signal <= 1 + 1e-10)
+
+    print("Repetitions =", benchmark_counts)
+    print("Ideal-recovery return signal =", return_signal)
+
+    # Compare repeated logical-channel use with retained joint-system evolution.
+    initial_logical_density = tensor(plus, plus).proj()
+    reduced_density = initial_logical_density.copy()
+    reduced_return_signal = []
+    reduced_survival_signal = []
+
+    requested_counts = set(benchmark_counts.tolist())
+
+    for count in range(int(benchmark_counts.max()) + 1):
+        if count in requested_counts:
+            recovery = target.dag() ** count
+            recovered = (
+                recovery * reduced_density * recovery.dag()
+            )
+
+            reduced_return_signal.append(
+                float(
+                    (initial_logical_density * recovered).tr().real
+                )
+            )
+            reduced_survival_signal.append(
+                float(reduced_density.tr().real)
+            )
+
+        if count < benchmark_counts.max():
+            reduced_density = sum(
+                operator * reduced_density * operator.dag()
+                for operator in reduced_kraus
+            )
+
+    reduced_return_signal = np.asarray(reduced_return_signal)
+    reduced_survival_signal = np.asarray(reduced_survival_signal)
+
+    # The initial state and the first gate must agree with the exact reference.
+    np.testing.assert_allclose(
+        reduced_return_signal[:2],
+        return_signal[:2],
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    assert np.all(reduced_return_signal >= -1e-10)
+    assert np.all(
+        reduced_return_signal <= reduced_survival_signal + 1e-10
+    )
+
+    differences = reduced_return_signal - return_signal
+
+    print("Repeated reduced-channel return =", reduced_return_signal)
+    print("Reduced-channel logical survival =", reduced_survival_signal)
+    print("Reduced minus retained-reference return =", differences)
+    print(
+        "Maximum absolute return discrepancy =",
+        float(np.max(np.abs(differences))),
+    )
+
+    # Retain nuclear memory while projecting electrons after each gate.
+    joint_embedding = np.column_stack(nuclear_embeddings)
+
+    # Columns are ordered as nuclear-pair index, then logical electron state.
+    retained_gate = Qobj(
+        joint_embedding.conj().T
+        @ propagator.full()
+        @ joint_embedding,
+        dims=[[9, 2, 2], [9, 2, 2]],
+    )
+
+    retained_density = tensor(
+        qeye(9) / 9,
+        initial_logical_density,
+    )
+
+    retained_return_signal = []
+    retained_survival_signal = []
+
+    for count in range(int(benchmark_counts.max()) + 1):
+        if count in requested_counts:
+            electron_density = retained_density.ptrace([1, 2])
+            recovery = target.dag() ** count
+            recovered = (
+                recovery * electron_density * recovery.dag()
+            )
+
+            retained_return_signal.append(
+                float(
+                    (initial_logical_density * recovered).tr().real
+                )
+            )
+            retained_survival_signal.append(
+                float(retained_density.tr().real)
+            )
+
+        if count < benchmark_counts.max():
+            retained_density = (
+                retained_gate
+                * retained_density
+                * retained_gate.dag()
+            )
+
+    retained_return_signal = np.asarray(retained_return_signal)
+    retained_survival_signal = np.asarray(retained_survival_signal)
+
+    np.testing.assert_allclose(
+        retained_return_signal[:2],
+        return_signal[:2],
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+    assert np.all(retained_return_signal >= -1e-10)
+    assert np.all(
+        retained_return_signal <= retained_survival_signal + 1e-10
+    )
+
+    print("Retained-nuclei reduced return =", retained_return_signal)
+    print(
+        "Retained-nuclei reduction minus full reference =",
+        retained_return_signal - return_signal,
+    )
+    print(
+        "Reset channel minus retained-nuclei reduction =",
+        reduced_return_signal - retained_return_signal,
+    )
+
+    def local_benchmark_readout(density_matrix, count):
+        """Measure locally recovered NV1 logical Z for even gate counts."""
+        return (
+            (-1) ** (count // 2)
+            * (tensor(sigmax(), qeye(2)) * density_matrix).tr()
+        )
+
+    local_counts = np.arange(0, 33, 2)
+
+    local_signal = logical_repetitive_return_signal(
+        initial_density=tensor(plus, plus).proj(),
+        propagator=propagator,
+        logical_basis=logical_electron_basis,
+        nuclear_states=[qeye(3) / 3, qeye(3) / 3],
+        target=target,
+        repetitions=local_counts,
+        logical_readout=local_benchmark_readout,
+    )
+
+    assert local_signal[0] == pytest.approx(1.0, abs=1e-12)
+    assert np.all(np.abs(local_signal) <= 1 + 1e-10)
+
+    print("Local-recovery repetitions =", local_counts)
+    print("Local-recovery NV1 signal =", local_signal)
+
+    # ------------------------------------------------------------------
+    # 14. Randomized benchmarking
+    # ------------------------------------------------------------------
+
+    if drive_mode == "shared" and hyperfine_mode == "full":
+        builders = joas_rb_primitive_builders(
+            free_hamiltonian=h_free,
+            controls={1: control, 2: control},
+            carriers={1: omega_1, 2: omega_2},
+            # This model uses canonical Sx in the electronic eigenbasis.
+            transition_elements={
+                1: 1 / np.sqrt(2),
+                2: 1 / np.sqrt(2),
+            },
+            pi_pulse_duration=pulse_duration,
+            tau_1=tau_1,
+            tau_2=tau_2,
+            pulse_steps=pulse_steps,
+        )
+
+        rebuilt_lab, rebuilt_duration = builders[4](0.0)
+
+        assert rebuilt_duration == pytest.approx(
+            gate_duration, abs=1e-12
+        )
+
+        np.testing.assert_allclose(
+            rebuilt_lab.full(),
+            propagator_lab.full(),
+            atol=1e-9,
+            rtol=0.0,
+        )

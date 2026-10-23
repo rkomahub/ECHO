@@ -84,6 +84,7 @@ def test_driven_hamiltonian_adds_microwave_term():
         expected.full(),
     )
 
+
 def test_reduced_hamiltonian_matches_tensor_order_migration():
     """Preserve the legacy reduced Hamiltonian under a tensor-factor swap."""
     delta_1 = 0.31
@@ -114,7 +115,6 @@ def test_reduced_hamiltonian_matches_tensor_order_migration():
         rtol=0.0,
     )
 
-# ----------------------------------------------------------------------------------
 
 def test_joas_two_pulse_toggling_hamiltonians():
     """The toggling Hamiltonians for the Joas two-pulse sequence. Periods 1 -- 5"""
@@ -362,7 +362,6 @@ def test_sqrt_zz_gate_time_scales_inverse_with_coupling():
 
     assert np.isclose(tau_2_2, tau_2_1 / 2)
 
-# ----------------------------------------------------------------------------------
 
 def test_joas_sequence_timing():
     """The Joas sequence timing functions return the expected values."""
@@ -379,8 +378,6 @@ def test_joas_sequence_timing():
         sequence_duration(tau_1, n_pi),
         24e-6,
     )
-
-# ----------------------------------------------------------------------------------
 
 @pytest.mark.parametrize("nv_order", [(1, 2), (2, 1)])
 def test_xy8_gate_pulses_respects_nv_order(nv_order):
@@ -432,6 +429,7 @@ def test_xy8_gate_pulses_defaults_to_nv1_left():
             atol=1e-12,
             rtol=0.0,
         )
+
 
 def test_xy8_gate_times_rejects_invalid_tau_2():
     """The XY8 gate times reject tau_2 > tau_1 / 2."""
@@ -663,7 +661,6 @@ def test_xy8_joas_sequence_generates_sqrt_zz():
         sqrt_zz_gate().full(),
     )
 
-
 @pytest.mark.parametrize("tau_2", [0.0, 0.2, 0.5])
 def test_joas_xy8_matches_generic_zz_recoupling(tau_2):
     """Compare generic modulation with explicit ideal Joas propagation."""
@@ -724,7 +721,6 @@ def test_joas_xy8_matches_generic_zz_recoupling(tau_2):
     )
     assert np.allclose(actual, expected, atol=1e-12, rtol=0.0)
 
-
 @pytest.mark.parametrize(
     "tau_1, tau_2, n_pi",
     [
@@ -743,7 +739,6 @@ def test_xy8_gate_times_rejects_invalid_parameters(tau_1, tau_2, n_pi):
     with pytest.raises(ValueError):
         xy8_gate_times(tau_1, tau_2, n_pi)
 
-
 @pytest.mark.parametrize("tau_2", [0.0, 0.2, 0.5])
 @pytest.mark.parametrize("n_pi", [8, 16])
 def test_xy8_pulse_trains_stay_within_gate(tau_2, n_pi):
@@ -755,7 +750,6 @@ def test_xy8_pulse_trains_stay_within_gate(tau_2, n_pi):
         assert len(train) == n_pi
         assert all(0 <= time <= total_duration for time in train)
         assert np.all(np.diff(train) > 0)
-
 
 @pytest.mark.parametrize("n_pi", [8, 16])
 def test_complete_xy8_cycles_generate_calibrated_sqrt_zz(n_pi):
@@ -804,7 +798,6 @@ def test_complete_xy8_cycles_generate_calibrated_sqrt_zz(n_pi):
         atol=1e-12,
         rtol=0.0,
     )
-
 
 @pytest.mark.parametrize("n_pi", [1, 7, 9])
 def test_xy8_schedule_requires_complete_cycles(n_pi):
