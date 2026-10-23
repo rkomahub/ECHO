@@ -870,8 +870,7 @@ def test_joas_two_electron_ideal_xy8_gate():
         nv2_states=(zero_nv2, one_nv2),
     )
 
-    # --- Test both signs of the staggered pulse offset ---
-
+    # Positive timing implements G_minus for this logical encoding.
     n_pi = 8
 
     for tau_2_sign, target in [
