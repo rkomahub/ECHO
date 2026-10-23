@@ -8,6 +8,7 @@ from echo_spin.core.system import SpinSystem
 from echo_spin.decoupling.modulation import (
     effective_zz_coupling,
     modulation_function,
+    selective_pair_pulse_times,
 )
 
 
@@ -200,3 +201,58 @@ def test_three_qubit_recoupling_suppresses_spectator():
         atol=1e-12,
         rtol=0.0,
     )
+
+
+@pytest.mark.parametrize(
+    "target_pair",
+    [(i, j) for i in range(8) for j in range(i + 1, 8)],
+)
+def test_eight_qubit_selective_pair_schedule(target_pair):
+    """Refocus all local terms and all interactions except the selected pair."""
+    duration = 2.4
+    schedules = selective_pair_pulse_times(8, target_pair, duration)
+    boundaries = np.linspace(0.0, duration, 9)
+    widths = np.diff(boundaries)
+    midpoints = boundaries[:-1] + widths / 2
+
+    signs = np.array([
+        modulation_function(midpoints, pulses)
+        for pulses in schedules
+    ])
+    np.testing.assert_allclose(signs @ widths, 0.0, atol=1e-12)
+
+    for i in range(8):
+        for j in range(i + 1, 8):
+            expected = 1.0 if (i, j) == target_pair else 0.0
+            actual = effective_zz_coupling(
+                1.0, duration, schedules[i], schedules[j]
+            )
+            assert actual == pytest.approx(expected, abs=1e-12)
+
+    for pulses in schedules:
+        assert len(pulses) % 2 == 0
+        assert modulation_function([duration], pulses)[0] == 1
+
+
+@pytest.mark.parametrize(
+    "number_of_qubits, target_pair, duration",
+    [
+        (1, (0, 1), 1.0),
+        (9, (0, 1), 1.0),
+        (True, (0, 1), 1.0),
+        (8, (0, 0), 1.0),
+        (8, (0, 8), 1.0),
+        (8, (0, True), 1.0),
+        (8, (0, 1), 0.0),
+        (8, (0, 1), np.inf),
+        (8, (0, 1), 1j),
+    ],
+)
+def test_selective_pair_schedule_rejects_invalid_parameters(
+    number_of_qubits, target_pair, duration
+):
+    """Reject invalid register sizes, target indices and durations."""
+    with pytest.raises(ValueError):
+        selective_pair_pulse_times(
+            number_of_qubits, target_pair, duration
+        )

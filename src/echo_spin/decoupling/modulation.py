@@ -1,6 +1,7 @@
 from typing import Sequence
 
 import numpy as np
+from scipy.linalg import hadamard
 
 
 def modulation_function(
@@ -82,3 +83,67 @@ def effective_zz_coupling(
 
     overlap = float((signs_i * signs_j) @ durations)
     return float(coupling * overlap / total_duration)
+
+
+def selective_pair_pulse_times(
+    number_of_qubits: int,
+    target_pair: tuple[int, int],
+    total_duration: float,
+) -> list[np.ndarray]:
+    """Return closed ideal X-pi schedules retaining only the selected ZZ pair."""
+    if (
+        isinstance(number_of_qubits, (bool, np.bool_))
+        or not isinstance(number_of_qubits, (int, np.integer))
+        or not 2 <= number_of_qubits <= 8
+    ):
+        raise ValueError("number_of_qubits must be an integer from 2 to 8.")
+
+    pair = tuple(target_pair)
+    if (
+        len(pair) != 2
+        or any(
+            isinstance(site, (bool, np.bool_))
+            or not isinstance(site, (int, np.integer))
+            or not 0 <= site < number_of_qubits
+            for site in pair
+        )
+        or pair[0] == pair[1]
+    ):
+        raise ValueError("target_pair must contain two distinct valid indices.")
+
+    if np.iscomplexobj(total_duration):
+        raise ValueError("total_duration must be finite and positive.")
+
+    duration = np.asarray(total_duration, dtype=float)
+    if (
+        duration.shape != ()
+        or not np.isfinite(duration)
+        or duration <= 0
+    ):
+        raise ValueError("total_duration must be finite and positive.")
+
+    boundaries = np.linspace(0.0, float(duration), 9)
+    if np.any(np.diff(boundaries) <= 0):
+        raise ValueError("total_duration is too small for eight intervals.")
+
+    patterns = hadamard(8)
+    schedules = []
+    spectator_row = 2
+
+    for site in range(number_of_qubits):
+        if site in pair:
+            signs = patterns[1]
+        else:
+            signs = patterns[spectator_row]
+            spectator_row += 1
+
+        flips = np.flatnonzero(signs[1:] != signs[:-1]) + 1
+        pulses = boundaries[flips]
+
+        # A terminal pulse closes the physical control frame.
+        if signs[-1] == -1:
+            pulses = np.append(pulses, boundaries[-1])
+
+        schedules.append(pulses)
+
+    return schedules
