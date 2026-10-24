@@ -6,8 +6,10 @@ from echo_spin.core.system import SpinSystem
 from echo_spin.nv.fields import (
     linear_magnetic_field,
     local_zeeman_vector,
+    register_magnetic_fields,
 )
 from echo_spin.nv.frames import rotation_matrix
+from echo_spin.nv.geometry import lattice_positions
 from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 
 
@@ -152,3 +154,62 @@ def test_linear_field_rejects_invalid_positions(position):
     """Reject malformed, nonfinite or complex spatial coordinates."""
     with pytest.raises(ValueError):
         linear_magnetic_field(position, [0, 0, 0.01])
+
+
+def test_register_uniform_field_in_local_frames():
+    """Preserve site ordering when expressing a common field in local frames."""
+    positions = lattice_positions((3, 1, 1), 15e-9 * np.eye(3))
+    field = [0.0, 0.0, 0.01]
+    frames = [
+        np.eye(3),
+        rotation_matrix("y", np.pi / 2),
+        rotation_matrix("x", np.pi / 2),
+    ]
+
+    fields = register_magnetic_fields(positions, field)
+    np.testing.assert_allclose(
+        fields, np.tile(field, (3, 1)), atol=1e-15, rtol=0.0
+    )
+
+    coefficients = np.array([
+        local_zeeman_vector(site_field, frame, 100.0)
+        for site_field, frame in zip(fields, frames)
+    ])
+    np.testing.assert_allclose(
+        coefficients,
+        [[0, 0, 1], [-1, 0, 0], [0, 1, 0]],
+        atol=1e-12,
+        rtol=0.0,
+    )
+
+
+def test_register_gradient_uses_positions_in_metres():
+    """Evaluate a physical gradient at ordered sites relative to its reference."""
+    reference = np.array([1e-6, 2e-6, 3e-6])
+    positions = lattice_positions(
+        (1, 1, 3), 20e-9 * np.eye(3), origin=reference
+    )
+
+    fields = register_magnetic_fields(
+        positions,
+        field_at_reference=[0.0, 0.0, 0.01],
+        gradient=np.diag([-500.0, -500.0, 1000.0]),
+        reference_position=reference,
+    )
+
+    np.testing.assert_allclose(
+        fields,
+        [[0, 0, 0.01], [0, 0, 0.01002], [0, 0, 0.01004]],
+        atol=1e-15,
+        rtol=0.0,
+    )
+
+
+def test_register_field_preserves_gradient_constraints():
+    """Reject a nonphysical gradient through the register-level interface."""
+    with pytest.raises(ValueError, match="traceless"):
+        register_magnetic_fields(
+            [[0, 0, 0], [15e-9, 0, 0]],
+            [0, 0, 0.01],
+            gradient=np.eye(3),
+        )

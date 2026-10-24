@@ -1,5 +1,7 @@
 import numpy as np
 
+from echo_spin.nv.geometry import validate_positions
+
 
 def _finite_real_array(value, shape, name):
     """Validate and return a finite real array with the required shape."""
@@ -110,3 +112,25 @@ def local_zeeman_vector(
         raise ValueError("The local Zeeman vector must be finite.")
 
     return result
+
+
+def register_magnetic_fields(
+    positions,
+    field_at_reference,
+    gradient=None,
+    reference_position=(0.0, 0.0, 0.0),
+    source_free=True,
+) -> np.ndarray:
+    """Return laboratory magnetic fields in tesla for ordered sites in metres."""
+    positions = validate_positions(positions)
+
+    return np.stack([
+        linear_magnetic_field(
+            position=position,
+            field_at_reference=field_at_reference,
+            gradient=gradient,
+            reference_position=reference_position,
+            source_free=source_free,
+        )
+        for position in positions
+    ])
