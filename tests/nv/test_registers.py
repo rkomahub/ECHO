@@ -4,9 +4,11 @@ import pytest
 from echo_spin.core.operators import embed_operator, spin_operators
 from echo_spin.core.system import SpinSystem
 from echo_spin.nv.frames import local_frame_from_axis, rotation_matrix
+from echo_spin.nv.geometry import lattice_positions
 from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import dipolar_interaction
 from echo_spin.nv.registers import (
+    NVRegisterConfiguration,
     nv_dipolar_interaction,
     nv_register_hamiltonian,
 )
@@ -40,6 +42,7 @@ def test_two_nv_register_dimension():
 
     assert hamiltonian.shape == (81, 81)
 
+
 def test_two_nv_register_has_one_dipolar_pair():
     """Two NV centers should generate exactly one electronic dipolar pair."""
     system = SpinSystem([1, 1, 1, 1])
@@ -70,6 +73,7 @@ def test_two_nv_register_has_one_dipolar_pair():
         interaction.full(),
         expected.full(),
     )
+
 
 def test_three_nv_register_has_three_dipolar_pairs():
     """Three NV centers should generate the three unique electronic pairs."""
@@ -102,6 +106,7 @@ def test_three_nv_register_has_three_dipolar_pairs():
         interaction.full(),
         expected.full(),
     )
+
 
 def test_nv_register_equals_sum_of_single_nv_hamiltonians():
     """The register Hamiltonian should equal the sum of its NV Hamiltonians."""
@@ -149,6 +154,7 @@ def test_nv_register_equals_sum_of_single_nv_hamiltonians():
         expected.full(),
     )
 
+
 def test_nv_register_requires_two_subsystems_per_nv():
     """Each NV must contain one electron and one nuclear subsystem."""
     system = SpinSystem([1, 1, 1])
@@ -168,6 +174,7 @@ def test_nv_register_requires_two_subsystems_per_nv():
             system=system,
             nv_parameters=parameters,
         )
+
 
 def test_zero_dipolar_couplings_leave_register_unchanged():
     """Zero dipolar couplings should reproduce the non-interacting register."""
@@ -212,6 +219,7 @@ def test_zero_dipolar_couplings_leave_register_unchanged():
         interacting.full(),
     )
 
+
 def test_invalid_dipolar_coupling_shape_raises_error():
     """The coupling matrix must match the number of NV centers."""
     system = SpinSystem([1, 1, 1, 1])
@@ -222,6 +230,7 @@ def test_invalid_dipolar_coupling_shape_raises_error():
             couplings=np.zeros((3, 3)),
             directions=np.zeros((2, 2, 3)),
         )
+
 
 def test_couplings_without_directions_raise_error():
     """Dipolar couplings and directions must be provided together."""
@@ -243,6 +252,7 @@ def test_couplings_without_directions_raise_error():
             nv_parameters=parameters,
             dipolar_couplings=np.zeros((1, 1)),
         )
+
 
 def test_register_can_build_dipolar_interaction_from_positions():
     """NV positions should generate the same interaction as explicit geometry."""
@@ -298,6 +308,7 @@ def test_register_can_build_dipolar_interaction_from_positions():
         explicit.full(),
     )
 
+
 def test_positions_require_coupling_prefactor():
     """Position-based interactions require a coupling prefactor."""
     system = SpinSystem([1, 1])
@@ -318,6 +329,7 @@ def test_positions_require_coupling_prefactor():
             nv_parameters=parameters,
             positions=[[0.0, 0.0, 0.0]],
         )
+
 
 def test_positions_and_explicit_geometry_cannot_be_mixed():
     """Automatic and explicit dipolar geometry should be mutually exclusive."""
@@ -433,4 +445,41 @@ def test_register_field_interaction_and_control_share_frames():
         np.testing.assert_allclose(
             actual.full(), expected.full(),
             atol=1e-12, rtol=0.0,
+        )
+
+
+def test_register_configuration_assembles_ordered_frames_and_fields():
+    """Associate each site with its orientation and position-dependent field."""
+    positions = lattice_positions((1, 1, 3), 20e-9 * np.eye(3))
+    axes = [[0, 0, 1], [0, 1, 0], [0, 0, 1]]
+    references = [[1, 0, 0]] * 3
+
+    register = NVRegisterConfiguration.from_geometry(
+        positions,
+        axes,
+        references,
+        field_at_reference=[0, 0, 0.01],
+        gradient=np.diag([-500.0, -500.0, 1000.0]),
+    )
+
+    assert register.number_of_nv == 3
+    np.testing.assert_allclose(register.local_frames[:, :, 2], axes)
+    np.testing.assert_allclose(
+        register.magnetic_fields,
+        [[0, 0, 0.01], [0, 0, 0.01002], [0, 0, 0.01004]],
+        atol=1e-15,
+        rtol=0.0,
+    )
+
+    positions[0, 0] = 1.0
+    assert register.positions[0, 0] == 0.0
+
+
+def test_register_configuration_rejects_missing_site_fields():
+    """Reject a configuration whose field array does not cover every site."""
+    with pytest.raises(ValueError, match="magnetic_fields"):
+        NVRegisterConfiguration(
+            positions=[[0, 0, 0], [15e-9, 0, 0]],
+            local_frames=[np.eye(3), np.eye(3)],
+            magnetic_fields=[[0, 0, 0.01]],
         )

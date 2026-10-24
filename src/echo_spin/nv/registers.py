@@ -1,10 +1,13 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 
 import numpy as np
 from qutip import Qobj, qeye
 
 from echo_spin.core.system import SpinSystem
+from echo_spin.nv.fields import register_magnetic_fields
 from echo_spin.nv.frames import validate_local_frame
+from echo_spin.nv.geometry import register_local_frames, validate_positions
 from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import (
     dipolar_geometry,
@@ -204,3 +207,70 @@ def nv_dipolar_interaction(
             )
 
     return interaction
+
+
+@dataclass
+class NVRegisterConfiguration:
+    """Store ordered laboratory positions in metres, local frames and fields in tesla."""
+
+    positions: np.ndarray
+    local_frames: np.ndarray
+    magnetic_fields: np.ndarray
+
+    def __post_init__(self):
+        """Validate and copy the static register arrays."""
+        self.positions = validate_positions(self.positions)
+        number_of_nv = len(self.positions)
+
+        if len(self.local_frames) != number_of_nv:
+            raise ValueError("Provide one local frame per NV.")
+
+        self.local_frames = np.stack([
+            validate_local_frame(frame)
+            for frame in self.local_frames
+        ])
+
+        if np.iscomplexobj(self.magnetic_fields):
+            raise ValueError("magnetic_fields must be real.")
+
+        fields = np.asarray(self.magnetic_fields, dtype=float)
+        if (
+            fields.shape != (number_of_nv, 3)
+            or not np.all(np.isfinite(fields))
+        ):
+            raise ValueError("magnetic_fields must be a finite (N, 3) array.")
+
+        self.magnetic_fields = fields.copy()
+
+    @property
+    def number_of_nv(self) -> int:
+        """Return the number of sites in the register."""
+        return len(self.positions)
+
+    @classmethod
+    def from_geometry(
+        cls,
+        positions,
+        nv_axes,
+        transverse_references,
+        field_at_reference,
+        gradient=None,
+        reference_position=(0.0, 0.0, 0.0),
+        source_free=True,
+    ):
+        """Assemble a static register from laboratory geometry and an affine field."""
+        positions = validate_positions(positions)
+
+        return cls(
+            positions=positions,
+            local_frames=register_local_frames(
+                positions, nv_axes, transverse_references
+            ),
+            magnetic_fields=register_magnetic_fields(
+                positions=positions,
+                field_at_reference=field_at_reference,
+                gradient=gradient,
+                reference_position=reference_position,
+                source_free=source_free,
+            ),
+        )
