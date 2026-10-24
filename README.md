@@ -51,6 +51,31 @@ Run the test suite with:
 pytest
 ```
 
+### Inspect an NV register
+
+Install the package from the repository root:
+
+```bash
+python -m pip install -e .
+```
+
+Inspect the provided three-NV configuration:
+
+```bash
+echo-register configs/registers/aligned_chain_3.json
+```
+
+The command outputs JSON containing the site count, laboratory positions
+in metres, local-to-laboratory frames, and magnetic fields in tesla.
+
+Alternatively:
+
+```bash
+python -m echo_spin.cli configs/registers/aligned_chain_3.json
+```
+
+Use `echo-register --help` for usage information.
+
 ## Development philosophy
 
 The project is developed progressively. Simple physical models are used first to validate the numerical and software framework before more complex models are introduced.
