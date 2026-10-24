@@ -1,5 +1,7 @@
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 from qutip import Qobj, qeye
@@ -7,7 +9,11 @@ from qutip import Qobj, qeye
 from echo_spin.core.system import SpinSystem
 from echo_spin.nv.fields import register_magnetic_fields
 from echo_spin.nv.frames import validate_local_frame
-from echo_spin.nv.geometry import register_local_frames, validate_positions
+from echo_spin.nv.geometry import (
+    lattice_positions,
+    register_local_frames,
+    validate_positions,
+)
 from echo_spin.nv.hamiltonians import nv_hamiltonian
 from echo_spin.nv.interactions import (
     dipolar_geometry,
@@ -274,3 +280,22 @@ class NVRegisterConfiguration:
                 source_free=source_free,
             ),
         )
+
+
+def load_register_configuration(path) -> NVRegisterConfiguration:
+    """Load a static register from a JSON file using metres, tesla and tesla/metre."""
+    with Path(path).open(encoding="utf-8") as stream:
+        parameters = json.load(stream)
+
+    if not isinstance(parameters, dict):
+        raise ValueError("The register configuration must be a JSON object.")
+
+    if ("positions" in parameters) == ("lattice" in parameters):
+        raise ValueError("Provide exactly one of positions or lattice.")
+
+    if "lattice" in parameters:
+        parameters["positions"] = lattice_positions(
+            **parameters.pop("lattice")
+        )
+
+    return NVRegisterConfiguration.from_geometry(**parameters)
