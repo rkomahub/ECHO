@@ -1,11 +1,15 @@
 import numpy as np
-from qutip import Qobj, qeye
+from qutip import Qobj, qdiags, qeye
 
 from echo_spin.control.microwave import (
     logical_axis_carrier_phase,
     microwave_hamiltonian,
 )
 from echo_spin.control.pulses import sine_envelope
+from echo_spin.control.rotations import single_qubit_rotation
+from echo_spin.core.operators import embed_operator
+from echo_spin.core.system import SpinSystem
+from echo_spin.decoupling.modulation import modulation_function
 from echo_spin.dynamics.propagators import time_dependent_propagator
 
 
@@ -243,3 +247,75 @@ def logical_sine_pulse_propagator(
         t1=start_time + duration,
         steps=steps,
     )
+
+
+def diagonal_x_pulse_propagator(
+    hamiltonian: Qobj,
+    pulse_times,
+    total_duration: float,
+) -> Qobj:
+    """Propagate a diagonal qubit Hamiltonian in rad/us under ideal X-pi pulses."""
+    if np.iscomplexobj(total_duration):
+        raise ValueError("total_duration must be finite and positive.")
+
+    duration = np.asarray(total_duration, dtype=float)
+    if duration.shape != () or not np.isfinite(duration) or duration <= 0:
+        raise ValueError("total_duration must be finite and positive.")
+
+    dimensions = hamiltonian.dims[0]
+    if (
+        not hamiltonian.isoper
+        or not dimensions
+        or any(dimension != 2 for dimension in dimensions)
+        or hamiltonian.dims[1] != dimensions
+    ):
+        raise ValueError("hamiltonian must have explicit qubit tensor dimensions.")
+
+    matrix = hamiltonian.full()
+    energies = np.diag(matrix)
+    if (
+        not np.all(np.isfinite(matrix))
+        or np.any(energies.imag != 0)
+        or np.any(matrix != np.diag(energies))
+    ):
+        raise ValueError("hamiltonian must be finite, Hermitian and diagonal.")
+
+    if len(pulse_times) != len(dimensions):
+        raise ValueError("Provide one pulse-time array per qubit.")
+
+    schedules = []
+    for times in pulse_times:
+        modulation_function([0.0], times)
+        times = np.asarray(times, dtype=float)
+        if np.any(times > duration):
+            raise ValueError("Pulse times must lie within the sequence.")
+        schedules.append(times)
+
+    event_times = np.unique(
+        np.concatenate(schedules + [np.array([float(duration)])])
+    )
+    system = SpinSystem([0.5] * len(dimensions))
+    x_pi = single_qubit_rotation(np.pi, "x")
+    pulses = [
+        embed_operator(x_pi, site, system)
+        for site in range(len(dimensions))
+    ]
+
+    propagator = qeye(dimensions)
+    previous_time = 0.0
+
+    for time in event_times:
+        free = qdiags(
+            np.exp(-1j * energies.real * (time - previous_time)),
+            0,
+            dims=hamiltonian.dims,
+        )
+        propagator = free * propagator
+
+        for site, times in enumerate(schedules):
+            if np.any(times == time):
+                propagator = pulses[site] * propagator
+
+        previous_time = time
+
+    return propagator

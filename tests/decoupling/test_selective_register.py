@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
-from qutip import qdiags, qeye, sigmaz
+from qutip import qdiags, sigmaz
 from scipy.constants import hbar, mu_0, physical_constants
 
-from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.core.operators import embed_operator
 from echo_spin.core.system import SpinSystem
 from echo_spin.decoupling.modulation import selective_pair_pulse_times
+from echo_spin.dynamics.sequences import diagonal_x_pulse_propagator
 from echo_spin.models.longitudinal import (
     longitudinal_qubit_parameters,
     longitudinal_register_hamiltonian,
@@ -81,31 +81,10 @@ def test_selective_gate_protects_complete_register(
     schedules = selective_pair_pulse_times(
         number_of_qubits, target_pair, duration
     )
-    event_times = np.unique(np.concatenate(schedules + [np.array([duration])]))
 
-    x_pi = single_qubit_rotation(np.pi, "x")
-    pulses = [
-        embed_operator(x_pi, site, system)
-        for site in range(number_of_qubits)
-    ]
-
-    actual = qeye(list(system.dimensions))
-    previous_time = 0.0
-
-    for time in event_times:
-        # Exact diagonal free evolution avoids a general matrix exponential.
-        free = qdiags(
-            np.exp(-1j * hamiltonian.diag() * (time - previous_time)),
-            0,
-            dims=hamiltonian.dims,
-        )
-        actual = free * actual
-
-        for site, pulse_times in enumerate(schedules):
-            if np.any(pulse_times == time):
-                actual = pulses[site] * actual
-
-        previous_time = time
+    actual = diagonal_x_pulse_propagator(
+        hamiltonian, schedules, duration
+    )
 
     za = embed_operator(sigmaz(), a, system)
     zb = embed_operator(sigmaz(), b, system)
