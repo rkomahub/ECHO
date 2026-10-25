@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "register": {
+    "positions": [
+      [0.0, 0.0, 0.0],
+      [1.5e-8, 0.0, 0.0],
+      [3.0e-8, 0.0, 0.0]
+    ],
+    "nv_axes": [
+      [0.0, 0.0, 1.0],
+      [0.0, 0.0, 1.0],
+      [0.0, 0.0, 1.0]
+    ],
+    "transverse_references": [
+      [1.0, 0.0, 0.0],
+      [1.0, 0.0, 0.0],
+      [1.0, 0.0, 0.0]
+    ],
+    "field_at_reference": [0.0, 0.0, 0.01],
+    "gradient": [
+      [0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0]
+    ],
+    "reference_position": [0.0, 0.0, 0.0],
+    "source_free": true
+  },
+  "model": "ideal_longitudinal",
+  "sites": [
+    {
+      "D": 18032.741831605414,
+      "E": 0.0,
+      "gamma_e": -176085.9554021785,
+      "bare_detuning": 0.0
+    },
+    {
+      "D": 18032.741831605414,
+      "E": 0.0,
+      "gamma_e": -176085.9554021785,
+      "bare_detuning": 0.0
+    },
+    {
+      "D": 18032.741831605414,
+      "E": 0.0,
+      "gamma_e": -176085.9554021785,
+      "bare_detuning": 0.0
+    }
+  ],
+  "task": {
+    "target_pair": [0, 1],
+    "target": "signed_sqrt_zz",
+    "spectators": "identity",
+    "encoding": "ms0_msminus1",
+    "tensor_order": "site_0_left",
+    "detuning_convention": "reference_minus_transition",
+    "local_corrections": "none"
+  },
+  "control": {
+    "pulse_model": "instantaneous",
+    "addressing": "independent_ideal",
+    "noise": "none"
+  },
+  "provenance": {
+    "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+    "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+    "E": "Chosen zero strain splitting.",
+    "gamma_e": "Signed Hamiltonian convention: -2*pi*28024.95 rad/us/T; magnitude from Joas et al., PRX 15, 021069 (2025).",
+    "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+    "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T."
+  }
+}

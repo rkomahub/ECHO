@@ -1,5 +1,6 @@
 import json
 from collections.abc import Sequence
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -282,13 +283,12 @@ class NVRegisterConfiguration:
         )
 
 
-def load_register_configuration(path) -> NVRegisterConfiguration:
-    """Load a static register from a JSON file using metres, tesla and tesla/metre."""
-    with Path(path).open(encoding="utf-8") as stream:
-        parameters = json.load(stream)
-
+def register_configuration_from_dict(parameters) -> NVRegisterConfiguration:
+    """Resolve a register specification without modifying its input."""
     if not isinstance(parameters, dict):
         raise ValueError("The register configuration must be a JSON object.")
+
+    parameters = deepcopy(parameters)
 
     if ("positions" in parameters) == ("lattice" in parameters):
         raise ValueError("Provide exactly one of positions or lattice.")
@@ -299,3 +299,11 @@ def load_register_configuration(path) -> NVRegisterConfiguration:
         )
 
     return NVRegisterConfiguration.from_geometry(**parameters)
+
+
+def load_register_configuration(path) -> NVRegisterConfiguration:
+    """Load a static register from JSON using metres and tesla."""
+    with Path(path).open(encoding="utf-8") as stream:
+        parameters = json.load(stream)
+
+    return register_configuration_from_dict(parameters)
