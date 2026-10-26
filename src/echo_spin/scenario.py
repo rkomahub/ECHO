@@ -342,6 +342,128 @@ def validate_uncertainty_parameters(parameters, specification=None):
                 raise ValueError("Uncertainty path must identify a real scalar.")
 
 
+def validate_control_design(parameters):
+    """Validate protocol identifiers and an optional finite microwave template."""
+    if not isinstance(parameters, dict):
+        raise ValueError("Control design must be a JSON object.")
+
+    required = {"candidate_protocols"}
+    allowed = required | {"microwave_template"}
+    if not required.issubset(parameters) or set(parameters) - allowed:
+        raise ValueError("Provide exactly the supported control-design fields.")
+
+    protocols = parameters["candidate_protocols"]
+    if (
+        not isinstance(protocols, list)
+        or not protocols
+        or any(
+            not isinstance(name, str) or not name.strip()
+            for name in protocols
+        )
+    ):
+        raise ValueError("Provide nonempty candidate protocol identifiers.")
+
+    if len(protocols) != len(set(protocols)):
+        raise ValueError("Candidate protocol identifiers must be unique.")
+
+    if "microwave_template" not in parameters:
+        return
+
+    pulse = parameters["microwave_template"]
+    fields = {
+        "shape",
+        "duration_us",
+        "peak_coefficient_rad_per_us",
+        "carrier_rad_per_us",
+        "phase_rad",
+        "coefficient_convention",
+    }
+    if not isinstance(pulse, dict) or set(pulse) != fields:
+        raise ValueError("Provide all supported microwave-template fields.")
+
+    if pulse["shape"] not in ("square", "sine"):
+        raise ValueError("Supported template shapes are square and sine.")
+
+    if pulse["coefficient_convention"] != "sqrt2_A_cos_Sx":
+        raise ValueError("Unsupported microwave coefficient convention.")
+
+    for name in (
+        "duration_us",
+        "peak_coefficient_rad_per_us",
+        "carrier_rad_per_us",
+    ):
+        if not _finite_real(pulse[name]) or pulse[name] <= 0:
+            raise ValueError(f"{name} must be finite and positive.")
+
+    if not _finite_real(pulse["phase_rad"]):
+        raise ValueError("phase_rad must be finite and real.")
+
+
+def validate_numerical_parameters(parameters):
+    """Validate propagation settings without executing a numerical method."""
+    if not isinstance(parameters, dict):
+        raise ValueError("Numerical parameters must be a JSON object.")
+
+    method = parameters.get("method")
+    if method not in ("static_exponential", "piecewise_exponential"):
+        raise ValueError("Unsupported propagation-method identifier.")
+
+    required = {"method", "comparison_atol", "comparison_rtol"}
+    if method == "piecewise_exponential":
+        required.add("steps")
+
+    if set(parameters) != required:
+        raise ValueError("Provide exactly the required numerical fields.")
+
+    for name in ("comparison_atol", "comparison_rtol"):
+        value = parameters[name]
+        if not _finite_real(value) or value < 0:
+            raise ValueError(f"{name} must be finite and nonnegative.")
+
+    if (
+        parameters["comparison_atol"] == 0
+        and parameters["comparison_rtol"] == 0
+    ):
+        raise ValueError("At least one comparison tolerance must be positive.")
+
+    if method == "piecewise_exponential":
+        steps = parameters["steps"]
+        if type(steps) is not int or steps < 1:
+            raise ValueError("Propagation steps must be a positive integer.")
+
+
+def validate_evaluation_parameters(parameters):
+    """Validate whole-register output requests without calculating metrics."""
+    if (
+        not isinstance(parameters, dict)
+        or set(parameters) != {"scope", "metrics"}
+        or parameters["scope"] != "whole_register"
+    ):
+        raise ValueError("Evaluation requires scope='whole_register' and metrics.")
+
+    supported = {
+        "average_gate_fidelity",
+        "residual_local_phases",
+        "residual_pair_phases",
+        "duration",
+        "individual_pulse_count",
+        "distinct_pulse_times",
+    }
+    metrics = parameters["metrics"]
+    if (
+        not isinstance(metrics, list)
+        or not metrics
+        or any(
+            not isinstance(metric, str) or metric not in supported
+            for metric in metrics
+        )
+    ):
+        raise ValueError("Provide supported evaluation metric identifiers.")
+
+    if len(metrics) != len(set(metrics)):
+        raise ValueError("Evaluation metric identifiers must be unique.")
+
+
 def validate_environment(environment, number_of_nv=None) -> dict:
     """Validate and copy descriptive records without claiming simulation support."""
     if not isinstance(environment, dict):
@@ -412,6 +534,15 @@ def validate_environment(environment, number_of_nv=None) -> dict:
 
         if name == "uncertainty" and record["status"] == "specified":
             validate_uncertainty_parameters(record["parameters"])
+
+        if name == "control_design" and record["status"] == "specified":
+            validate_control_design(record["parameters"])
+
+        if name == "numerics" and record["status"] == "specified":
+            validate_numerical_parameters(record["parameters"])
+
+        if name == "evaluation" and record["status"] == "specified":
+            validate_evaluation_parameters(record["parameters"])
 
         resolved[name] = deepcopy(record)
 

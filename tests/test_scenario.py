@@ -7,15 +7,18 @@ import pytest
 from echo_spin.scenario import (
     load_longitudinal_scenario,
     longitudinal_scenario_from_dict,
+    validate_control_design,
     validate_environment,
+    validate_evaluation_parameters,
     validate_logical_preparation,
     validate_noise_parameters,
+    validate_numerical_parameters,
     validate_uncertainty_parameters,
 )
 
 CONFIGURATION = (
     Path(__file__).resolve().parents[1]
-    / "configs/registers/three_nv_trial.json"
+    / "configs/registers/linear/n3/scenario.json"
 )
 
 
@@ -365,3 +368,65 @@ def test_uncertainty_rejects_invalid_distribution_width():
 
     with pytest.raises(ValueError, match="low < high"):
         validate_uncertainty_parameters(parameters)
+
+
+def test_control_design_rejects_duplicate_protocols():
+    """Reject repeated protocol identifiers in a comparison request."""
+    with pytest.raises(ValueError, match="unique"):
+        validate_control_design({
+            "candidate_protocols": ["free", "free"],
+        })
+
+
+def test_microwave_template_does_not_activate_finite_control():
+    """Accept a design template while preserving the active ideal model."""
+    source = json.loads(CONFIGURATION.read_text(encoding="utf-8"))
+    template = {
+        "shape": "sine",
+        "duration_us": 0.05,
+        "peak_coefficient_rad_per_us": 1.0,
+        "carrier_rad_per_us": 18000.0,
+        "phase_rad": 0.0,
+        "coefficient_convention": "sqrt2_A_cos_Sx",
+    }
+    design = source["environment"]["control_design"]["parameters"]
+    design["microwave_template"] = template
+
+    scenario = longitudinal_scenario_from_dict(source)
+
+    assert scenario.specification["control"]["pulse_model"] == "instantaneous"
+    assert scenario.environment["control_design"]["parameters"] == design
+
+    template["duration_us"] = 0.0
+    with pytest.raises(ValueError, match="duration_us"):
+        longitudinal_scenario_from_dict(source)
+
+
+def test_numerical_settings_require_valid_time_resolution():
+    """Require a positive step count only for discretised propagation."""
+    parameters = {
+        "method": "static_exponential",
+        "comparison_atol": 1e-10,
+        "comparison_rtol": 0.0,
+    }
+    validate_numerical_parameters(parameters)
+
+    parameters["method"] = "piecewise_exponential"
+    parameters["steps"] = 0
+    with pytest.raises(ValueError, match="positive integer"):
+        validate_numerical_parameters(parameters)
+
+    parameters["steps"] = 100
+    validate_numerical_parameters(parameters)
+
+
+def test_evaluation_settings_reject_unknown_metrics():
+    """Accept the trial outputs while rejecting unsupported metric requests."""
+    source = json.loads(CONFIGURATION.read_text(encoding="utf-8"))
+    parameters = source["environment"]["evaluation"]["parameters"]
+
+    validate_evaluation_parameters(parameters)
+
+    parameters["metrics"].append("undefined_metric")
+    with pytest.raises(ValueError, match="supported evaluation"):
+        validate_evaluation_parameters(parameters)

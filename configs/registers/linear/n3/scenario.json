@@ -30,19 +30,19 @@
     {
       "D": 18032.741831605414,
       "E": 0.0,
-      "gamma_e": -176085.9554021785,
+      "gamma_e": -176085.95540243763,
       "bare_detuning": 0.0
     },
     {
       "D": 18032.741831605414,
       "E": 0.0,
-      "gamma_e": -176085.9554021785,
+      "gamma_e": -176085.95540243763,
       "bare_detuning": 0.0
     },
     {
       "D": 18032.741831605414,
       "E": 0.0,
-      "gamma_e": -176085.9554021785,
+      "gamma_e": -176085.95540243763,
       "bare_detuning": 0.0
     }
   ],
@@ -60,12 +60,75 @@
     "addressing": "independent_ideal",
     "noise": "none"
   },
+  "environment": {
+    "nuclear_parameters": {
+      "status": "not_applicable",
+      "parameters": {}
+    },
+    "preparation": {
+      "status": "not_applicable",
+      "parameters": {}
+    },
+    "noise": {
+      "status": "specified",
+      "parameters": {
+        "model": "none"
+      }
+    },
+    "uncertainty": {
+      "status": "specified",
+      "parameters": {
+        "model": "deterministic"
+      }
+    },
+    "control_design": {
+      "status": "specified",
+      "parameters": {
+        "candidate_protocols": [
+          "free",
+          "closed_global_hahn",
+          "hadamard_selective"
+        ]
+      }
+    },
+    "constraints": {
+      "status": "specified",
+      "parameters": {
+        "minimum_separation_m": 5e-9,
+        "maximum_field_t": 0.02
+      }
+    },
+    "numerics": {
+      "status": "specified",
+      "parameters": {
+        "method": "static_exponential",
+        "comparison_atol": 1e-10,
+        "comparison_rtol": 1e-10
+      }
+    },
+    "evaluation": {
+      "status": "specified",
+      "parameters": {
+        "scope": "whole_register",
+        "metrics": [
+          "average_gate_fidelity",
+          "residual_local_phases",
+          "residual_pair_phases",
+          "duration",
+          "individual_pulse_count",
+          "distinct_pulse_times"
+        ]
+      }
+    }
+  },
   "provenance": {
     "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
     "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
     "E": "Chosen zero strain splitting.",
     "gamma_e": "Signed Hamiltonian convention: -2*pi*28024.95 rad/us/T; magnitude from Joas et al., PRX 15, 021069 (2025).",
     "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
-    "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T."
+    "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+    "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+    "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
   }
 }

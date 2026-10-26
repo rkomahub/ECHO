@@ -65,10 +65,23 @@ def main(argv=None) -> int:
                     "sample parameters or execute an uncertainty ensemble."
                 ),
                 "hardware_bounds": (
-                    "Not specified for instantaneous ideal control."
+                    "Specified static bounds are checked separately; "
+                    "finite-drive hardware limits are not assessed."
                 ),
                 "experimental_feasibility": "Not assessed.",
                 "individual_addressability": "Assumed, not established.",
+                "control_design": (
+                    "Protocol identifiers and optional microwave templates are "
+                    "design records; they do not activate a protocol or finite pulses."
+                ),
+                "noise": (
+                    "The active scenario is noiseless; conflicting active "
+                    "noise specifications are rejected."
+                ),
+                "numerics_and_evaluation": (
+                    "Supported settings and metric identifiers are validated; "
+                    "this command performs no propagation or metric calculation."
+                ),
             }
             report["validation"] = {
                 "geometry_and_frames": "Passed.",
@@ -81,10 +94,17 @@ def main(argv=None) -> int:
                 "physical_model_validity": "Not established by input validation.",
             }
             report["environment"] = scenario.environment
-            report["environment_validation"] = (
-                "Record structure and finite JSON values checked; "
-                "section-specific physics and execution support not established."
-            )
+            report["environment_validation"] = {
+                name: {
+                    "status": record["status"],
+                    "parameter_checks": (
+                        "Passed for the supported schema."
+                        if record["status"] == "specified"
+                        else "Not performed: section is not specified."
+                    ),
+                }
+                for name, record in report["environment"].items()
+            }
             report["constraint_checks"] = scenario.constraint_checks
 
         output = json.dumps(report, indent=2, allow_nan=False)
