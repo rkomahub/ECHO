@@ -138,6 +138,12 @@ parameters for future calculations does not activate those calculations.
 The report distinguishes parameter validation from physical-model validity
 and experimental feasibility.
 
+The scenario fields `gamma_e` and `gamma_n` denote the coefficients
+multiplying B·S and B·I in the Hamiltonian. When importing signed
+physical gyromagnetic ratios defined through H_Z = -gamma B·J,
+negate them and convert to rad/us/T. The electronic coefficient
+is positive in the provided axial-field scenario.
+
 ## Development philosophy
 
 The project is developed progressively. Simple physical models are used first to validate the numerical and software framework before more complex models are introduced.

@@ -30,19 +30,19 @@
     {
       "D": 18032.741831605414,
       "E": 0.0,
-      "gamma_e": -176085.95540243763,
+      "gamma_e": 176085.95540243763,
       "bare_detuning": 0.0
     },
     {
       "D": 18032.741831605414,
       "E": 0.0,
-      "gamma_e": -176085.95540243763,
+      "gamma_e": 176085.95540243763,
       "bare_detuning": 0.0
     },
     {
       "D": 18032.741831605414,
       "E": 0.0,
-      "gamma_e": -176085.95540243763,
+      "gamma_e": 176085.95540243763,
       "bare_detuning": 0.0
     }
   ],
@@ -125,7 +125,7 @@
     "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
     "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
     "E": "Chosen zero strain splitting.",
-    "gamma_e": "Signed Hamiltonian convention: -2*pi*28024.95 rad/us/T; magnitude from Joas et al., PRX 15, 021069 (2025).",
+    "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
     "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
     "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
     "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",

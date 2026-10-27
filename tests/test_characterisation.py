@@ -9,6 +9,8 @@ from echo_spin.characterisation import (
     characterise_longitudinal_scenario,
     local_spectral_overlap,
 )
+from echo_spin.core.system import SpinSystem
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.scenario import longitudinal_scenario_from_dict
 
 
@@ -85,6 +87,23 @@ def test_aligned_chain_has_identical_axial_electronic_transitions():
     site = specification["sites"][0]
     splitting = abs(site["gamma_e"] * 0.01)
     expected = [site["D"] - splitting, site["D"] + splitting]
+
+    assert site["gamma_e"] > 0
+
+    hamiltonian = electronic_nv_hamiltonian(
+        system=SpinSystem([1]),
+        electron_site=0,
+        D=site["D"],
+        E=site["E"],
+        omega_e=spectra[0]["zeeman_vector_rad_per_us"],
+    )
+    # Spin-one basis order: ms=+1, 0, -1.
+    np.testing.assert_allclose(
+        hamiltonian.diag(),
+        [site["D"] + splitting, 0.0, site["D"] - splitting],
+        atol=1e-12,
+        rtol=1e-12,
+    )
 
     assert len(spectra) == 3
     for spectrum in spectra:
