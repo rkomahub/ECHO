@@ -455,3 +455,303 @@ def plot_protocol_modulations(report):
         "dots: final signs"
     )
     return figure
+
+
+def plot_gate_evaluation(report):
+    """Plot saved whole-register fidelities, resources and residual phases."""
+    protocols = report["protocols"]
+    names = list(protocols)
+    labels = [name.replace("_", "\n") for name in names]
+    positions = np.arange(len(names))
+
+    performance, axes = plt.subplots(
+        1, 2, figsize=(11, 4), constrained_layout=True
+    )
+
+    fidelities = [
+        protocols[name]["average_gate_fidelity"]
+        for name in names
+    ]
+    axes[0].bar(positions, fidelities, color="tab:blue")
+    axes[0].set_ylim(0, 1.08)
+    axes[0].set_ylabel("Whole-register average gate fidelity")
+    axes[0].set_xticks(positions)
+    axes[0].set_xticklabels(labels)
+    for position, fidelity in zip(positions, fidelities):
+        axes[0].text(
+            position, fidelity + 0.02, f"{fidelity:.6g}",
+            ha="center",
+        )
+
+    individual = [
+        protocols[name]["resources"]["individual_pulse_count"]
+        for name in names
+    ]
+    distinct = [
+        protocols[name]["resources"]["distinct_pulse_time_count"]
+        for name in names
+    ]
+    axes[1].bar(
+        positions - 0.18, individual, width=0.36,
+        label="Individual pulses",
+    )
+    axes[1].bar(
+        positions + 0.18, distinct, width=0.36,
+        label="Distinct pulse times",
+    )
+    axes[1].set_ylabel("Count, including closing pulses")
+    axes[1].set_xticks(positions)
+    axes[1].set_xticklabels(labels)
+    axes[1].legend()
+    performance.suptitle(
+        f"Ideal register gates — common duration "
+        f"{report['duration_us']:.6g} µs"
+    )
+
+    local_phases = [
+        np.asarray(
+            protocols[name]["phases"]["local_generator_phases_rad"]
+        )
+        for name in names
+    ]
+    pair_phases = [
+        np.asarray(
+            protocols[name]["phases"][
+                "residual_pair_generator_phases_rad"
+            ]
+        )
+        for name in names
+    ]
+    limit = max(
+        float(np.max(np.abs(values)))
+        for values in local_phases + pair_phases
+    )
+    limit = limit if limit > 0 else 1.0
+
+    phases, axes = plt.subplots(
+        2, len(names),
+        squeeze=False,
+        figsize=(4 * len(names), 7),
+        constrained_layout=True,
+    )
+    colour_map = plt.get_cmap("RdBu_r").copy()
+    colour_map.set_bad("lightgrey")
+
+    for column, name in enumerate(names):
+        number_of_nv = len(local_phases[column])
+        sites = np.arange(number_of_nv)
+
+        axes[0, column].imshow(
+            local_phases[column][None, :],
+            cmap=colour_map,
+            vmin=-limit,
+            vmax=limit,
+            aspect="auto",
+        )
+        axes[0, column].set_title(name.replace("_", " "))
+        axes[0, column].set_xticks(sites)
+        axes[0, column].set_yticks([])
+        axes[0, column].set_xlabel("Site index")
+        axes[0, column].set_ylabel("Local residual φᵢ")
+
+        # Show each pair once: i < j.
+        image = axes[1, column].imshow(
+            np.ma.array(
+                pair_phases[column],
+                mask=np.tri(number_of_nv, dtype=bool),
+            ),
+            cmap=colour_map,
+            vmin=-limit,
+            vmax=limit,
+        )
+        axes[1, column].set_xticks(sites)
+        axes[1, column].set_yticks(sites)
+        axes[1, column].set_xlabel("Site j")
+        axes[1, column].set_ylabel("Site i")
+        axes[1, column].set_title("Residual pair coefficients Δφᵢⱼ")
+
+    phases.colorbar(
+        image,
+        ax=axes.ravel().tolist(),
+        label="Generator coefficient (rad)",
+        shrink=0.85,
+    )
+    phases.suptitle(
+        "Unwrapped residual phases — common colour scale\n"
+        "Grey: duplicate or self-pairs; no local corrections"
+    )
+
+    return {
+        "performance": performance,
+        "residual_phases": phases,
+    }
+
+
+def plot_spacing_comparison(report):
+    """Plot saved gate durations and fidelities while marking rejected spacings."""
+    records = report["records"]
+    evaluated = sorted(
+        (record for record in records if record["status"] == "evaluated"),
+        key=lambda record: record["requested_pair_separation_m"],
+    )
+    rejected = [
+        record["requested_pair_separation_m"] * 1e9
+        for record in records
+        if record["status"] == "rejected"
+    ]
+
+    figure, axes = plt.subplots(
+        1, 2, figsize=(11, 4), constrained_layout=True
+    )
+    distances = [
+        record["requested_pair_separation_m"] * 1e9
+        for record in evaluated
+    ]
+
+    axes[0].plot(
+        distances,
+        [record["duration_us"] for record in evaluated],
+        "o-",
+        label="Calculated gate duration",
+    )
+    axes[0].set_ylabel("Target-pair gate duration (µs)")
+    axes[0].set_title("Duration recomputed at each separation")
+
+    names = sorted({
+        name
+        for record in evaluated
+        for name in record["protocols"]
+    })
+    markers = ("o", "s", "^")
+    styles = ("-", "--", ":")
+
+    for index, name in enumerate(names):
+        available = [
+            record for record in evaluated
+            if name in record["protocols"]
+        ]
+        axes[1].plot(
+            [
+                record["requested_pair_separation_m"] * 1e9
+                for record in available
+            ],
+            [
+                record["protocols"][name]["average_gate_fidelity"]
+                for record in available
+            ],
+            marker=markers[index % len(markers)],
+            linestyle=styles[index % len(styles)],
+            label=name.replace("_", " "),
+        )
+
+    axes[1].set_ylabel("Whole-register average gate fidelity")
+    axes[1].set_ylim(0, 1.05)
+    axes[1].set_title("Ideal control performance")
+
+    for axis in axes:
+        axis.set_xlabel("Target-pair separation (nm)")
+        axis.grid(alpha=0.25)
+        if rejected:
+            axis.plot(
+                rejected,
+                [0.03] * len(rejected),
+                transform=axis.get_xaxis_transform(),
+                linestyle="none",
+                marker="x",
+                color="red",
+                label="Rejected; vertical position is arbitrary",
+            )
+        if axis.get_legend_handles_labels()[0]:
+            axis.legend(fontsize="small")
+
+    if not evaluated:
+        for axis in axes:
+            axis.text(
+                0.5, 0.5, "No evaluated configurations",
+                transform=axis.transAxes,
+                ha="center",
+            )
+
+    figure.suptitle(
+        "Uniform geometry scaling — deterministic ideal longitudinal model"
+    )
+    return figure
+
+
+def plot_pulse_duration_comparison(report):
+    """Plot finite-pulse gate errors and required peak Rabi frequencies."""
+    figure, axes = plt.subplots(
+        1, 2, figsize=(11, 4), constrained_layout=True
+    )
+    styles = {"square": "-", "sine": "--"}
+    colors = {
+        "free": "C0",
+        "closed_global_hahn": "C1",
+        "hadamard_selective": "C2",
+    }
+
+    for shape, style in styles.items():
+        records = sorted(
+            (
+                record for record in report["records"]
+                if record["status"] == "evaluated"
+                and record["pulse_shape"] == shape
+            ),
+            key=lambda record: record["pulse_duration_us"],
+        )
+        if not records:
+            continue
+
+        durations_ns = [
+            record["pulse_duration_us"] * 1000
+            for record in records
+        ]
+        for name in records[0]["protocols"]:
+            errors = [
+                max(
+                    1 - record["protocols"][name]["average_gate_fidelity"],
+                    1e-15,
+                )
+                for record in records
+            ]
+            axes[0].loglog(
+                durations_ns,
+                errors,
+                marker="o",
+                linestyle=style,
+                color=colors.get(name),
+                label=f"{name.replace('_', ' ')}: {shape}",
+            )
+
+        axes[1].loglog(
+            durations_ns,
+            [
+                record["peak_rabi_frequency_rad_per_us"] / (2 * np.pi)
+                for record in records
+            ],
+            marker="o",
+            linestyle=style,
+            label=shape,
+        )
+
+    axes[0].set_ylabel(r"Whole-register gate error $1-F_{\rm avg}$")
+    axes[0].set_title("Display floor: $10^{-15}$")
+    axes[1].set_ylabel("Peak Rabi frequency (MHz)")
+    axes[1].set_title("Equal duration and rotation area")
+
+    for axis in axes:
+        axis.set_xlabel("Pulse duration (ns)")
+        axis.grid(alpha=0.25, which="both")
+        if axis.get_legend_handles_labels()[0]:
+            axis.legend(fontsize="small")
+
+    rejected = sum(
+        record["status"] == "rejected"
+        for record in report["records"]
+    )
+    figure.suptitle(
+        f"Finite independent qubit controls — "
+        f"T = {report['duration_us']:.6g} µs; "
+        f"{rejected} rejected shape-duration cases"
+    )
+    return figure

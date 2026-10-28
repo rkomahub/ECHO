@@ -217,7 +217,9 @@ def implement_finite_protocols(
                     control_operator=control_operator,
                     duration=pulse_duration,
                     envelope=lambda time: sine_envelope(
-                        time, pulse_duration, peak_amplitude
+                        time - pulse_duration / (2 * steps),
+                        pulse_duration,
+                        peak_amplitude,
                     ),
                     steps=int(steps),
                 )

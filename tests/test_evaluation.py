@@ -4,7 +4,12 @@ from pathlib import Path
 import numpy as np
 
 from echo_spin.characterisation import longitudinal_characterisation_report
-from echo_spin.evaluation import evaluate_ideal_implementation
+from echo_spin.evaluation import (
+    evaluate_finite_protocols,
+    evaluate_ideal_implementation,
+    finite_evaluation_report,
+    ideal_evaluation_report,
+)
 from echo_spin.implementation import ideal_implementation_report
 from echo_spin.protocols import ideal_protocol_report
 from echo_spin.representation import longitudinal_model_report
@@ -37,6 +42,7 @@ def test_selective_operation_matches_whole_register_target():
 
     for protocol in result["protocols"].values():
         assert protocol["unitarity_error"] < 1e-10
+        assert protocol["phase_prediction_error"] < 1e-10
 
     assert result["protocols"]["free"]["average_gate_fidelity"] < 0.99
     assert (
@@ -44,3 +50,124 @@ def test_selective_operation_matches_whole_register_target():
         < 0.99
     )
     assert result["assessment"]["physical_approximation_validated"] is False
+
+    selective_phases = selective["phases"]
+    np.testing.assert_allclose(
+        selective_phases["local_generator_phases_rad"],
+        0.0,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        selective_phases["residual_pair_generator_phases_rad"],
+        0.0,
+        atol=1e-12,
+    )
+
+    hahn = result["protocols"]["closed_global_hahn"]
+    np.testing.assert_allclose(
+        hahn["phases"]["local_generator_phases_rad"],
+        0.0,
+        atol=1e-12,
+    )
+    np.testing.assert_allclose(
+        hahn["phases"]["residual_pair_generator_phases_rad"][1][2],
+        np.pi / 4,
+        atol=1e-12,
+    )
+    assert hahn["resources"]["individual_pulse_count"] == 6
+    assert hahn["resources"]["distinct_pulse_time_count"] == 2
+
+    saved = json.loads(json.dumps(
+        ideal_evaluation_report(implementation),
+        allow_nan=False,
+    ))
+    stored = saved["protocols"]["hadamard_selective"]
+    assert stored["phase_prediction_error"] < 1e-10
+
+    restored_propagator = (
+        np.asarray(stored["propagator"]["real"])
+        + 1j * np.asarray(stored["propagator"]["imag"])
+    )
+
+    np.testing.assert_allclose(
+        restored_propagator,
+        selective["propagator"].full(),
+        atol=1e-12,
+        rtol=0.0,
+    )
+    assert saved["dimension"] == 8
+    assert stored["resources"] == selective["resources"]
+    assert saved["assessment"]["physical_approximation_validated"] is False
+
+
+def test_finite_evaluation_recovers_short_pulse_limit():
+    """Recover ideal fidelities with short square and sine pulses."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    ideal = evaluate_ideal_implementation(
+        ideal_implementation_report(source)
+    )
+
+    for shape in ("square", "sine"):
+        finite = evaluate_finite_protocols(
+            source,
+            pulse_duration_us=1e-6,
+            shape=shape,
+            steps=256,
+        )
+
+        for name, result in finite["protocols"].items():
+            reference = ideal["protocols"][name]
+            np.testing.assert_allclose(
+                result["average_gate_fidelity"],
+                reference["average_gate_fidelity"],
+                atol=1e-5,
+                rtol=0.0,
+            )
+            assert result["unitarity_error"] < 1e-10
+            assert result["resources"] == reference["resources"]
+            assert "phase_prediction_error" not in result
+
+        np.testing.assert_allclose(
+            finite["protocols"]["free"]["propagator"].full(),
+            ideal["protocols"]["free"]["propagator"].full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+        saved = json.loads(json.dumps(
+        finite_evaluation_report(
+            source,
+            pulse_duration_us=0.02,
+            shape="square",
+        ),
+        allow_nan=False,
+    ))
+
+    assert saved["pulse_shape"] == "square"
+    assert saved["integration_steps"] is None
+    assert saved["source_protocol_report"] == source
+
+    for result in saved["protocols"].values():
+        matrix = (
+            np.asarray(result["propagator"]["real"])
+            + 1j * np.asarray(result["propagator"]["imag"])
+        )
+        np.testing.assert_allclose(
+            np.einsum(
+                "ki,kj->ij", matrix.conj(), matrix, optimize=False
+            ),
+            np.eye(saved["dimension"]),
+            atol=1e-10,
+            rtol=0.0,
+        )
