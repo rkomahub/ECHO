@@ -1,9 +1,15 @@
 import numpy as np
 from qutip import qeye
 
+from echo_spin.control.pulses import (
+    sine_envelope,
+    sine_pi_pulse_amplitude,
+)
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.core.operators import embed_operator
 from echo_spin.decoupling.modulation import modulation_function
+from echo_spin.dynamics.propagators import static_propagator
+from echo_spin.dynamics.sequences import finite_pulse_propagator
 from echo_spin.protocols import build_ideal_gate_candidates
 
 
@@ -141,3 +147,114 @@ def ideal_implementation_report(protocol_report) -> dict:
             "No gate propagation or fidelity calculation is performed.",
         ],
     }
+
+
+def implement_finite_protocols(
+    protocol_report,
+    pulse_duration_us,
+    *,
+    shape="square",
+    steps=128,
+) -> dict:
+    """Replace ideal events by finite square or sine pulses."""
+    if shape not in ("square", "sine"):
+        raise ValueError("shape must be 'square' or 'sine'.")
+
+    if (
+        isinstance(steps, (bool, np.bool_))
+        or not isinstance(steps, (int, np.integer))
+        or steps < 1
+    ):
+        raise ValueError("steps must be a positive integer.")
+
+    if (
+        isinstance(pulse_duration_us, (bool, np.bool_))
+        or not isinstance(
+            pulse_duration_us,
+            (int, float, np.integer, np.floating),
+        )
+        or not np.isfinite(pulse_duration_us)
+        or pulse_duration_us <= 0
+    ):
+        raise ValueError("pulse_duration_us must be finite and positive.")
+
+    pulse_duration = float(pulse_duration_us)
+    ideal = implement_ideal_protocols(protocol_report)
+    model = ideal["model"]
+    peak_amplitude = (
+        np.pi / pulse_duration
+        if shape == "square"
+        else sine_pi_pulse_amplitude(pulse_duration)
+    )
+    implementations = {}
+
+    for name, control in ideal["protocols"].items():
+        free_intervals = control["free_intervals_us"].copy()
+        free_intervals[:-1] -= pulse_duration
+
+        if np.any(free_intervals < 0):
+            raise ValueError(
+                f"Finite pulse windows overlap or precede t=0 for {name}."
+            )
+
+        pulses = []
+        for sites in control["addressed_sites"]:
+            control_operator = 0.0 * model.hamiltonian
+            for site in sites:
+                control_operator += (
+                    model.pauli_operators["X"][site] / 2
+                )
+
+            if shape == "square":
+                pulse = static_propagator(
+                    model.hamiltonian
+                    + peak_amplitude * control_operator,
+                    pulse_duration,
+                )
+            else:
+                pulse = finite_pulse_propagator(
+                    free_hamiltonian=model.hamiltonian,
+                    control_operator=control_operator,
+                    duration=pulse_duration,
+                    envelope=lambda time: sine_envelope(
+                        time, pulse_duration, peak_amplitude
+                    ),
+                    steps=int(steps),
+                )
+
+            pulses.append(pulse)
+
+        implementations[name] = {
+            "event_times_us": control["event_times_us"].copy(),
+            "pulse_start_times_us": (
+                control["event_times_us"] - pulse_duration
+            ),
+            "addressed_sites": control["addressed_sites"],
+            "free_intervals_us": free_intervals,
+            "pulse_propagators": tuple(pulses),
+        }
+
+    return {
+        "implementation": f"finite_{shape}_local_X_pi",
+        "model": model,
+        "target": ideal["target"],
+        "duration_us": ideal["duration_us"],
+        "pulse_duration_us": pulse_duration,
+        "pulse_shape": shape,
+        "peak_rabi_frequency_rad_per_us": float(peak_amplitude),
+        "integration_steps": int(steps) if shape == "sine" else None,
+        "protocols": implementations,
+    }
+
+
+def implement_square_protocols(protocol_report, pulse_duration_us) -> dict:
+    """Implement square pulses through the general finite-control builder."""
+    result = implement_finite_protocols(
+        protocol_report,
+        pulse_duration_us,
+        shape="square",
+    )
+    result["rabi_frequency_rad_per_us"] = (
+        result["peak_rabi_frequency_rad_per_us"]
+    )
+    return result

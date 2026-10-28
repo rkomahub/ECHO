@@ -6,9 +6,12 @@ import pytest
 from qutip import qeye
 
 from echo_spin.characterisation import longitudinal_characterisation_report
+from echo_spin.dynamics.sequences import finite_pulse_sequence_propagator
 from echo_spin.implementation import (
     ideal_implementation_report,
+    implement_finite_protocols,
     implement_ideal_protocols,
+    implement_square_protocols,
 )
 from echo_spin.protocols import ideal_protocol_report
 from echo_spin.representation import longitudinal_model_report
@@ -104,3 +107,111 @@ def test_ideal_implementation_groups_pulses_and_preserves_closing_events():
     source["target_diagonal"]["real"][0] += 0.1
     with pytest.raises(ValueError, match="Saved target"):
         implement_ideal_protocols(source)
+
+
+def test_square_controls_preserve_duration_and_approach_ideal_limit():
+    """Preserve elapsed time, recover ideal control and reject overlapping windows."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    protocol_report = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    ideal = implement_ideal_protocols(protocol_report)
+    finite = implement_square_protocols(
+        protocol_report,
+        pulse_duration_us=1e-6,
+    )
+
+    for name, control in finite["protocols"].items():
+        count = len(control["pulse_propagators"])
+        np.testing.assert_allclose(
+            control["free_intervals_us"].sum()
+            + count * finite["pulse_duration_us"],
+            finite["duration_us"],
+        )
+        assert np.all(control["pulse_start_times_us"] >= 0)
+
+        actual = finite_pulse_sequence_propagator(
+            finite["model"].hamiltonian,
+            control["free_intervals_us"],
+            control["pulse_propagators"],
+        )
+        reference = ideal["protocols"][name]
+        expected = finite_pulse_sequence_propagator(
+            ideal["model"].hamiltonian,
+            reference["free_intervals_us"],
+            reference["pulse_propagators"],
+        )
+        error = np.linalg.norm(
+            actual.full() - expected.full(), ord="fro"
+        ) / np.sqrt(ideal["model"].system.dimension)
+        assert error < 2e-5
+
+    with pytest.raises(ValueError, match="overlap"):
+        implement_square_protocols(
+            protocol_report,
+            pulse_duration_us=ideal["duration_us"] / 4,
+        )
+
+
+def test_sine_controls_converge_with_time_resolution():
+    """Check sine-pulse normalization and convergence of register evolution."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+
+    duration = 0.02
+    propagators = []
+
+    for steps in (64, 128, 256):
+        result = implement_finite_protocols(
+            source,
+            pulse_duration_us=duration,
+            shape="sine",
+            steps=steps,
+        )
+        np.testing.assert_allclose(
+            result["peak_rabi_frequency_rad_per_us"],
+            np.pi**2 / (2 * duration),
+        )
+
+        control = result["protocols"]["hadamard_selective"]
+        np.testing.assert_allclose(
+            control["free_intervals_us"].sum()
+            + len(control["pulse_propagators"]) * duration,
+            result["duration_us"],
+        )
+        propagators.append(
+            finite_pulse_sequence_propagator(
+                result["model"].hamiltonian,
+                control["free_intervals_us"],
+                control["pulse_propagators"],
+            ).full()
+        )
+
+    dimension = propagators[0].shape[0]
+    coarse = np.linalg.norm(
+        propagators[1] - propagators[0], ord="fro"
+    ) / np.sqrt(dimension)
+    fine = np.linalg.norm(
+        propagators[2] - propagators[1], ord="fro"
+    ) / np.sqrt(dimension)
+
+    assert fine < coarse
+    assert fine < 2e-3
