@@ -255,6 +255,7 @@ def evaluate_finite_protocols(
     *,
     shape="square",
     steps=128,
+    amplitude_error=0.0,
 ) -> dict:
     """Evaluate finite-pulse register operations against the ideal target."""
     implemented = implement_finite_protocols(
@@ -262,6 +263,7 @@ def evaluate_finite_protocols(
         pulse_duration_us,
         shape=shape,
         steps=steps,
+        amplitude_error=amplitude_error,
     )
     model = implemented["model"]
     target = implemented["target"]
@@ -297,6 +299,7 @@ def evaluate_finite_protocols(
         "integration_steps": implemented["integration_steps"],
         "protocols": results,
         "assessment": dict(model.assessment),
+        "amplitude_error": implemented["amplitude_error"],
     }
 
 
@@ -306,6 +309,7 @@ def finite_evaluation_report(
     *,
     shape="square",
     steps=128,
+    amplitude_error=0.0,
 ) -> dict:
     """Export finite-pulse operations and their reconstruction settings."""
     evaluation = evaluate_finite_protocols(
@@ -313,6 +317,7 @@ def finite_evaluation_report(
         pulse_duration_us,
         shape=shape,
         steps=steps,
+        amplitude_error=amplitude_error,
     )
     target = evaluation["target"].full()
     protocols = {}
@@ -343,6 +348,7 @@ def finite_evaluation_report(
                 "dimension",
                 "pulse_shape",
                 "pulse_duration_us",
+                "amplitude_error",
                 "peak_rabi_frequency_rad_per_us",
                 "integration_steps",
                 "assessment",

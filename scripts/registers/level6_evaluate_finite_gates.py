@@ -18,6 +18,7 @@ def main():
         "--shape", choices=("square", "sine"), default="square"
     )
     parser.add_argument("--steps", type=int, default=128)
+    parser.add_argument("--amplitude-error", type=float, default=0.0)
     arguments = parser.parse_args()
 
     try:
@@ -29,6 +30,7 @@ def main():
             arguments.pulse_duration_us,
             shape=arguments.shape,
             steps=arguments.steps,
+            amplitude_error=arguments.amplitude_error,
         )
         report["software"] = software_provenance()
 

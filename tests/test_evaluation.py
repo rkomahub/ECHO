@@ -171,3 +171,46 @@ def test_finite_evaluation_recovers_short_pulse_limit():
             atol=1e-10,
             rtol=0.0,
         )
+
+
+def test_zero_drive_recovers_free_evolution_for_every_schedule():
+    """Recover free evolution when a common amplitude error disables the drive."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+
+    for shape in ("square", "sine"):
+        saved = json.loads(json.dumps(
+            finite_evaluation_report(
+                source,
+                pulse_duration_us=0.02,
+                shape=shape,
+                steps=8,
+                amplitude_error=-1.0,
+            ),
+            allow_nan=False,
+        ))
+        assert saved["amplitude_error"] == -1.0
+        assert saved["peak_rabi_frequency_rad_per_us"] == 0.0
+
+        def matrix(result):
+            """Reconstruct the saved complex propagator."""
+            return (
+                np.asarray(result["propagator"]["real"])
+                + 1j * np.asarray(result["propagator"]["imag"])
+            )
+
+        reference = matrix(saved["protocols"]["free"])
+        for result in saved["protocols"].values():
+            np.testing.assert_allclose(
+                matrix(result), reference, atol=1e-10, rtol=0.0
+            )
