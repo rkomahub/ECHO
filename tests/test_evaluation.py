@@ -214,3 +214,39 @@ def test_zero_drive_recovers_free_evolution_for_every_schedule():
             np.testing.assert_allclose(
                 matrix(result), reference, atol=1e-10, rtol=0.0
             )
+
+
+def test_exact_amplitude_calibration_recovers_finite_pulse_baseline():
+    """Recover calibrated register operations with an exact gain estimate."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    baseline = evaluate_finite_protocols(
+        source, pulse_duration_us=0.02
+    )
+    corrected = evaluate_finite_protocols(
+        source,
+        pulse_duration_us=0.02,
+        amplitude_error=0.02,
+        amplitude_error_estimate=0.02,
+    )
+
+    assert corrected["amplitude_error_estimate"] == 0.02
+    for name, result in corrected["protocols"].items():
+        reference = baseline["protocols"][name]
+        np.testing.assert_allclose(
+            result["propagator"].full(),
+            reference["propagator"].full(),
+            atol=1e-12,
+            rtol=0.0,
+        )
+        assert result["resources"] == reference["resources"]

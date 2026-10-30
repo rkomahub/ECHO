@@ -256,6 +256,7 @@ def evaluate_finite_protocols(
     shape="square",
     steps=128,
     amplitude_error=0.0,
+    amplitude_error_estimate=0.0,
 ) -> dict:
     """Evaluate finite-pulse register operations against the ideal target."""
     implemented = implement_finite_protocols(
@@ -264,6 +265,7 @@ def evaluate_finite_protocols(
         shape=shape,
         steps=steps,
         amplitude_error=amplitude_error,
+        amplitude_error_estimate=amplitude_error_estimate,
     )
     model = implemented["model"]
     target = implemented["target"]
@@ -293,13 +295,14 @@ def evaluate_finite_protocols(
         "target": target,
         "pulse_shape": implemented["pulse_shape"],
         "pulse_duration_us": implemented["pulse_duration_us"],
+        "amplitude_error": implemented["amplitude_error"],
+        "amplitude_error_estimate": implemented["amplitude_error_estimate"],
         "peak_rabi_frequency_rad_per_us": (
             implemented["peak_rabi_frequency_rad_per_us"]
         ),
         "integration_steps": implemented["integration_steps"],
         "protocols": results,
         "assessment": dict(model.assessment),
-        "amplitude_error": implemented["amplitude_error"],
     }
 
 
@@ -310,6 +313,7 @@ def finite_evaluation_report(
     shape="square",
     steps=128,
     amplitude_error=0.0,
+    amplitude_error_estimate=0.0,
 ) -> dict:
     """Export finite-pulse operations and their reconstruction settings."""
     evaluation = evaluate_finite_protocols(
@@ -318,6 +322,7 @@ def finite_evaluation_report(
         shape=shape,
         steps=steps,
         amplitude_error=amplitude_error,
+        amplitude_error_estimate=amplitude_error_estimate,
     )
     target = evaluation["target"].full()
     protocols = {}
@@ -349,6 +354,7 @@ def finite_evaluation_report(
                 "pulse_shape",
                 "pulse_duration_us",
                 "amplitude_error",
+                "amplitude_error_estimate",
                 "peak_rabi_frequency_rad_per_us",
                 "integration_steps",
                 "assessment",

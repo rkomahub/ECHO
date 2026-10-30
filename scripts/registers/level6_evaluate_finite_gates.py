@@ -19,6 +19,9 @@ def main():
     )
     parser.add_argument("--steps", type=int, default=128)
     parser.add_argument("--amplitude-error", type=float, default=0.0)
+    parser.add_argument(
+        "--amplitude-error-estimate", type=float, default=0.0
+    )
     arguments = parser.parse_args()
 
     try:
@@ -31,6 +34,7 @@ def main():
             shape=arguments.shape,
             steps=arguments.steps,
             amplitude_error=arguments.amplitude_error,
+            amplitude_error_estimate=arguments.amplitude_error_estimate,
         )
         report["software"] = software_provenance()
 

@@ -156,6 +156,7 @@ def implement_finite_protocols(
     shape="square",
     steps=128,
     amplitude_error=0.0,
+    amplitude_error_estimate=0.0,
 ) -> dict:
     """Implement finite square or sine pulses with a common amplitude error."""
     if shape not in ("square", "sine"):
@@ -193,6 +194,21 @@ def implement_finite_protocols(
         )
 
     amplitude_error = float(amplitude_error)
+
+    if (
+        isinstance(amplitude_error_estimate, (bool, np.bool_))
+        or not isinstance(
+            amplitude_error_estimate,
+            (int, float, np.integer, np.floating),
+        )
+        or not np.isfinite(amplitude_error_estimate)
+        or amplitude_error_estimate <= -1
+    ):
+        raise ValueError(
+            "amplitude_error_estimate must be finite and greater than -1."
+        )
+
+    amplitude_error_estimate = float(amplitude_error_estimate)
     pulse_duration = float(pulse_duration_us)
     ideal = implement_ideal_protocols(protocol_report)
     model = ideal["model"]
@@ -202,7 +218,9 @@ def implement_finite_protocols(
         if shape == "square"
         else sine_pi_pulse_amplitude(pulse_duration)
     )
-    peak_amplitude *= 1 + amplitude_error
+    peak_amplitude *= (
+        (1 + amplitude_error) / (1 + amplitude_error_estimate)
+    )
     implementations = {}
 
     for name, control in ideal["protocols"].items():
@@ -261,6 +279,7 @@ def implement_finite_protocols(
         "pulse_duration_us": pulse_duration,
         "pulse_shape": shape,
         "amplitude_error": amplitude_error,
+        "amplitude_error_estimate": amplitude_error_estimate,
         "peak_rabi_frequency_rad_per_us": float(peak_amplitude),
         "integration_steps": int(steps) if shape == "sine" else None,
         "protocols": implementations,
