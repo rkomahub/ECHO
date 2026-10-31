@@ -215,3 +215,112 @@ def test_sine_controls_converge_with_time_resolution():
 
     assert fine < coarse
     assert fine < 2e-3
+
+
+@pytest.mark.parametrize(
+    "phase_cycle,target_pattern",
+    [("xy4", "XYXYXYXY"), ("xy8_targets", "XYXYYXYX")],
+)
+def test_selective_phase_cycles_preserve_patterns_and_ideal_limit(
+    phase_cycle, target_pattern
+):
+    """Verify per-site phase patterns and recover ideal selective evolution."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    ideal = implement_ideal_protocols(source)
+    finite = implement_finite_protocols(
+        source,
+        pulse_duration_us=1e-6,
+        phase_cycle=phase_cycle,
+    )
+    control = finite["protocols"]["hadamard_selective"]
+
+    for site, expected in enumerate(
+        (target_pattern, target_pattern, "XYXY")
+    ):
+        actual = "".join(
+            axes[sites.index(site)]
+            for sites, axes in zip(
+                control["addressed_sites"], control["pulse_axes"]
+            )
+            if site in sites
+        )
+        assert actual == expected
+
+    reference = ideal["protocols"]["hadamard_selective"]
+    np.testing.assert_array_equal(
+        control["event_times_us"], reference["event_times_us"]
+    )
+    assert control["addressed_sites"] == reference["addressed_sites"]
+
+    actual = finite_pulse_sequence_propagator(
+        finite["model"].hamiltonian,
+        control["free_intervals_us"],
+        control["pulse_propagators"],
+    )
+    expected = finite_pulse_sequence_propagator(
+        ideal["model"].hamiltonian,
+        reference["free_intervals_us"],
+        reference["pulse_propagators"],
+    )
+    np.testing.assert_allclose(
+        abs(complex((expected.dag() * actual).tr()))
+        / finite["model"].system.dimension,
+        1.0,
+        atol=1e-10,
+        rtol=0.0,
+    )
+
+
+def test_timing_offset_preserves_widths_closure_and_elapsed_time():
+    """Shift interior events while retaining pulse widths and terminal events."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    baseline = implement_finite_protocols(source, 0.02)
+    shifted = implement_finite_protocols(
+        source, 0.02, timing_error_us=0.01
+    )
+
+    for name, control in shifted["protocols"].items():
+        original = baseline["protocols"][name]
+        expected = original["event_times_us"].copy()
+        expected[expected < shifted["duration_us"]] += 0.01
+
+        np.testing.assert_allclose(control["event_times_us"], expected)
+        np.testing.assert_allclose(
+            control["event_times_us"] - control["pulse_start_times_us"],
+            0.02,
+        )
+        np.testing.assert_allclose(
+            control["free_intervals_us"].sum()
+            + len(control["pulse_propagators"]) * 0.02,
+            shifted["duration_us"],
+        )
+        assert control["addressed_sites"] == original["addressed_sites"]
+        if len(expected):
+            assert control["event_times_us"][-1] == shifted["duration_us"]
+
+    with pytest.raises(ValueError):
+        implement_finite_protocols(
+            source, 0.02, timing_error_us=source["duration_us"]
+        )

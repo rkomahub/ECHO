@@ -159,6 +159,7 @@ def implement_finite_protocols(
     amplitude_error_estimate=0.0,
     phase_cycle="x",
     detuning_error_rad_per_us=0.0,
+    timing_error_us=0.0,
 ) -> dict:
     """Implement finite pulses with amplitude calibration and per-site phases."""
     if phase_cycle not in ("x", "xy4", "xy8_targets"):
@@ -226,6 +227,17 @@ def implement_finite_protocols(
         raise ValueError("detuning_error_rad_per_us must be finite.")
 
     detuning_error = float(detuning_error_rad_per_us)
+    if (
+        isinstance(timing_error_us, (bool, np.bool_))
+        or not isinstance(
+            timing_error_us,
+            (int, float, np.integer, np.floating),
+        )
+        or not np.isfinite(timing_error_us)
+    ):
+        raise ValueError("timing_error_us must be finite.")
+
+    timing_error = float(timing_error_us)
 
     ideal = implement_ideal_protocols(protocol_report)
     model = ideal["model"]
@@ -246,7 +258,19 @@ def implement_finite_protocols(
     implementations = {}
 
     for name, control in ideal["protocols"].items():
-        free_intervals = control["free_intervals_us"].copy()
+        event_times = control["event_times_us"].copy()
+        event_times[event_times < ideal["duration_us"]] += timing_error
+
+        if (
+            np.any(event_times < 0)
+            or np.any(event_times > ideal["duration_us"])
+            or np.any(np.diff(event_times) <= 0)
+        ):
+            raise ValueError("Timing error produces invalid event ordering.")
+
+        free_intervals = np.diff(
+            np.concatenate(([0.0], event_times, [ideal["duration_us"]]))
+        )
         free_intervals[:-1] -= pulse_duration
 
         if np.any(free_intervals < 0):
@@ -323,10 +347,8 @@ def implement_finite_protocols(
             pulses.append(pulse)
 
         implementations[name] = {
-            "event_times_us": control["event_times_us"].copy(),
-            "pulse_start_times_us": (
-                control["event_times_us"] - pulse_duration
-            ),
+            "event_times_us": event_times,
+            "pulse_start_times_us": event_times - pulse_duration,
             "addressed_sites": control["addressed_sites"],
             "free_intervals_us": free_intervals,
             "pulse_propagators": tuple(pulses),
@@ -343,6 +365,7 @@ def implement_finite_protocols(
         "target": ideal["target"],
         "duration_us": ideal["duration_us"],
         "pulse_duration_us": pulse_duration,
+        "timing_error_us": timing_error,
         "pulse_shape": shape,
         "amplitude_error": amplitude_error,
         "amplitude_error_estimate": amplitude_error_estimate,

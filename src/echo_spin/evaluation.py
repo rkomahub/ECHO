@@ -259,6 +259,7 @@ def evaluate_finite_protocols(
     amplitude_error_estimate=0.0,
     phase_cycle="x",
     detuning_error_rad_per_us=0.0,
+    timing_error_us=0.0,
 ) -> dict:
     """Evaluate finite-pulse register operations against the ideal target."""
     implemented = implement_finite_protocols(
@@ -270,6 +271,7 @@ def evaluate_finite_protocols(
         amplitude_error_estimate=amplitude_error_estimate,
         phase_cycle=phase_cycle,
         detuning_error_rad_per_us=detuning_error_rad_per_us,
+        timing_error_us=timing_error_us,
     )
     model = implemented["model"]
     target = implemented["target"]
@@ -299,6 +301,7 @@ def evaluate_finite_protocols(
         "target": target,
         "pulse_shape": implemented["pulse_shape"],
         "pulse_duration_us": implemented["pulse_duration_us"],
+        "timing_error_us": implemented["timing_error_us"],
         "amplitude_error": implemented["amplitude_error"],
         "amplitude_error_estimate": implemented["amplitude_error_estimate"],
         "peak_rabi_frequency_rad_per_us": (
@@ -322,6 +325,7 @@ def finite_evaluation_report(
     amplitude_error_estimate=0.0,
     phase_cycle="x",
     detuning_error_rad_per_us=0.0,
+    timing_error_us=0.0,
 ) -> dict:
     """Export finite-pulse operations and their reconstruction settings."""
     evaluation = evaluate_finite_protocols(
@@ -333,6 +337,7 @@ def finite_evaluation_report(
         amplitude_error_estimate=amplitude_error_estimate,
         phase_cycle=phase_cycle,
         detuning_error_rad_per_us=detuning_error_rad_per_us,
+        timing_error_us=timing_error_us,
     )
     target = evaluation["target"].full()
     protocols = {}
@@ -363,6 +368,7 @@ def finite_evaluation_report(
                 "dimension",
                 "pulse_shape",
                 "pulse_duration_us",
+                "timing_error_us",
                 "amplitude_error",
                 "amplitude_error_estimate",
                 "peak_rabi_frequency_rad_per_us",
