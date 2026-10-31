@@ -7,6 +7,7 @@ from qutip import basis, qeye, tensor
 from echo_spin.characterisation import longitudinal_characterisation_report
 from echo_spin.representation import (
     assess_dipolar_projection,
+    build_electronic_reference,
     build_longitudinal_model,
     longitudinal_model_report,
 )
@@ -127,3 +128,42 @@ def test_model_report_preserves_diagonal_and_assessment_in_json():
         reconstructed.pauli_operators["X"][0]
         - model.pauli_operators["X"][0]
     ).norm() < 1e-12
+
+
+def test_electronic_reference_retains_exchange_and_leakage_couplings():
+    """Retain logical exchange and coupling to the third electronic level."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    reference = build_electronic_reference(scenario)
+    hamiltonian = reference["hamiltonian"]
+    interaction = reference["dipolar_hamiltonian"]
+
+    assert hamiltonian.shape == (27, 27)
+    assert hamiltonian.isherm
+    embedding = reference["embedding"]
+    assert (
+        embedding.dag() * embedding - qeye([2, 2, 2])
+    ).norm() < 1e-12
+
+    # Aligned x-chain: K = k * diag(-2, 1, 1).
+    k = reference["dipolar_tensors_rad_per_us"][0, 1, 2, 2]
+    logical_initial = tensor(basis(3, 2), basis(3, 1), basis(3, 1))
+    exchanged = tensor(basis(3, 1), basis(3, 2), basis(3, 1))
+    np.testing.assert_allclose(
+        interaction.matrix_element(exchanged.dag(), logical_initial),
+        -k / 2,
+        atol=1e-12,
+    )
+
+    initial = tensor(basis(3, 1), basis(3, 1), basis(3, 1))
+    outside = tensor(basis(3, 0), basis(3, 2), basis(3, 1))
+    np.testing.assert_allclose(
+        interaction.matrix_element(outside.dag(), initial),
+        -k / 2,
+        atol=1e-12,
+    )

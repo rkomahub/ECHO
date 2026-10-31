@@ -10,6 +10,8 @@ from echo_spin.models.longitudinal import (
     longitudinal_qubit_parameters,
     longitudinal_register_hamiltonian,
 )
+from echo_spin.nv.fields import local_zeeman_vector
+from echo_spin.nv.hamiltonians import electronic_nv_hamiltonian
 from echo_spin.scenario import longitudinal_scenario_from_dict
 
 
@@ -101,27 +103,41 @@ def bare_electronic_embedding(number_of_nv) -> Qobj:
     return tensor([local] * number_of_nv)
 
 
-def assess_dipolar_projection(scenario) -> dict:
-    """Assess bare dipolar projection for at most three electronic qutrits."""
+def build_electronic_reference(scenario) -> dict:
+    """Assemble an untruncated laboratory-frame reference for up to three electrons."""
     number_of_nv = scenario.register.number_of_nv
     if number_of_nv > 3:
-        raise ValueError(
-            "This reference diagnostic is limited to three electronic qutrits."
+        raise ValueError("This electronic reference supports at most three sites.")
+
+    system = SpinSystem([1] * number_of_nv)
+    zero = 0.0 * qeye([3] * number_of_nv)
+    local = zero.copy()
+
+    for site, parameters in enumerate(scenario.specification["sites"]):
+        omega = local_zeeman_vector(
+            field_lab=scenario.register.magnetic_fields[site],
+            local_frame=scenario.register.local_frames[site],
+            gyromagnetic_ratio=parameters["gamma_e"],
+        )
+        local += electronic_nv_hamiltonian(
+            system=system,
+            electron_site=site,
+            D=parameters["D"],
+            E=parameters["E"],
+            omega_e=omega,
         )
 
     parameters = characterise_longitudinal_scenario(scenario)
     tensors = parameters["dipolar_tensors_rad_per_us"]
-    system = SpinSystem([1] * number_of_nv)
-    local_operators = spin_operators(1)
     operators = [
         [
             embed_operator(operator, site, system)
-            for operator in local_operators
+            for operator in spin_operators(1)
         ]
         for site in range(number_of_nv)
     ]
 
-    interaction = 0.0 * qeye([3] * number_of_nv)
+    interaction = zero.copy()
     for i in range(number_of_nv):
         for j in range(i + 1, number_of_nv):
             for alpha in range(3):
@@ -132,7 +148,24 @@ def assess_dipolar_projection(scenario) -> dict:
                         * operators[j][beta]
                     )
 
-    embedding = bare_electronic_embedding(number_of_nv)
+    return {
+        "system": system,
+        "hamiltonian": local + interaction,
+        "local_hamiltonian": local,
+        "dipolar_hamiltonian": interaction,
+        "embedding": bare_electronic_embedding(number_of_nv),
+        "dipolar_tensors_rad_per_us": tensors,
+        "frame": "laboratory",
+    }
+
+
+def assess_dipolar_projection(scenario) -> dict:
+    """Assess bare dipolar projection for at most three electronic qutrits."""
+    reference = build_electronic_reference(scenario)
+    number_of_nv = reference["system"].number_of_spins
+    tensors = reference["dipolar_tensors_rad_per_us"]
+    interaction = reference["dipolar_hamiltonian"]
+    embedding = reference["embedding"]
     projected = embedding.dag() * interaction * embedding
 
     # Compare dipolar terms only; prescribed bare detunings are excluded.
