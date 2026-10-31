@@ -257,6 +257,8 @@ def evaluate_finite_protocols(
     steps=128,
     amplitude_error=0.0,
     amplitude_error_estimate=0.0,
+    phase_cycle="x",
+    detuning_error_rad_per_us=0.0,
 ) -> dict:
     """Evaluate finite-pulse register operations against the ideal target."""
     implemented = implement_finite_protocols(
@@ -266,6 +268,8 @@ def evaluate_finite_protocols(
         steps=steps,
         amplitude_error=amplitude_error,
         amplitude_error_estimate=amplitude_error_estimate,
+        phase_cycle=phase_cycle,
+        detuning_error_rad_per_us=detuning_error_rad_per_us,
     )
     model = implemented["model"]
     target = implemented["target"]
@@ -273,7 +277,7 @@ def evaluate_finite_protocols(
 
     for name, control in implemented["protocols"].items():
         propagator = finite_pulse_sequence_propagator(
-            free_hamiltonian=model.hamiltonian,
+            free_hamiltonian=implemented["drift_hamiltonian"],
             durations=control["free_intervals_us"],
             pulse_propagators=control["pulse_propagators"],
         )
@@ -303,6 +307,8 @@ def evaluate_finite_protocols(
         "integration_steps": implemented["integration_steps"],
         "protocols": results,
         "assessment": dict(model.assessment),
+        "phase_cycle": implemented["phase_cycle"],
+        "detuning_error_rad_per_us": implemented["detuning_error_rad_per_us"],
     }
 
 
@@ -314,6 +320,8 @@ def finite_evaluation_report(
     steps=128,
     amplitude_error=0.0,
     amplitude_error_estimate=0.0,
+    phase_cycle="x",
+    detuning_error_rad_per_us=0.0,
 ) -> dict:
     """Export finite-pulse operations and their reconstruction settings."""
     evaluation = evaluate_finite_protocols(
@@ -323,6 +331,8 @@ def finite_evaluation_report(
         steps=steps,
         amplitude_error=amplitude_error,
         amplitude_error_estimate=amplitude_error_estimate,
+        phase_cycle=phase_cycle,
+        detuning_error_rad_per_us=detuning_error_rad_per_us,
     )
     target = evaluation["target"].full()
     protocols = {}
@@ -358,6 +368,8 @@ def finite_evaluation_report(
                 "peak_rabi_frequency_rad_per_us",
                 "integration_steps",
                 "assessment",
+                "phase_cycle",
+                "detuning_error_rad_per_us",
             )
         },
         "target": {

@@ -250,3 +250,42 @@ def test_exact_amplitude_calibration_recovers_finite_pulse_baseline():
             rtol=0.0,
         )
         assert result["resources"] == reference["resources"]
+
+
+def test_static_detuning_accumulates_over_the_complete_duration():
+    """Recover the analytical detuning phase when the drive is disabled."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    baseline = evaluate_finite_protocols(source, 0.02)
+    delta = 0.1
+    detuned = evaluate_finite_protocols(
+        source,
+        0.02,
+        amplitude_error=-1.0,
+        detuning_error_rad_per_us=delta,
+    )
+
+    z_sum = np.array([3, 1, 1, -1, 1, -1, -1, -3])
+    phases = np.exp(-1j * delta * detuned["duration_us"] * z_sum / 2)
+    expected = (
+        phases[:, None]
+        * baseline["protocols"]["free"]["propagator"].full()
+    )
+
+    for result in detuned["protocols"].values():
+        np.testing.assert_allclose(
+            result["propagator"].full(),
+            expected,
+            atol=1e-10,
+            rtol=0.0,
+        )

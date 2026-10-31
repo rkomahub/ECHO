@@ -22,6 +22,12 @@ def main():
     parser.add_argument(
         "--amplitude-error-estimate", type=float, default=0.0
     )
+    parser.add_argument(
+        "--phase-cycle", choices=("x", "xy4", "xy8_targets"), default="x"
+    )
+    parser.add_argument(
+        "--detuning-error-rad-per-us", type=float, default=0.0
+    )
     arguments = parser.parse_args()
 
     try:
@@ -35,6 +41,8 @@ def main():
             steps=arguments.steps,
             amplitude_error=arguments.amplitude_error,
             amplitude_error_estimate=arguments.amplitude_error_estimate,
+            phase_cycle=arguments.phase_cycle,
+            detuning_error_rad_per_us=arguments.detuning_error_rad_per_us,
         )
         report["software"] = software_provenance()
 

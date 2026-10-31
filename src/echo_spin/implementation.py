@@ -157,8 +157,13 @@ def implement_finite_protocols(
     steps=128,
     amplitude_error=0.0,
     amplitude_error_estimate=0.0,
+    phase_cycle="x",
+    detuning_error_rad_per_us=0.0,
 ) -> dict:
-    """Implement finite square or sine pulses with a common amplitude error."""
+    """Implement finite pulses with amplitude calibration and per-site phases."""
+    if phase_cycle not in ("x", "xy4", "xy8_targets"):
+        raise ValueError("Unsupported phase_cycle.")
+
     if shape not in ("square", "sine"):
         raise ValueError("shape must be 'square' or 'sine'.")
 
@@ -193,8 +198,6 @@ def implement_finite_protocols(
             "amplitude_error must be finite and at least -1."
         )
 
-    amplitude_error = float(amplitude_error)
-
     if (
         isinstance(amplitude_error_estimate, (bool, np.bool_))
         or not isinstance(
@@ -208,10 +211,28 @@ def implement_finite_protocols(
             "amplitude_error_estimate must be finite and greater than -1."
         )
 
+    amplitude_error = float(amplitude_error)
     amplitude_error_estimate = float(amplitude_error_estimate)
     pulse_duration = float(pulse_duration_us)
+
+    if (
+        isinstance(detuning_error_rad_per_us, (bool, np.bool_))
+        or not isinstance(
+            detuning_error_rad_per_us,
+            (int, float, np.integer, np.floating),
+        )
+        or not np.isfinite(detuning_error_rad_per_us)
+    ):
+        raise ValueError("detuning_error_rad_per_us must be finite.")
+
+    detuning_error = float(detuning_error_rad_per_us)
+
     ideal = implement_ideal_protocols(protocol_report)
     model = ideal["model"]
+
+    drift_hamiltonian = model.hamiltonian.copy()
+    for operator in model.pauli_operators["Z"]:
+        drift_hamiltonian += detuning_error * operator / 2
 
     peak_amplitude = (
         np.pi / pulse_duration
@@ -221,6 +242,7 @@ def implement_finite_protocols(
     peak_amplitude *= (
         (1 + amplitude_error) / (1 + amplitude_error_estimate)
     )
+
     implementations = {}
 
     for name, control in ideal["protocols"].items():
@@ -232,23 +254,62 @@ def implement_finite_protocols(
                 f"Finite pulse windows overlap or precede t=0 for {name}."
             )
 
+        patterns = {}
+        for site in range(model.system.number_of_spins):
+            pattern = ("X",)
+
+            if name == "hadamard_selective" and phase_cycle != "x":
+                pattern = ("X", "Y", "X", "Y")
+
+                if (
+                    phase_cycle == "xy8_targets"
+                    and site in protocol_report["target_pair"]
+                ):
+                    pattern = (
+                        "X", "Y", "X", "Y",
+                        "Y", "X", "Y", "X",
+                    )
+
+                count = sum(
+                    site in sites
+                    for sites in control["addressed_sites"]
+                )
+                if count % len(pattern):
+                    raise ValueError(
+                        "Incomplete per-site phase-cycle block."
+                    )
+
+            patterns[site] = pattern
+
+        site_counts = [0] * model.system.number_of_spins
+        event_axes = []
         pulses = []
+
         for sites in control["addressed_sites"]:
             control_operator = 0.0 * model.hamiltonian
+            axes = []
+
             for site in sites:
+                pattern = patterns[site]
+                axis = pattern[site_counts[site] % len(pattern)]
+
                 control_operator += (
-                    model.pauli_operators["X"][site] / 2
+                    model.pauli_operators[axis][site] / 2
                 )
+                axes.append(axis)
+                site_counts[site] += 1
+
+            event_axes.append(axes)
 
             if shape == "square":
                 pulse = static_propagator(
-                    model.hamiltonian
+                    drift_hamiltonian
                     + peak_amplitude * control_operator,
                     pulse_duration,
                 )
             else:
                 pulse = finite_pulse_propagator(
-                    free_hamiltonian=model.hamiltonian,
+                    free_hamiltonian=drift_hamiltonian,
                     control_operator=control_operator,
                     duration=pulse_duration,
                     envelope=lambda time: sine_envelope(
@@ -269,10 +330,15 @@ def implement_finite_protocols(
             "addressed_sites": control["addressed_sites"],
             "free_intervals_us": free_intervals,
             "pulse_propagators": tuple(pulses),
+            "pulse_axes": event_axes,
         }
 
     return {
-        "implementation": f"finite_{shape}_local_X_pi",
+        "implementation": (
+            f"finite_{shape}_local_X_pi"
+            if phase_cycle == "x"
+            else f"finite_{shape}_selective_{phase_cycle}_pi"
+        ),
         "model": model,
         "target": ideal["target"],
         "duration_us": ideal["duration_us"],
@@ -283,8 +349,10 @@ def implement_finite_protocols(
         "peak_rabi_frequency_rad_per_us": float(peak_amplitude),
         "integration_steps": int(steps) if shape == "sine" else None,
         "protocols": implementations,
+        "phase_cycle": phase_cycle,
+        "drift_hamiltonian": drift_hamiltonian,
+        "detuning_error_rad_per_us": detuning_error,
     }
-
 
 def implement_square_protocols(protocol_report, pulse_duration_us) -> dict:
     """Implement square pulses through the general finite-control builder."""
