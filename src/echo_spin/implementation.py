@@ -160,6 +160,7 @@ def implement_finite_protocols(
     phase_cycle="x",
     detuning_error_rad_per_us=0.0,
     timing_error_us=0.0,
+    duration_scale=1.0,
 ) -> dict:
     """Implement finite pulses with amplitude calibration and per-site phases."""
     if phase_cycle not in ("x", "xy4", "xy8_targets"):
@@ -239,8 +240,22 @@ def implement_finite_protocols(
 
     timing_error = float(timing_error_us)
 
+    if (
+        isinstance(duration_scale, (bool, np.bool_))
+        or not isinstance(
+            duration_scale, (int, float, np.integer, np.floating)
+        )
+        or not np.isfinite(duration_scale)
+        or duration_scale <= 0
+    ):
+        raise ValueError("duration_scale must be finite and positive.")
+
+    duration_scale = float(duration_scale)
+
     ideal = implement_ideal_protocols(protocol_report)
     model = ideal["model"]
+
+    duration = duration_scale * ideal["duration_us"]
 
     drift_hamiltonian = model.hamiltonian.copy()
     for operator in model.pauli_operators["Z"]:
@@ -258,18 +273,19 @@ def implement_finite_protocols(
     implementations = {}
 
     for name, control in ideal["protocols"].items():
-        event_times = control["event_times_us"].copy()
-        event_times[event_times < ideal["duration_us"]] += timing_error
+        event_times = duration_scale * control["event_times_us"]
+        interior = control["event_times_us"] < ideal["duration_us"]
+        event_times[interior] += timing_error
 
         if (
             np.any(event_times < 0)
-            or np.any(event_times > ideal["duration_us"])
+            or np.any(event_times > duration)
             or np.any(np.diff(event_times) <= 0)
         ):
             raise ValueError("Timing error produces invalid event ordering.")
 
         free_intervals = np.diff(
-            np.concatenate(([0.0], event_times, [ideal["duration_us"]]))
+            np.concatenate(([0.0], event_times, [duration]))
         )
         free_intervals[:-1] -= pulse_duration
 
@@ -363,7 +379,8 @@ def implement_finite_protocols(
         ),
         "model": model,
         "target": ideal["target"],
-        "duration_us": ideal["duration_us"],
+        "duration_us": duration,
+        "duration_scale": duration_scale,
         "pulse_duration_us": pulse_duration,
         "timing_error_us": timing_error,
         "pulse_shape": shape,

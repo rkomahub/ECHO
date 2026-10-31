@@ -260,6 +260,7 @@ def evaluate_finite_protocols(
     phase_cycle="x",
     detuning_error_rad_per_us=0.0,
     timing_error_us=0.0,
+    duration_scale=1.0,
 ) -> dict:
     """Evaluate finite-pulse register operations against the ideal target."""
     implemented = implement_finite_protocols(
@@ -272,6 +273,7 @@ def evaluate_finite_protocols(
         phase_cycle=phase_cycle,
         detuning_error_rad_per_us=detuning_error_rad_per_us,
         timing_error_us=timing_error_us,
+        duration_scale=duration_scale,
     )
     model = implemented["model"]
     target = implemented["target"]
@@ -297,6 +299,7 @@ def evaluate_finite_protocols(
     return {
         "implementation": implemented["implementation"],
         "duration_us": implemented["duration_us"],
+        "duration_scale": implemented["duration_scale"],
         "dimension": model.system.dimension,
         "target": target,
         "pulse_shape": implemented["pulse_shape"],
@@ -326,6 +329,7 @@ def finite_evaluation_report(
     phase_cycle="x",
     detuning_error_rad_per_us=0.0,
     timing_error_us=0.0,
+    duration_scale=1.0,
 ) -> dict:
     """Export finite-pulse operations and their reconstruction settings."""
     evaluation = evaluate_finite_protocols(
@@ -338,6 +342,7 @@ def finite_evaluation_report(
         phase_cycle=phase_cycle,
         detuning_error_rad_per_us=detuning_error_rad_per_us,
         timing_error_us=timing_error_us,
+        duration_scale=duration_scale,
     )
     target = evaluation["target"].full()
     protocols = {}
@@ -365,6 +370,7 @@ def finite_evaluation_report(
             for key in (
                 "implementation",
                 "duration_us",
+                "duration_scale",
                 "dimension",
                 "pulse_shape",
                 "pulse_duration_us",

@@ -282,7 +282,10 @@ def test_selective_phase_cycles_preserve_patterns_and_ideal_limit(
     )
 
 
-def test_timing_offset_preserves_widths_closure_and_elapsed_time():
+@pytest.mark.parametrize("duration_scale", [1.0, 1.1])
+def test_timing_offset_preserves_widths_closure_and_elapsed_time(
+    duration_scale,
+):
     """Shift interior events while retaining pulse widths and terminal events."""
     path = (
         Path(__file__).resolve().parents[1]
@@ -298,12 +301,12 @@ def test_timing_offset_preserves_widths_closure_and_elapsed_time():
     )
     baseline = implement_finite_protocols(source, 0.02)
     shifted = implement_finite_protocols(
-        source, 0.02, timing_error_us=0.01
+        source, 0.02, timing_error_us=0.01, duration_scale=duration_scale,
     )
 
     for name, control in shifted["protocols"].items():
         original = baseline["protocols"][name]
-        expected = original["event_times_us"].copy()
+        expected = duration_scale * original["event_times_us"]
         expected[expected < shifted["duration_us"]] += 0.01
 
         np.testing.assert_allclose(control["event_times_us"], expected)
