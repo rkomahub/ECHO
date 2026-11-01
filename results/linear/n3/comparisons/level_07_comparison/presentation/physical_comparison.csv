@@ -1,0 +1,6 @@
+source,separation_nm,field_scale,gradient_scale,steps_per_event,average_gate_fidelity,infidelity,average_leakage,duration_us
+results/linear/n3/comparisons/level_07_comparison/physical_d15_reference.json,15.0,1.0,1.0,1024,0.9970684272777146,0.0029315727222853916,5.378578745115784e-09,32.42634898364052
+results/linear/n3/comparisons/level_07_comparison/physical_d10.json,10.0,1.0,1.0,1024,0.9878879660912513,0.01211203390874871,2.55697348287235e-08,9.607807106263856
+results/linear/n3/comparisons/level_07_comparison/physical_d20.json,20.0,1.0,1.0,1024,0.9985521396965927,0.0014478603034072668,1.5734458475663047e-09,76.86245685011085
+results/linear/n3/comparisons/level_07_comparison/physical_d15_gradient_half.json,15.0,1.0,0.5,1024,0.9915278405713699,0.00847215942863011,6.4491035036198675e-09,32.42634898364052
+results/linear/n3/comparisons/level_07_comparison/physical_d15_gradient_double_refined.json,15.0,1.0,2.0,2048,0.9987941005298322,0.0012058994701678039,5.960853205692329e-09,32.42634898364052
