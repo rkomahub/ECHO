@@ -74,17 +74,19 @@ def main():
     }
 
     records = []
-    for label, branch, scale in (
-        ("original", 1, 1.0),
-        ("centred", 0, 1.0),
-        ("centred_x2", 0, 2.0),
-        ("centred_x4", 0, 4.0),
+    for label, branch, scale, family in (
+        ("original", 1, 1.0, "square"),
+        ("centred", 0, 1.0, "square"),
+        ("centred_x2", 0, 2.0, "square"),
+        ("centred_x4", 0, 4.0, "square"),
+        ("centred_corpse", 0, 1.0, "corpse"),
     ):
         calibration = calibrate_local_nitrogen_square_pulse(
             local_reference,
             local_magnetic,
             nuclear_projection=branch,
             amplitude_scale=scale,
+            pulse_family=family,
         )
         propagator = calibration["propagator"]
         carrier_frame = hermitian_propagator(
@@ -152,7 +154,7 @@ def main():
         "site": 0,
         "records": records,
         "limits": [
-            "Local square-pulse screening, not a register gate.",
+            "Local square and CORPSE screening, not a register gate.",
             "No noise or intersite dynamics during local propagation.",
             "Inversion probabilities do not certify coherent gate phases.",
             "Amplitude scales are candidate choices, not hardware validation.",

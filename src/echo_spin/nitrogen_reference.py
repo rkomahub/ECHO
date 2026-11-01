@@ -216,6 +216,7 @@ def calibrate_local_nitrogen_square_pulse(
     *,
     nuclear_projection=1,
     amplitude_scale=1.0,
+    pulse_family="square",
 ) -> dict:
     """Calibrate a local square pulse on a selected nitrogen branch."""
     number_of_nv = reference["system"].number_of_spins // 2
@@ -236,6 +237,8 @@ def calibrate_local_nitrogen_square_pulse(
         or amplitude_scale <= 0
     ):
         raise ValueError("amplitude_scale must be finite and positive.")
+    if pulse_family not in ("square", "corpse"):
+        raise ValueError("pulse_family must be 'square' or 'corpse'.")
 
     pair = [2 * site, 2 * site + 1]
     normalisation = 9**(number_of_nv - 1)
@@ -265,7 +268,17 @@ def calibrate_local_nitrogen_square_pulse(
     coupling = abs(matrix[upper, lower])
     if carrier <= 0 or coupling == 0:
         raise ValueError("The selected branch must have positive frequency and coupling.")
-    duration = float(np.pi / coupling)
+    primitive_duration = float(np.pi / coupling)
+    segments = (
+        [(np.pi, 1)]
+        if pulse_family == "square"
+        else [
+            (7 * np.pi / 3, 1),
+            (5 * np.pi / 3, -1),
+            (np.pi / 3, 1),
+        ]
+    )
+    duration = float(sum(angle / coupling for angle, _ in segments))
 
     excited_projector = tensor(
         Qobj(np.diag([1, 0, 1])), qeye(3)
@@ -287,13 +300,20 @@ def calibrate_local_nitrogen_square_pulse(
         ),
         dims=local.dims,
     )
-    rotating += (raising + raising.dag()) / 2
+    drive = (raising + raising.dag()) / 2
+    rotating_propagator = qeye(local.dims[0])
+    for angle, sign in segments:
+        segment = hermitian_propagator(
+            rotating + sign * drive,
+            angle / coupling,
+        )
+        rotating_propagator = segment * rotating_propagator
     frame = Qobj(
         np.diag(np.exp(-1j * carrier * duration * excitation)),
         dims=local.dims,
     )
     propagator = (
-        transform * frame * hermitian_propagator(rotating, duration)
+        transform * frame * rotating_propagator
         * transform.dag()
     )
 
@@ -311,6 +331,8 @@ def calibrate_local_nitrogen_square_pulse(
         )),
         "nuclear_projection": int(nuclear_projection),
         "amplitude_scale": float(amplitude_scale),
+        "pulse_family": pulse_family,
+        "primitive_pi_duration_us": primitive_duration,
     }
 
 

@@ -372,3 +372,34 @@ def test_joint_magnetic_trajectory_interpolates_and_rejects_extrapolation(
     assert len(calls) == 1
     with pytest.raises(ValueError, match="outside"):
         drift(1.1)
+
+
+def test_local_corpse_recovers_resonant_pi_rotation():
+    """Recover exact resonant inversion and the CORPSE duration overhead."""
+    from echo_spin.core.system import SpinSystem
+
+    local = tensor(Qobj(np.diag([20.0, 0.0, 10.0])), qeye(3))
+    magnetic = tensor(
+        Qobj([[0, 0, 0], [0, 0, 2], [0, 2, 0]]),
+        qeye(3),
+    )
+    reference = {
+        "system": SpinSystem([1, 1]),
+        "local_hamiltonian": local,
+    }
+    initial = tensor(basis(3, 1), basis(3, 0))
+    target = tensor(basis(3, 2), basis(3, 0))
+
+    square = calibrate_local_nitrogen_square_pulse(reference, magnetic)
+    corpse = calibrate_local_nitrogen_square_pulse(
+        reference, magnetic, pulse_family="corpse"
+    )
+
+    for result in (square, corpse):
+        evolved = result["propagator"] * initial
+        np.testing.assert_allclose(
+            abs(target.overlap(evolved))**2, 1.0, atol=1e-12
+        )
+    np.testing.assert_allclose(
+        corpse["duration_us"] / square["duration_us"], 13 / 3
+    )
