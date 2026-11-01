@@ -516,6 +516,8 @@ def propagate_nitrogen_events(
     shape="sine",
     steps=256,
     free_eigensystem=None,
+    drift_at_time=None,
+    free_step_us=0.05,
 ):
     """Propagate joint amplitude columns through shared tones without nuclear resets."""
     if shape not in ("square", "sine"):
@@ -528,6 +530,25 @@ def propagate_nitrogen_events(
         raise ValueError("steps must be a positive integer.")
 
     drift = model["drift_hamiltonian"]
+
+    if not np.isfinite(free_step_us) or free_step_us <= 0:
+        raise ValueError("free_step_us must be finite and positive.")
+
+    def current_drift(time):
+        """Return a matching finite Hermitian drift at the requested time."""
+        candidate = drift if drift_at_time is None else drift_at_time(time)
+        if (
+            not isinstance(candidate, Qobj)
+            or candidate.dims != drift.dims
+            or not candidate.isherm
+            or not np.all(np.isfinite(candidate.full()))
+        ):
+            raise ValueError(
+                "Time-dependent drift must be finite, Hermitian, "
+                "and match the model dimensions."
+            )
+        return candidate
+
     state = np.asarray(columns, dtype=complex).copy()
     if (
         state.ndim != 2
@@ -536,18 +557,29 @@ def propagate_nitrogen_events(
     ):
         raise ValueError("Provide matching finite joint amplitude columns.")
 
-    if free_eigensystem is None:
+    if drift_at_time is None and free_eigensystem is None:
         energies, eigenstates = drift.eigenstates()
         vectors = np.column_stack([
             eigenstate.full().ravel() for eigenstate in eigenstates
         ])
-    else:
+    elif drift_at_time is None:
         energies, vectors = free_eigensystem
 
-    def free_action(amplitudes, duration):
+    def free_action(amplitudes, duration, start_time):
         """Apply fixed drift evolution using the cached eigensystem."""
         if duration == 0:
             return amplitudes
+
+        if drift_at_time is not None:
+            count = max(1, int(np.ceil(duration / free_step_us)))
+            dt = duration / count
+            for index in range(count):
+                time = start_time + (index + 0.5) * dt
+                amplitudes = joint_exponential_action(
+                    current_drift(time), amplitudes, dt
+                )
+            return amplitudes
+
         coefficients = np.einsum(
             "ki,kj->ij", vectors.conj(), amplitudes, optimize=False
         )
@@ -562,7 +594,7 @@ def propagate_nitrogen_events(
         if start < previous or end <= start or end > schedule["duration_us"]:
             raise ValueError("Invalid or overlapping pulse windows.")
 
-        state = free_action(state, start - previous)
+        state = free_action(state, start - previous, previous)
         dt = (end - start) / steps
 
         for step in range(steps):
@@ -579,8 +611,40 @@ def propagate_nitrogen_events(
                 for tone in event["tones"]
             ]
             hamiltonian = shared_multitone_hamiltonian(time, model, tones)
+            if drift_at_time is not None:
+                hamiltonian += current_drift(time) - drift
             state = joint_exponential_action(hamiltonian, state, dt)
 
         previous = end
 
-    return free_action(state, schedule["duration_us"] - previous)
+    return free_action(
+        state, schedule["duration_us"] - previous, previous
+    )
+
+
+def slow_operator_in_nitrogen_rwa(model, laboratory_operator):
+    """Transform a slow laboratory perturbation into the joint microwave RWA."""
+    transform = model["basis_to_lab"]
+    if (
+        not isinstance(laboratory_operator, Qobj)
+        or laboratory_operator.dims != transform.dims
+        or not laboratory_operator.isherm
+        or not np.all(np.isfinite(laboratory_operator.full()))
+    ):
+        raise ValueError(
+            "Provide a finite Hermitian laboratory operator "
+            "matching the joint model."
+        )
+
+    dressed = transform.dag() * laboratory_operator * transform
+    excitation = model["excitation_operator"].diag().real
+    retained = np.isclose(
+        excitation[:, None],
+        excitation[None, :],
+        atol=1e-12,
+        rtol=0.0,
+    )
+    return Qobj(
+        dressed.full() * retained,
+        dims=dressed.dims,
+    ).to("CSR")

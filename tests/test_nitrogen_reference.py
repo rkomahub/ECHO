@@ -18,6 +18,7 @@ from echo_spin.nitrogen_reference import (
     nitrogen_magnetic_drive_operator,
     nitrogen_product_preparation,
     propagate_nitrogen_events,
+    slow_operator_in_nitrogen_rwa,
 )
 from echo_spin.scenario import longitudinal_scenario_from_dict
 
@@ -250,3 +251,72 @@ def test_nuclear_channel_metrics_match_an_analytical_dephasing_channel():
             result["total_probability"], 1.0, atol=1e-11
         )
         assert result["average_leakage"] < 1e-20
+
+
+def test_joint_noise_drift_applies_during_free_and_pulse_windows():
+    """Match constant noisy joint evolution across free and driven intervals."""
+    sx, _, sz = spin_operators(1)
+    drift = tensor(sz, sz)
+    perturbation = 0.2 * tensor(sx, qeye(3))
+    noisy_drift = drift + perturbation
+
+    raising = tensor(
+        basis(3, 0) * basis(3, 1).dag(), qeye(3)
+    )
+    drive = 0.3 * (raising + raising.dag())
+    model = {
+        "drift_hamiltonian": drift,
+        "raising_operator": raising,
+        "carrier_rad_per_us": 10.0,
+    }
+    schedule = {
+        "duration_us": 0.8,
+        "events": [{
+            "start_us": 0.2,
+            "end_us": 0.5,
+            "tones": [{
+                "carrier_rad_per_us": 10.0,
+                "phase_rad": 0.0,
+                "envelope_scale": 0.6,
+            }],
+        }],
+    }
+    initial = tensor(
+        (basis(3, 1) + basis(3, 2)).unit(),
+        (basis(3, 0) + basis(3, 2)).unit(),
+    ).full()
+
+    expected = joint_exponential_action(noisy_drift, initial, 0.2)
+    expected = joint_exponential_action(
+        noisy_drift + drive, expected, 0.3
+    )
+    expected = joint_exponential_action(noisy_drift, expected, 0.3)
+
+    actual = propagate_nitrogen_events(
+        model,
+        schedule,
+        initial,
+        shape="square",
+        steps=3,
+        drift_at_time=lambda time: noisy_drift,
+        free_step_us=0.07,
+    )
+    np.testing.assert_allclose(actual, expected, atol=1e-10, rtol=0)
+
+
+def test_slow_joint_noise_retains_nuclear_but_removes_electronic_transitions():
+    """Retain intra-manifold nuclear coupling while discarding electronic flips."""
+    sx, _, sz = spin_operators(1)
+    model = {
+        "basis_to_lab": qeye([3, 3]),
+        "excitation_operator": tensor(
+            Qobj(np.diag([1, 0, 1])), qeye(3)
+        ),
+    }
+    retained = tensor(sz, qeye(3)) + 0.1 * tensor(qeye(3), sx)
+    perturbation = retained + tensor(sx, qeye(3))
+
+    actual = slow_operator_in_nitrogen_rwa(model, perturbation)
+    np.testing.assert_allclose(
+        actual.full(), retained.full(), atol=1e-12, rtol=0
+    )
