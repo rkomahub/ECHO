@@ -210,9 +210,14 @@ def nitrogen_local_spectra(reference, magnetic_operator) -> list:
 
 
 def calibrate_local_nitrogen_square_pulse(
-    reference, magnetic_operator, site=0
+    reference,
+    magnetic_operator,
+    site=0,
+    *,
+    nuclear_projection=1,
+    amplitude_scale=1.0,
 ) -> dict:
-    """Calibrate a local square pulse on the predominantly mI=+1 logical branch."""
+    """Calibrate a local square pulse on a selected nitrogen branch."""
     number_of_nv = reference["system"].number_of_spins // 2
     if (
         isinstance(site, bool)
@@ -220,11 +225,24 @@ def calibrate_local_nitrogen_square_pulse(
         or not 0 <= site < number_of_nv
     ):
         raise ValueError("Provide a valid NV site index.")
+    if (
+        isinstance(nuclear_projection, (bool, np.bool_))
+        or nuclear_projection not in (-1, 0, 1)
+    ):
+        raise ValueError("nuclear_projection must be -1, 0 or +1.")
+    if (
+        not np.isrealobj(amplitude_scale)
+        or not np.isfinite(amplitude_scale)
+        or amplitude_scale <= 0
+    ):
+        raise ValueError("amplitude_scale must be finite and positive.")
 
     pair = [2 * site, 2 * site + 1]
     normalisation = 9**(number_of_nv - 1)
     local = reference["local_hamiltonian"].ptrace(pair) / normalisation
-    magnetic = magnetic_operator.ptrace(pair) / normalisation
+    magnetic = (
+        amplitude_scale * magnetic_operator.ptrace(pair) / normalisation
+    )
     energies, states = local.eigenstates()
     transform = Qobj(
         np.column_stack([state.full().ravel() for state in states]),
@@ -232,8 +250,9 @@ def calibrate_local_nitrogen_square_pulse(
     )
     matrix = (transform.dag() * magnetic * transform).full()
 
-    initial = tensor(basis(3, 1), basis(3, 0))
-    target = tensor(basis(3, 2), basis(3, 0))
+    nuclear_index = 1 - int(nuclear_projection)
+    initial = tensor(basis(3, 1), basis(3, nuclear_index))
+    target = tensor(basis(3, 2), basis(3, nuclear_index))
     initial_weights = np.array([
         abs(state.overlap(initial))**2 for state in states
     ])
@@ -290,6 +309,8 @@ def calibrate_local_nitrogen_square_pulse(
             * matrix[upper, lower]
             * states[lower].overlap(initial)
         )),
+        "nuclear_projection": int(nuclear_projection),
+        "amplitude_scale": float(amplitude_scale),
     }
 
 
