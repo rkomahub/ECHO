@@ -1,0 +1,79 @@
+{
+  "sites": [
+    {
+      "isotope": "14N",
+      "spin": 1.0,
+      "gamma_n": -19.32878703128796,
+      "Q": -31.070351344003054,
+      "A": [
+        [
+          -16.461945504810515,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -16.461945504810515,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -13.584246634122264
+        ]
+      ],
+      "frame": "nv_local",
+      "source": "Starting values inherited from ECHO Joas references: configs/joas/plot_two_nv_transitions.py and tests/models/test_joas_full.py; not calibrated to this register."
+    },
+    {
+      "isotope": "14N",
+      "spin": 1.0,
+      "gamma_n": -19.32878703128796,
+      "Q": -31.070351344003054,
+      "A": [
+        [
+          -16.461945504810515,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -16.461945504810515,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -13.584246634122264
+        ]
+      ],
+      "frame": "nv_local",
+      "source": "Starting values inherited from ECHO Joas references: configs/joas/plot_two_nv_transitions.py and tests/models/test_joas_full.py; not calibrated to this register."
+    },
+    {
+      "isotope": "14N",
+      "spin": 1.0,
+      "gamma_n": -19.32878703128796,
+      "Q": -31.070351344003054,
+      "A": [
+        [
+          -16.461945504810515,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          -16.461945504810515,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          -13.584246634122264
+        ]
+      ],
+      "frame": "nv_local",
+      "source": "Starting values inherited from ECHO Joas references: configs/joas/plot_two_nv_transitions.py and tests/models/test_joas_full.py; not calibrated to this register."
+    }
+  ]
+}

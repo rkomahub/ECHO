@@ -269,32 +269,14 @@ def plot_characterisation_report(report):
                     bbox={"facecolor": "white", "alpha": 0.75, "edgecolor": "none"},
                 )
 
-    spectrum_figure, axes = plt.subplots(
-        number_of_nv,
-        1,
-        sharex=True,
-        sharey=True,
-        squeeze=False,
-        figsize=(8, max(3, 1.5 * number_of_nv)),
-        constrained_layout=True,
+    spectrum_figure = plot_local_transition_spectra(
+        report["local_electrons"],
+        title="Isolated electronic transitions: diagnostic local Sx",
     )
-    for spectrum, axis_spectrum in zip(
-        report["local_electrons"], axes[:, 0]
-    ):
-        lines = spectrum["transitions"]
-        frequencies = [
-            line["frequency_rad_per_us"] / (2 * np.pi)
-            for line in lines
-        ]
-        strengths = [line["strength"] for line in lines]
-        axis_spectrum.vlines(frequencies, 0, strengths, color="tab:blue")
-        axis_spectrum.set_ylabel(f"Site {spectrum['site']}\nstrength")
-        axis_spectrum.set_ylim(bottom=0)
-        axis_spectrum.grid(alpha=0.2)
 
-    axes[-1, 0].set_xlabel("Transition frequency (MHz)")
-    spectrum_figure.suptitle(
-        "Isolated electronic transitions: diagnostic local Sx"
+    spectrum_figure = plot_local_transition_spectra(
+        report["local_electrons"],
+        title="Isolated electronic transitions: diagnostic local Sx",
     )
 
     return {
@@ -754,4 +736,180 @@ def plot_pulse_duration_comparison(report):
         f"T = {report['duration_us']:.6g} µs; "
         f"{rejected} rejected shape-duration cases"
     )
+    return figure
+
+
+def plot_amplitude_error_comparison(report):
+    """Plot whole-register infidelity against systematic amplitude error."""
+    records = sorted(
+        report["records"], key=lambda record: record["amplitude_error"]
+    )
+    errors_percent = [
+        100 * record["amplitude_error"] for record in records
+    ]
+    figure, axis = plt.subplots(
+        figsize=(7, 4.5), constrained_layout=True
+    )
+
+    for name in records[0]["protocols"]:
+        axis.semilogy(
+            errors_percent,
+            [
+                max(record["protocols"][name]["infidelity"], 1e-15)
+                for record in records
+            ],
+            "o-",
+            label=name.replace("_", " "),
+        )
+
+    axis.axvline(0, color="grey", linestyle=":", linewidth=1)
+    axis.set_xlabel(r"Amplitude error $100\varepsilon$ (%)")
+    axis.set_ylabel(r"Whole-register gate infidelity $1-F_{\rm avg}$")
+    axis.set_title(
+        f"{report['pulse_shape'].capitalize()} pulses: "
+        f"{1000 * report['pulse_duration_us']:g} ns; "
+        f"T = {report['duration_us']:.6g} µs"
+    )
+    axis.grid(alpha=0.25, which="both")
+    axis.legend()
+    figure.text(
+        0.5, 0.01,
+        "Independent addressing; fixed timing; display floor 10⁻¹⁵",
+        ha="center", fontsize="small",
+    )
+    return figure
+
+
+def plot_phase_cycle_comparison(reports):
+    """Compare selective-gate amplitude sensitivity across pulse phase cycles."""
+    if not reports:
+        raise ValueError("Provide at least one labelled scan report.")
+
+    reference = next(iter(reports.values()))
+    for report in reports.values():
+        for key in (
+            "source_protocol_report",
+            "pulse_shape",
+            "pulse_duration_us",
+            "duration_us",
+        ):
+            if report[key] != reference[key]:
+                raise ValueError(f"Incompatible scan setting: {key}.")
+
+    figure, axis = plt.subplots(
+        figsize=(7, 4.5), constrained_layout=True
+    )
+
+    for label, report in reports.items():
+        records = sorted(
+            report["records"],
+            key=lambda record: record["amplitude_error"],
+        )
+        axis.semilogy(
+            [100 * record["amplitude_error"] for record in records],
+            [
+                max(
+                    record["protocols"]["hadamard_selective"]["infidelity"],
+                    1e-15,
+                )
+                for record in records
+            ],
+            "o-",
+            label=label,
+        )
+
+    axis.set_xlabel(r"Amplitude error $100\varepsilon$ (%)")
+    axis.set_ylabel(r"Whole-register gate infidelity $1-F_{\rm avg}$")
+    axis.set_title(
+        f"Selective recoupling — {reference['pulse_shape']} pulses, "
+        f"{1000 * reference['pulse_duration_us']:g} ns"
+    )
+    axis.grid(alpha=0.25, which="both")
+    axis.legend()
+    return figure
+
+
+def plot_electronic_populations(report):
+    """Plot logical population transfer and sampled electronic leakage."""
+    records = report["records"]
+    times = [record["time_us"] for record in records]
+    figure, axes = plt.subplots(
+        1, 2, figsize=(10, 4), constrained_layout=True
+    )
+
+    for key, label in (
+        ("mean_exchange_probability", "Logical exchange"),
+        ("mean_other_logical_transfer_probability", "Other logical transfer"),
+    ):
+        axes[0].plot(
+            times, [record[key] for record in records], label=label
+        )
+
+    axes[0].axhline(
+        0, color="grey", linestyle="--", label="Longitudinal prediction"
+    )
+    axes[0].set_ylabel("Mean population-transfer probability")
+    axes[0].set_title("Dynamics within the logical subspace")
+    axes[0].legend(fontsize="small")
+
+    axes[1].plot(
+        times,
+        [record["mean_leakage_probability"] for record in records],
+        ".",
+        label="Sampled leakage",
+    )
+    axes[1].set_ylabel("Mean leakage probability")
+    axes[1].set_title("Population outside the logical subspace")
+    axes[1].ticklabel_format(axis="y", style="sci", scilimits=(0, 0))
+    axes[1].legend(fontsize="small")
+
+    for axis in axes:
+        axis.set_xlabel("Time (µs)")
+        axis.grid(alpha=0.25)
+
+    figure.suptitle("Full electronic free evolution — no control pulses")
+    return figure
+
+
+def plot_local_transition_spectra(
+    spectra,
+    *,
+    title="Local transition lines",
+    frequency_range_mhz=None,
+    strength_label="Strength",
+):
+    """Plot saved transition frequencies and squared coupling matrix elements."""
+    if not spectra:
+        raise ValueError("Provide at least one local spectrum.")
+
+    figure, axes = plt.subplots(
+        len(spectra),
+        1,
+        sharex=True,
+        sharey=True,
+        squeeze=False,
+        figsize=(8, max(3, 1.5 * len(spectra))),
+        constrained_layout=True,
+    )
+    for spectrum, axis in zip(spectra, axes[:, 0]):
+        frequencies = np.array([
+            line["frequency_rad_per_us"] / (2 * np.pi)
+            for line in spectrum["transitions"]
+        ])
+        strengths = np.array([
+            line["strength"] for line in spectrum["transitions"]
+        ])
+        if frequency_range_mhz is not None:
+            lower, upper = frequency_range_mhz
+            selected = (frequencies >= lower) & (frequencies <= upper)
+            frequencies, strengths = frequencies[selected], strengths[selected]
+            axis.set_xlim(lower, upper)
+
+        axis.vlines(frequencies, 0, strengths, color="tab:blue")
+        axis.set_ylabel(f"Site {spectrum['site']}\n{strength_label}")
+        axis.set_ylim(bottom=0)
+        axis.grid(alpha=0.2)
+
+    axes[-1, 0].set_xlabel("Transition frequency (MHz)")
+    figure.suptitle(title)
     return figure
