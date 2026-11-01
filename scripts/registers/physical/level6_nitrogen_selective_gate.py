@@ -16,6 +16,7 @@ from echo_spin.nitrogen_reference import (
     build_nitrogen_drive_rwa,
     build_nitrogen_reference,
     calibrate_local_nitrogen_square_pulse,
+    joint_magnetic_noise_drift,
     nitrogen_electronic_gate_metrics,
     nitrogen_logical_input_columns,
     nitrogen_magnetic_drive_operator,
@@ -44,11 +45,27 @@ def main():
             'results/linear/n3/physical/electron_nitrogen/level_06_evaluation/nitrogen_selective_gate.json'
         ),
     )
+    parser.add_argument(
+        "--magnetic-trajectory",
+        type=Path,
+        help="Saved magnetic-field trajectory with explicit units and provenance.",
+    )
+    parser.add_argument(
+        "--noise-free-step-us",
+        type=float,
+        default=0.05,
+        help="Maximum free-interval integration step when a trajectory is active.",
+    )
     arguments = parser.parse_args()
     if arguments.output.exists():
         parser.error("Output exists; choose a new --output filename.")
     if any(steps < 1 for steps in arguments.steps):
         parser.error("Step counts must be positive.")
+    if (
+        not np.isfinite(arguments.noise_free_step_us)
+        or arguments.noise_free_step_us <= 0
+    ):
+        parser.error("--noise-free-step-us must be finite and positive.")
 
     root = Path("results/linear/n3")
     source = json.loads(
@@ -121,6 +138,40 @@ def main():
     initial = transform.conjugate().transpose().dot(complete["columns"])
 
     duration = schedule["duration_us"]
+    noise_record = None
+    noisy_drift = None
+    if arguments.magnetic_trajectory is not None:
+        noise_record = json.loads(
+            arguments.magnetic_trajectory.read_text(encoding="utf-8")
+        )
+        expected_units = {
+            "times": "us",
+            "amplitudes": "T",
+            "profiles": "dimensionless",
+        }
+        if noise_record.get("units") != expected_units:
+            parser.error("Magnetic trajectory units must be us, T and dimensionless.")
+        if noise_record.get("status") not in {
+            "exploratory", "literature_based", "experimentally_calibrated"
+        }:
+            parser.error("Provide an explicit magnetic-trajectory status.")
+        if not isinstance(noise_record.get("source"), str) or not (
+            noise_record["source"].strip()
+        ):
+            parser.error("Provide a nonempty magnetic-trajectory source.")
+
+        noisy_drift = joint_magnetic_noise_drift(
+            model,
+            scenario,
+            nuclei,
+            noise_record["profiles"],
+            noise_record["times_us"],
+            noise_record["amplitudes_tesla"],
+        )
+        # Reject incomplete coverage before beginning propagation.
+        noisy_drift(0.0)
+        noisy_drift(duration)
+
     rotating_phase = np.exp(
         -1j * model["carrier_rad_per_us"] * duration
         * model["excitation_operator"].diag().real
@@ -178,6 +229,8 @@ def main():
             initial,
             steps=steps,
             free_eigensystem=free_eigensystem,
+            drift_at_time=noisy_drift,
+            free_step_us=arguments.noise_free_step_us,
         )
         lab = transform.dot(rotating_phase[:, None] * evolved)
         record = {
@@ -238,8 +291,18 @@ def main():
             "Dressed-manifold microwave RWA.",
             "Same polarised-branch calibration for both preparations.",
             "Nuclear memory retained throughout the complete sequence.",
-            "No noise, nuclear reset or physical local corrections.",
+            "No nuclear reset or physical local corrections.",
+            "No dissipative relaxation.",
+            (
+                "No stochastic magnetic trajectory applied."
+                if noise_record is None
+                else "One prescribed magnetic trajectory; not an ensemble average."
+            ),
         ],
+        "magnetic_trajectory": noise_record,
+        "noise_free_step_us": (
+            arguments.noise_free_step_us if noisy_drift is not None else None
+        ),
     }
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
     with arguments.output.open("x", encoding="utf-8") as stream:
