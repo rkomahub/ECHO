@@ -648,3 +648,66 @@ def slow_operator_in_nitrogen_rwa(model, laboratory_operator):
         dressed.full() * retained,
         dims=dressed.dims,
     ).to("CSR")
+
+def joint_magnetic_noise_drift(
+    model,
+    scenario,
+    nuclear_parameters,
+    profiles,
+    times_us,
+    amplitudes_tesla,
+):
+    """Build a joint drift callback from saved magnetic-field trajectories."""
+    profiles = np.asarray(profiles)
+    times = np.asarray(times_us)
+    amplitudes = np.asarray(amplitudes_tesla)
+
+    if any(np.iscomplexobj(value) for value in (profiles, times, amplitudes)):
+        raise ValueError("Profiles, times and field amplitudes must be real.")
+
+    profiles = profiles.astype(float)
+    times = times.astype(float)
+    amplitudes = amplitudes.astype(float)
+    number_of_nv = scenario.register.number_of_nv
+
+    if (
+        profiles.ndim != 3
+        or profiles.shape[0] < 1
+        or profiles.shape[1:] != (number_of_nv, 3)
+        or not np.all(np.isfinite(profiles))
+    ):
+        raise ValueError("Provide finite profiles with shape (K, N, 3).")
+    if (
+        times.ndim != 1
+        or times.size < 2
+        or not np.all(np.isfinite(times))
+        or np.any(np.diff(times) <= 0)
+    ):
+        raise ValueError("Provide at least two strictly increasing finite times.")
+    if (
+        amplitudes.shape != (times.size, profiles.shape[0])
+        or not np.all(np.isfinite(amplitudes))
+    ):
+        raise ValueError("Provide finite amplitudes with shape (times, K).")
+
+    operators = [
+        slow_operator_in_nitrogen_rwa(
+            model,
+            nitrogen_magnetic_drive_operator(
+                scenario, nuclear_parameters, profile
+            ),
+        )
+        for profile in profiles
+    ]
+
+    def drift(time):
+        """Evaluate the joint drift without extrapolating the saved trajectory."""
+        if not np.isfinite(time) or time < times[0] or time > times[-1]:
+            raise ValueError("Requested time lies outside the saved trajectory.")
+        result = model["drift_hamiltonian"].copy()
+        for index, operator in enumerate(operators):
+            coefficient = np.interp(time, times, amplitudes[:, index])
+            result += coefficient * operator
+        return result
+
+    return drift

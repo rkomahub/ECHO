@@ -12,6 +12,7 @@ from echo_spin.nitrogen_reference import (
     calibrate_local_nitrogen_square_pulse,
     electron_nitrogen_preparation,
     joint_exponential_action,
+    joint_magnetic_noise_drift,
     nitrogen_electronic_gate_metrics,
     nitrogen_local_spectra,
     nitrogen_logical_input_columns,
@@ -320,3 +321,54 @@ def test_slow_joint_noise_retains_nuclear_but_removes_electronic_transitions():
     np.testing.assert_allclose(
         actual.full(), retained.full(), atol=1e-12, rtol=0
     )
+
+
+def test_joint_magnetic_trajectory_interpolates_and_rejects_extrapolation(
+    monkeypatch,
+):
+    """Interpolate saved fields using precomputed joint magnetic operators."""
+    from types import SimpleNamespace
+
+    import pytest
+
+    import echo_spin.nitrogen_reference as reference
+
+    _, _, sz = spin_operators(1)
+    magnetic = tensor(sz, qeye(3))
+    calls = []
+
+    def magnetic_operator(scenario, nuclei, profile):
+        """Provide a known axial magnetic response for this interpolation test."""
+        calls.append(profile.copy())
+        return profile[0, 2] * magnetic
+
+    monkeypatch.setattr(
+        reference, "nitrogen_magnetic_drive_operator", magnetic_operator
+    )
+    model = {
+        "basis_to_lab": qeye([3, 3]),
+        "excitation_operator": tensor(
+            Qobj(np.diag([1, 0, 1])), qeye(3)
+        ),
+        "drift_hamiltonian": tensor(sz, sz),
+    }
+    scenario = SimpleNamespace(
+        register=SimpleNamespace(number_of_nv=1)
+    )
+    drift = joint_magnetic_noise_drift(
+        model,
+        scenario,
+        {},
+        profiles=[[[0, 0, 1]]],
+        times_us=[0, 1],
+        amplitudes_tesla=[[0], [0.2]],
+    )
+
+    expected = model["drift_hamiltonian"] + 0.1 * magnetic
+    np.testing.assert_allclose(
+        drift(0.5).full(), expected.full(), atol=1e-12, rtol=0
+    )
+    drift(0.75)
+    assert len(calls) == 1
+    with pytest.raises(ValueError, match="outside"):
+        drift(1.1)
