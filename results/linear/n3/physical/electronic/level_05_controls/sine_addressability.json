@@ -1,0 +1,581 @@
+{
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+    "git_dirty": true
+  },
+  "source_local_trial": {
+    "software": {
+      "python": "3.9.6",
+      "packages": {
+        "echo-spin": "0.1.0",
+        "numpy": "2.0.2",
+        "scipy": "1.13.1",
+        "qutip": "5.0.4",
+        "matplotlib": "3.9.4"
+      },
+      "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+      "git_dirty": true
+    },
+    "carrier_rad_per_us": 16271.882277581037,
+    "duration_us": 0.2523133050562908,
+    "field_profile_tesla": [
+      [
+        0.0001,
+        0.0,
+        0.0
+      ],
+      [
+        0.0001,
+        0.0,
+        0.0
+      ],
+      [
+        0.0001,
+        0.0,
+        0.0
+      ]
+    ],
+    "model": "Isolated-site three-level square-pulse RWA.",
+    "limits": "No dipolar dynamics, nuclei or noise during the pulse.",
+    "cases": {
+      "uniform": {
+        "specification": {
+          "schema_version": 1,
+          "register": {
+            "positions": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.5e-08,
+                0.0,
+                0.0
+              ],
+              [
+                3e-08,
+                0.0,
+                0.0
+              ]
+            ],
+            "nv_axes": [
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "transverse_references": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "field_at_reference": [
+              0.0,
+              0.0,
+              0.01
+            ],
+            "gradient": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "reference_position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "source_free": true
+          },
+          "model": "ideal_longitudinal",
+          "sites": [
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            }
+          ],
+          "task": {
+            "target_pair": [
+              0,
+              1
+            ],
+            "target": "signed_sqrt_zz",
+            "spectators": "identity",
+            "encoding": "ms0_msminus1",
+            "tensor_order": "site_0_left",
+            "detuning_convention": "reference_minus_transition",
+            "local_corrections": "none"
+          },
+          "control": {
+            "pulse_model": "instantaneous",
+            "addressing": "independent_ideal",
+            "noise": "none"
+          },
+          "environment": {
+            "nuclear_parameters": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "preparation": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "noise": {
+              "status": "specified",
+              "parameters": {
+                "model": "none"
+              }
+            },
+            "uncertainty": {
+              "status": "specified",
+              "parameters": {
+                "model": "deterministic"
+              }
+            },
+            "control_design": {
+              "status": "specified",
+              "parameters": {
+                "candidate_protocols": [
+                  "free",
+                  "closed_global_hahn",
+                  "hadamard_selective"
+                ]
+              }
+            },
+            "constraints": {
+              "status": "specified",
+              "parameters": {
+                "minimum_separation_m": 5e-09,
+                "maximum_field_t": 0.02
+              }
+            },
+            "numerics": {
+              "status": "specified",
+              "parameters": {
+                "method": "static_exponential",
+                "comparison_atol": 1e-10,
+                "comparison_rtol": 1e-10
+              }
+            },
+            "evaluation": {
+              "status": "specified",
+              "parameters": {
+                "scope": "whole_register",
+                "metrics": [
+                  "average_gate_fidelity",
+                  "residual_local_phases",
+                  "residual_pair_phases",
+                  "duration",
+                  "individual_pulse_count",
+                  "distinct_pulse_times"
+                ]
+              }
+            }
+          },
+          "provenance": {
+            "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+            "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+            "E": "Chosen zero strain splitting.",
+            "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+            "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+            "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+            "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+            "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+          }
+        },
+        "populations": [
+          {
+            "site": 0,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          },
+          {
+            "site": 1,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          },
+          {
+            "site": 2,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          }
+        ]
+      },
+      "gradient": {
+        "specification": {
+          "schema_version": 1,
+          "register": {
+            "positions": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.5e-08,
+                0.0,
+                0.0
+              ],
+              [
+                3e-08,
+                0.0,
+                0.0
+              ]
+            ],
+            "nv_axes": [
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "transverse_references": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "field_at_reference": [
+              0.0,
+              0.0,
+              0.01
+            ],
+            "gradient": [
+              [
+                0,
+                0,
+                100000.0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                100000.0,
+                0,
+                0
+              ]
+            ],
+            "reference_position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "source_free": true
+          },
+          "model": "ideal_longitudinal",
+          "sites": [
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            }
+          ],
+          "task": {
+            "target_pair": [
+              0,
+              1
+            ],
+            "target": "signed_sqrt_zz",
+            "spectators": "identity",
+            "encoding": "ms0_msminus1",
+            "tensor_order": "site_0_left",
+            "detuning_convention": "reference_minus_transition",
+            "local_corrections": "none"
+          },
+          "control": {
+            "pulse_model": "instantaneous",
+            "addressing": "independent_ideal",
+            "noise": "none"
+          },
+          "environment": {
+            "nuclear_parameters": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "preparation": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "noise": {
+              "status": "specified",
+              "parameters": {
+                "model": "none"
+              }
+            },
+            "uncertainty": {
+              "status": "specified",
+              "parameters": {
+                "model": "deterministic"
+              }
+            },
+            "control_design": {
+              "status": "specified",
+              "parameters": {
+                "candidate_protocols": [
+                  "free",
+                  "closed_global_hahn",
+                  "hadamard_selective"
+                ]
+              }
+            },
+            "constraints": {
+              "status": "specified",
+              "parameters": {
+                "minimum_separation_m": 5e-09,
+                "maximum_field_t": 0.02
+              }
+            },
+            "numerics": {
+              "status": "specified",
+              "parameters": {
+                "method": "static_exponential",
+                "comparison_atol": 1e-10,
+                "comparison_rtol": 1e-10
+              }
+            },
+            "evaluation": {
+              "status": "specified",
+              "parameters": {
+                "scope": "whole_register",
+                "metrics": [
+                  "average_gate_fidelity",
+                  "residual_local_phases",
+                  "residual_pair_phases",
+                  "duration",
+                  "individual_pulse_count",
+                  "distinct_pulse_times"
+                ]
+              }
+            }
+          },
+          "provenance": {
+            "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+            "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+            "E": "Chosen zero strain splitting.",
+            "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+            "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+            "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+            "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+            "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+          }
+        },
+        "populations": [
+          {
+            "site": 0,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          },
+          {
+            "site": 1,
+            "eigenstate_populations": [
+              0.9980733727740827,
+              0.0019265717033877536,
+              5.552255045298805e-08
+            ]
+          },
+          {
+            "site": 2,
+            "eigenstate_populations": [
+              0.9997686900696646,
+              0.00022340210497898965,
+              7.907825373524009e-06
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "selected_case": "gradient",
+  "envelope": {
+    "shape": "sine",
+    "dimensionless_peak": 1.5707963267948966,
+    "duration_us": 0.2523133050562908
+  },
+  "results": [
+    {
+      "duration_us": 0.2523133050562908,
+      "target_site": 0,
+      "target_population_probability": 0.999996325080731,
+      "leakage_probability": 1.6982375620702017e-09,
+      "total_probability": 1.0000000000012004,
+      "local_populations": [
+        {
+          "site": 0,
+          "eigenstate_populations": [
+            1.605432922730363e-06,
+            0.9999983945163033,
+            5.197425389319032e-11
+          ]
+        },
+        {
+          "site": 1,
+          "eigenstate_populations": [
+            0.9999983403897826,
+            1.6579997453132852e-06,
+            1.6116723210910712e-09
+          ]
+        },
+        {
+          "site": 2,
+          "eigenstate_populations": [
+            0.9999995514432894,
+            4.4852331996327257e-07,
+            3.459098712136922e-11
+          ]
+        }
+      ],
+      "model": "Excitation-number RWA; transverse exchange retained.",
+      "initial_state": "Product of local lowest-energy eigenstates.",
+      "envelope": "supplied_callable",
+      "integration_steps": 512
+    },
+    {
+      "duration_us": 0.2523133050562908,
+      "target_site": 0,
+      "target_population_probability": 0.9999963167592242,
+      "leakage_probability": 1.8550353169849451e-09,
+      "total_probability": 1.0000000000000855,
+      "local_populations": [
+        {
+          "site": 0,
+          "eigenstate_populations": [
+            1.6063285713692142e-06,
+            0.9999983935872119,
+            8.430197199378657e-11
+          ]
+        },
+        {
+          "site": 1,
+          "eigenstate_populations": [
+            0.9999983368389986,
+            1.6614399404933615e-06,
+            1.7211460994627501e-09
+          ]
+        },
+        {
+          "site": 2,
+          "eigenstate_populations": [
+            0.999999547595182,
+            4.5235531607988734e-07,
+            4.958724563875169e-11
+          ]
+        }
+      ],
+      "model": "Excitation-number RWA; transverse exchange retained.",
+      "initial_state": "Product of local lowest-energy eigenstates.",
+      "envelope": "supplied_callable",
+      "integration_steps": 1024
+    }
+  ],
+  "refinement_changes": {
+    "maximum_local_population_change": 3.848107499315745e-09,
+    "target_probability_change": 8.321506816955093e-09,
+    "leakage_probability_change": 1.5679775491474347e-10
+  },
+  "limit": "Population convergence does not establish full gate convergence."
+}

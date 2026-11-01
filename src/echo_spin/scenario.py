@@ -222,8 +222,18 @@ def validate_noise_parameters(parameters, number_of_nv=None):
     if parameters["operator"] != "Z/2":
         raise ValueError("Local dephasing requires operator='Z/2'.")
 
-    if parameters["spatial_correlation"] != "independent":
-        raise ValueError("Only independent site noise is supported here.")
+    correlation = parameters["spatial_correlation"]
+    fraction = 0.0
+    if correlation != "independent":
+        if (
+            not isinstance(correlation, dict)
+            or set(correlation) != {"model", "fraction"}
+            or correlation["model"] != "common_fraction"
+            or not _finite_real(correlation["fraction"])
+            or not 0 <= correlation["fraction"] <= 1
+        ):
+            raise ValueError("Provide independent noise or a valid common fraction.")
+        fraction = correlation["fraction"]
 
     seed = parameters["seed"]
     if type(seed) is not int or seed < 0:
@@ -252,6 +262,12 @@ def validate_noise_parameters(parameters, number_of_nv=None):
             correlation_time = site["correlation_time_us"]
             if not _finite_real(correlation_time) or correlation_time <= 0:
                 raise ValueError("Noise correlation time must be positive.")
+
+    if model == "ornstein_uhlenbeck" and fraction > 0:
+        if len({site["correlation_time_us"] for site in sites}) != 1:
+            raise ValueError(
+                "Correlated OU noise requires a common correlation time."
+            )
 
 
 def validate_uncertainty_parameters(parameters, specification=None):

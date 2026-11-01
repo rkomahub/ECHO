@@ -1,0 +1,1397 @@
+{
+  "report_version": 1,
+  "comparison": "finite_pulse_duration",
+  "source_protocol_report": {
+    "report_version": 1,
+    "source_model": {
+      "report_version": 1,
+      "model": "ideal_longitudinal",
+      "specification": {
+        "schema_version": 1,
+        "register": {
+          "positions": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.5e-08,
+              0.0,
+              0.0
+            ],
+            [
+              3e-08,
+              0.0,
+              0.0
+            ]
+          ],
+          "nv_axes": [
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "transverse_references": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "field_at_reference": [
+            0.0,
+            0.0,
+            0.01
+          ],
+          "gradient": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "reference_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_free": true
+        },
+        "model": "ideal_longitudinal",
+        "sites": [
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          }
+        ],
+        "task": {
+          "target_pair": [
+            0,
+            1
+          ],
+          "target": "signed_sqrt_zz",
+          "spectators": "identity",
+          "encoding": "ms0_msminus1",
+          "tensor_order": "site_0_left",
+          "detuning_convention": "reference_minus_transition",
+          "local_corrections": "none"
+        },
+        "control": {
+          "pulse_model": "instantaneous",
+          "addressing": "independent_ideal",
+          "noise": "none"
+        },
+        "environment": {
+          "nuclear_parameters": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "preparation": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "noise": {
+            "status": "specified",
+            "parameters": {
+              "model": "none"
+            }
+          },
+          "uncertainty": {
+            "status": "specified",
+            "parameters": {
+              "model": "deterministic"
+            }
+          },
+          "control_design": {
+            "status": "specified",
+            "parameters": {
+              "candidate_protocols": [
+                "free",
+                "closed_global_hahn",
+                "hadamard_selective"
+              ]
+            }
+          },
+          "constraints": {
+            "status": "specified",
+            "parameters": {
+              "minimum_separation_m": 5e-09,
+              "maximum_field_t": 0.02
+            }
+          },
+          "numerics": {
+            "status": "unresolved",
+            "parameters": {}
+          },
+          "evaluation": {
+            "status": "specified",
+            "parameters": {
+              "scope": "whole_register",
+              "metrics": [
+                "average_gate_fidelity",
+                "residual_local_phases",
+                "residual_pair_phases",
+                "duration",
+                "individual_pulse_count",
+                "distinct_pulse_times"
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+          "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+          "E": "Chosen zero strain splitting.",
+          "gamma_e": "Signed Hamiltonian convention: -2*pi*28024.95 rad/us/T; magnitude from Joas et al., PRX 15, 021069 (2025).",
+          "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+          "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+          "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits."
+        }
+      },
+      "subsystem_dimensions": [
+        2,
+        2,
+        2
+      ],
+      "dimension": 8,
+      "detunings_rad_per_us": [
+        -0.05449721979294696,
+        -0.09688394629857237,
+        -0.05449721979294696
+      ],
+      "couplings_rad_per_us": [
+        [
+          0.0,
+          0.024220986574643093,
+          0.0030276233218303867
+        ],
+        [
+          0.024220986574643093,
+          0.0,
+          0.024220986574643093
+        ],
+        [
+          0.0030276233218303867,
+          0.024220986574643093,
+          0.0
+        ]
+      ],
+      "constant_rad_per_us": 0.05146959647111657,
+      "hamiltonian_diagonal_rad_per_us": [
+        0.0,
+        0.0,
+        0.0,
+        0.09688394629857236,
+        0.0,
+        0.012110493287321545,
+        0.09688394629857239,
+        0.2058783858844663
+      ],
+      "operator_conventions": {
+        "tensor_order": "site_0_left",
+        "computational_basis": "lexicographic binary order",
+        "local_operators": "Embedded Pauli X, Y, Z.",
+        "rotation": "exp(-i*theta*Pauli/2)",
+        "logical_embedding": "logical 0 -> ms=0; logical 1 -> ms=-1"
+      },
+      "assessment": {
+        "status": "ideal_design_baseline",
+        "tensor_order": "site_0_left",
+        "hamiltonian_units": "rad/us",
+        "rotation_convention": "exp(-i*theta*Pauli/2)",
+        "physical_approximation_validated": false,
+        "omitted": [
+          "transverse interactions",
+          "electronic leakage",
+          "nuclear dynamics",
+          "noise",
+          "finite-pulse effects",
+          "shared-drive crosstalk"
+        ]
+      },
+      "dipolar_projection": {
+        "status": "static_diagnostic_only",
+        "physical_dimension": 27,
+        "logical_dimension": 8,
+        "omitted_in_subspace_norm_rad_per_us": 0.225581965679381,
+        "discarded_subspace_coupling_norm_rad_per_us": 0.26707418453103987,
+        "interpretation": "Dipolar terms only; no energetic or dynamical suppression assessment. Norms are not gate errors.",
+        "matrices_rad_per_us": {
+          "projected": {
+            "real": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                -0.14532591944785855,
+                0.0,
+                -0.01816573993098232,
+                -0.14532591944785855,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                -0.006055246643660773,
+                0.0,
+                0.0,
+                -0.14532591944785855
+              ],
+              [
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                -0.01816573993098232
+              ],
+              [
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                0.09688394629857237,
+                0.0,
+                -0.04844197314928619,
+                -0.006055246643660773,
+                0.0
+              ],
+              [
+                0.0,
+                -0.006055246643660773,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.14532591944785855
+              ],
+              [
+                -0.01816573993098232,
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.012110493287321547,
+                -0.04844197314928619,
+                0.0
+              ],
+              [
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                -0.006055246643660773,
+                0.0,
+                -0.04844197314928619,
+                0.09688394629857237,
+                0.0
+              ],
+              [
+                0.0,
+                -0.14532591944785855,
+                -0.01816573993098232,
+                0.0,
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                0.20587838588446628
+              ]
+            ],
+            "imag": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          "longitudinal": {
+            "real": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.09688394629857236,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.012110493287321545,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.09688394629857239,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.2058783858844663
+              ]
+            ],
+            "imag": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          }
+        }
+      },
+      "source_level_2_software": {
+        "python": "3.9.6",
+        "packages": {
+          "echo-spin": "0.1.0",
+          "numpy": "2.0.2",
+          "scipy": "1.13.1",
+          "qutip": "5.0.4",
+          "matplotlib": "3.9.4"
+        },
+        "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+        "git_dirty": true
+      },
+      "software": {
+        "python": "3.9.6",
+        "packages": {
+          "echo-spin": "0.1.0",
+          "numpy": "2.0.2",
+          "scipy": "1.13.1",
+          "qutip": "5.0.4",
+          "matplotlib": "3.9.4"
+        },
+        "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+        "git_dirty": true
+      }
+    },
+    "target_pair": [
+      0,
+      1
+    ],
+    "duration_us": 32.4263489836405,
+    "pulse_model": "instantaneous",
+    "pulse_axis": "X",
+    "pulse_angle_rad": 3.141592653589793,
+    "target_diagonal": {
+      "real": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475
+      ],
+      "imag": [
+        -0.7071067811865475,
+        -0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        -0.7071067811865475,
+        -0.7071067811865475
+      ]
+    },
+    "target_convention": "exp(-i*sign(J_ab)*pi*Z_a*Z_b/4), spectator identity, site zero leftmost; no local corrections.",
+    "protocols": {
+      "free": {
+        "pulse_times_us": [
+          [],
+          [],
+          []
+        ],
+        "local_sign_averages": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 0,
+        "distinct_pulse_times_us": [],
+        "distinct_pulse_time_count": 0,
+        "closed_up_to_global_phase": true
+      },
+      "closed_global_hahn": {
+        "pulse_times_us": [
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 6,
+        "distinct_pulse_times_us": [
+          16.21317449182025,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 2,
+        "closed_up_to_global_phase": true
+      },
+      "hadamard_selective": {
+        "pulse_times_us": [
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            8.106587245910125,
+            16.21317449182025,
+            24.319761737730374,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          -2.1912511214832661e-16
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.6434383411124497e-16,
+            1.6434383411124497e-16,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 20,
+        "distinct_pulse_times_us": [
+          4.053293622955063,
+          8.106587245910125,
+          12.159880868865187,
+          16.21317449182025,
+          20.266468114775314,
+          24.319761737730374,
+          28.373055360685438,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 8,
+        "closed_up_to_global_phase": true
+      }
+    },
+    "limits": [
+      "Sign averages apply to the static longitudinal model.",
+      "Schedules include closing pulses.",
+      "Ideal independent addressing is assumed.",
+      "No finite-pulse, nuclear or leakage dynamics are evaluated.",
+      "No gate propagation or fidelity calculation is performed."
+    ],
+    "software": {
+      "python": "3.9.6",
+      "packages": {
+        "echo-spin": "0.1.0",
+        "numpy": "2.0.2",
+        "scipy": "1.13.1",
+        "qutip": "5.0.4",
+        "matplotlib": "3.9.4"
+      },
+      "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+      "git_dirty": true
+    }
+  },
+  "duration_us": 32.4263489836405,
+  "coarse_sine_steps": 512,
+  "reported_sine_steps": 1024,
+  "records": [
+    {
+      "pulse_duration_us": 0.005,
+      "pulse_shape": "square",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 628.3185307179587,
+      "integration_steps": null,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5513935071227032,
+          "phase_aligned_frobenius_error": 0.7696907117424768,
+          "unitarity_error": 7.183203673446998e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999995031483974,
+          "phase_aligned_frobenius_error": 0.0007476350249246016,
+          "unitarity_error": 1.6725383272863197e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.005,
+      "pulse_shape": "sine",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 986.9604401089358,
+      "integration_steps": 1024,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": 0.0,
+          "resolution_change": 0.0
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5513606888332101,
+          "phase_aligned_frobenius_error": 0.7697247901096875,
+          "unitarity_error": 1.959168779302183e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": 6.252072193291269e-10,
+          "resolution_change": 5.157444748240561e-06
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999997513780561,
+          "phase_aligned_frobenius_error": 0.0005288657305228768,
+          "unitarity_error": 7.507980282910545e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": 7.036053961684274e-09,
+          "resolution_change": 1.9890079738032455e-05
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.01,
+      "pulse_shape": "square",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 314.1592653589793,
+      "integration_steps": null,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5515013204857229,
+          "phase_aligned_frobenius_error": 0.7695787571395015,
+          "unitarity_error": 7.75201347586116e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999980128749905,
+          "phase_aligned_frobenius_error": 0.0014951645011677046,
+          "unitarity_error": 1.1142651493737824e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.01,
+      "pulse_shape": "sine",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 493.4802200544679,
+      "integration_steps": 1024,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": 0.0,
+          "resolution_change": 0.0
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5514357197592396,
+          "phase_aligned_frobenius_error": 0.7696468779754518,
+          "unitarity_error": 1.0767117361471742e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": 1.2291591078295028e-09,
+          "resolution_change": 5.158104728121165e-06
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999990100544771,
+          "phase_aligned_frobenius_error": 0.0010553146191668136,
+          "unitarity_error": 2.2860395614679823e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": 1.348446132531933e-08,
+          "resolution_change": 1.989432406634012e-05
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.02,
+      "pulse_shape": "square",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 157.07963267948966,
+      "integration_steps": null,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5517167193492907,
+          "phase_aligned_frobenius_error": 0.7693550768074544,
+          "unitarity_error": 8.633606215625679e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999920537617434,
+          "phase_aligned_frobenius_error": 0.0029899060211926705,
+          "unitarity_error": 2.4194912171614367e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.02,
+      "pulse_shape": "sine",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 246.74011002723395,
+      "integration_steps": 1024,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": 0.0,
+          "resolution_change": 0.0
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5515856614238834,
+          "phase_aligned_frobenius_error": 0.7694911747650492,
+          "unitarity_error": 1.50445798703271e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": 2.4382528218680477e-09,
+          "resolution_change": 5.159424864981096e-06
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999960499092797,
+          "phase_aligned_frobenius_error": 0.0021080458882140854,
+          "unitarity_error": 4.742149077296968e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": 2.6372174777300472e-08,
+          "resolution_change": 1.9902802281450838e-05
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.05,
+      "pulse_shape": "square",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 62.83185307179586,
+      "integration_steps": null,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5523610897110272,
+          "phase_aligned_frobenius_error": 0.7686858702136731,
+          "unitarity_error": 9.766124815813698e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999503789477472,
+          "phase_aligned_frobenius_error": 0.007471577000744406,
+          "unitarity_error": 1.9891090669566297e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.05,
+      "pulse_shape": "sine",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 98.69604401089357,
+      "integration_steps": 1024,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": 0.0,
+          "resolution_change": 0.0
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5520345237869169,
+          "phase_aligned_frobenius_error": 0.7690250347700007,
+          "unitarity_error": 8.14237455640557e-14,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": 6.075179914688533e-09,
+          "resolution_change": 5.1633867295185544e-06
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999753627202617,
+          "phase_aligned_frobenius_error": 0.005264706216922798,
+          "unitarity_error": 2.1927637246650914e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": 6.496163995617366e-08,
+          "resolution_change": 1.9928153465707864e-05
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.1,
+      "pulse_shape": "square",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 31.41592653589793,
+      "integration_steps": null,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5534289308300903,
+          "phase_aligned_frobenius_error": 0.7675766632189623,
+          "unitarity_error": 6.804242783430539e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9998018090427566,
+          "phase_aligned_frobenius_error": 0.01493242299871536,
+          "unitarity_error": 1.4500091113635086e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.1,
+      "pulse_shape": "sine",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 49.348022005446786,
+      "integration_steps": 1024,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": 0.0,
+          "resolution_change": 0.0
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5527794114513028,
+          "phase_aligned_frobenius_error": 0.7682513746787889,
+          "unitarity_error": 1.1645658660518002e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": 1.2169754870505756e-08,
+          "resolution_change": 5.169994512546504e-06
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999016178570737,
+          "phase_aligned_frobenius_error": 0.010520597565484164,
+          "unitarity_error": 3.7058464733067123e-13,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": 1.290339339821145e-07,
+          "resolution_change": 1.9970125513537884e-05
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.2,
+      "pulse_shape": "square",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 15.707963267948966,
+      "integration_steps": null,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5555415392230226,
+          "phase_aligned_frobenius_error": 0.7653814327844852,
+          "unitarity_error": 8.050654817257619e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9992096860999842,
+          "phase_aligned_frobenius_error": 0.029821147723043985,
+          "unitarity_error": 1.8532150024618687e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": null,
+          "resolution_change": null
+        }
+      }
+    },
+    {
+      "pulse_duration_us": 0.2,
+      "pulse_shape": "sine",
+      "status": "evaluated",
+      "reason": null,
+      "peak_rabi_frequency_rad_per_us": 24.674011002723393,
+      "integration_steps": 1024,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "phase_aligned_frobenius_error": 1.1430135945556055,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          },
+          "fidelity_resolution_change": 0.0,
+          "resolution_change": 0.0
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5542570700986048,
+          "phase_aligned_frobenius_error": 0.7667162620291632,
+          "unitarity_error": 7.040652639163043e-14,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          },
+          "fidelity_resolution_change": 2.4481921490071556e-08,
+          "resolution_change": 5.183226698188683e-06
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9996075733513585,
+          "phase_aligned_frobenius_error": 0.021012584719398736,
+          "unitarity_error": 9.675322519817098e-14,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          },
+          "fidelity_resolution_change": 2.562164426178626e-07,
+          "resolution_change": 2.0053008594139095e-05
+        }
+      }
+    }
+  ],
+  "limits": [
+    "Longitudinal qubit drift and independent local controls.",
+    "Fixed total duration and pulse-event end times.",
+    "Equal pulse duration and area, not equal peak amplitude.",
+    "Resolution change is a numerical diagnostic, not an error bound.",
+    "No leakage, nuclear dynamics, noise or hardware amplitude bounds."
+  ],
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "a2ad56f7a675d1a4e61cee215f6a90a77b541f49",
+    "git_dirty": true
+  }
+}

@@ -26,7 +26,7 @@ def test_nitrogen_reference_preserves_order_and_signed_local_terms():
     """Recover the nuclear Zeeman and hyperfine splitting in interleaved order."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))

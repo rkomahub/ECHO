@@ -81,13 +81,13 @@ Use `echo-register --help` for usage information.
 From the repository root, inspect the scenario and its control objective:
 
 ```bash
-echo-register configs/registers/linear/n3/scenario.json --scenario
+echo-register configs/registers/linear/n3/ideal/scenario.json --scenario
 ```
 
 Alternatively:
 
 ```bash
-python -m echo_spin.cli configs/registers/linear/n3/scenario.json --scenario
+python -m echo_spin.cli configs/registers/linear/n3/ideal/scenario.json --scenario
 ```
 
 The JSON report contains:
@@ -112,7 +112,7 @@ experimental addressability are not assessed.
 To save the report:
 
 ```bash
-python -m echo_spin.cli configs/registers/linear/n3/scenario.json --scenario > /tmp/echo_three_nv_scenario.json
+python -m echo_spin.cli configs/registers/linear/n3/ideal/scenario.json --scenario > /tmp/echo_three_nv_scenario.json
 ```
 
 The output file is overwritten if it already exists.

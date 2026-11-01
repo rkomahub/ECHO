@@ -2,6 +2,9 @@ import numpy as np
 from qutip import Qobj, qeye, sigmaz, tensor
 
 from echo_spin.control.microwave import control_hamiltonian
+from echo_spin.core.operators import embed_operator
+from echo_spin.core.system import SpinSystem
+from echo_spin.scenario import validate_noise_parameters
 
 
 def exponential_coherence(
@@ -455,4 +458,125 @@ def diagonal_dephasing_channel(
     return Qobj(
         density_matrix.full() * damping,
         dims=density_matrix.dims,
+    )
+
+
+def quasistatic_detuning_samples(parameters, sample_count):
+    """Draw reproducible independent detuning offsets from a validated noise record."""
+    validate_noise_parameters(parameters)
+    if parameters["model"] != "quasistatic":
+        raise ValueError("A quasistatic noise record is required.")
+    if (
+        isinstance(sample_count, (bool, np.bool_))
+        or not isinstance(sample_count, (int, np.integer))
+        or sample_count < 1
+    ):
+        raise ValueError("sample_count must be a positive integer.")
+
+    sigma = np.array([
+        site["sigma_rad_per_us"] for site in parameters["sites"]
+    ])
+    rng = np.random.default_rng(parameters["seed"])
+    independent = rng.normal(
+        size=(int(sample_count), len(sigma))
+    ) * sigma
+    correlation = parameters["spatial_correlation"]
+    fraction = (
+        0.0 if correlation == "independent" else correlation["fraction"]
+    )
+    if fraction == 0:
+        return independent
+
+    common_rng = np.random.default_rng(
+        np.random.SeedSequence([parameters["seed"], 1])
+    )
+    common = common_rng.normal(size=(int(sample_count), 1)) * sigma
+    return np.sqrt(1 - fraction) * independent + np.sqrt(fraction) * common
+
+
+def electronic_detuning_noise_model(model, offsets):
+    """Add static logical detuning noise while retaining nominal controls and frames."""
+    if "specification" not in model:
+        raise ValueError("An electronic register model is required.")
+    number_of_nv = len(model["specification"]["sites"])
+    dimensions = [[3] * number_of_nv, [3] * number_of_nv]
+    if model["drift_hamiltonian"].dims != dimensions:
+        raise ValueError("This noise extension requires electronic qutrits.")
+
+    if np.iscomplexobj(offsets):
+        raise ValueError("Offsets must be real.")
+    offsets = np.asarray(offsets, dtype=float)
+    if offsets.shape != (number_of_nv,) or not np.all(np.isfinite(offsets)):
+        raise ValueError("Provide one finite detuning offset per site.")
+
+    drift = model["drift_hamiltonian"].copy()
+    system = SpinSystem([1] * number_of_nv)
+    local = Qobj(np.diag([0.5, -0.5, 0.0]))
+    for site, offset in enumerate(offsets):
+        drift += offset * embed_operator(local, site, system)
+
+    return {
+        **model,
+        "drift_hamiltonian": drift,
+        "detuning_offsets_rad_per_us": offsets.tolist(),
+    }
+
+
+def ou_detuning_samples(parameters, times, sample_count):
+    """Draw reproducible independent stationary OU trajectories for all sites."""
+    validate_noise_parameters(parameters)
+    if parameters["model"] != "ornstein_uhlenbeck":
+        raise ValueError("An Ornstein--Uhlenbeck noise record is required.")
+
+    times = np.asarray(times, dtype=float)
+    if (
+        times.ndim != 1
+        or len(times) < 2
+        or not np.all(np.isfinite(times))
+        or np.any(np.diff(times) <= 0)
+    ):
+        raise ValueError("Provide finite strictly increasing noise times.")
+    if (
+        isinstance(sample_count, (bool, np.bool_))
+        or not isinstance(sample_count, (int, np.integer))
+        or sample_count < 1
+    ):
+        raise ValueError("sample_count must be a positive integer.")
+
+    rng = np.random.default_rng(parameters["seed"])
+    trajectories = np.empty(
+        (sample_count, len(times), len(parameters["sites"]))
+    )
+    for sample in range(sample_count):
+        for site, record in enumerate(parameters["sites"]):
+            trajectories[sample, :, site] = ornstein_uhlenbeck_noise(
+                times,
+                record["sigma_rad_per_us"],
+                record["correlation_time_us"],
+                rng,
+            )
+    correlation = parameters["spatial_correlation"]
+    fraction = (
+        0.0 if correlation == "independent" else correlation["fraction"]
+    )
+    if fraction == 0:
+        return trajectories
+
+    common_rng = np.random.default_rng(
+        np.random.SeedSequence([parameters["seed"], 1])
+    )
+    common = np.array([
+        ornstein_uhlenbeck_noise(
+            times, 1.0,
+            parameters["sites"][0]["correlation_time_us"],
+            common_rng,
+        )
+        for _ in range(sample_count)
+    ])
+    sigma = np.array([
+        site["sigma_rad_per_us"] for site in parameters["sites"]
+    ])
+    return (
+        np.sqrt(1 - fraction) * trajectories
+        + np.sqrt(fraction) * common[:, :, None] * sigma[None, None, :]
     )

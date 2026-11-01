@@ -18,7 +18,7 @@ def test_model_preserves_site_order_and_longitudinal_energy():
     """Recover the energy and local flip of a nonsymmetric logical basis state."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     report = longitudinal_characterisation_report(
@@ -56,7 +56,7 @@ def test_bare_projection_exposes_transverse_exchange_in_aligned_chain():
     """Preserve the logical embedding while detecting omitted resonant exchange."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     scenario = longitudinal_scenario_from_dict(specification)
@@ -88,7 +88,7 @@ def test_model_report_preserves_diagonal_and_assessment_in_json():
     """Export the selected Hamiltonian without claiming physical validation."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     source = longitudinal_characterisation_report(
@@ -134,7 +134,7 @@ def test_electronic_reference_retains_exchange_and_leakage_couplings():
     """Retain logical exchange and coupling to the third electronic level."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))

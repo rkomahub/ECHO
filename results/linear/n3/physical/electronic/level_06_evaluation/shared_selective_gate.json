@@ -1,0 +1,1490 @@
+{
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+    "git_dirty": true
+  },
+  "source_local_trial": {
+    "software": {
+      "python": "3.9.6",
+      "packages": {
+        "echo-spin": "0.1.0",
+        "numpy": "2.0.2",
+        "scipy": "1.13.1",
+        "qutip": "5.0.4",
+        "matplotlib": "3.9.4"
+      },
+      "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+      "git_dirty": true
+    },
+    "carrier_rad_per_us": 16271.882277581037,
+    "duration_us": 0.2523133050562908,
+    "field_profile_tesla": [
+      [
+        0.0001,
+        0.0,
+        0.0
+      ],
+      [
+        0.0001,
+        0.0,
+        0.0
+      ],
+      [
+        0.0001,
+        0.0,
+        0.0
+      ]
+    ],
+    "model": "Isolated-site three-level square-pulse RWA.",
+    "limits": "No dipolar dynamics, nuclei or noise during the pulse.",
+    "cases": {
+      "uniform": {
+        "specification": {
+          "schema_version": 1,
+          "register": {
+            "positions": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.5e-08,
+                0.0,
+                0.0
+              ],
+              [
+                3e-08,
+                0.0,
+                0.0
+              ]
+            ],
+            "nv_axes": [
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "transverse_references": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "field_at_reference": [
+              0.0,
+              0.0,
+              0.01
+            ],
+            "gradient": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "reference_position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "source_free": true
+          },
+          "model": "ideal_longitudinal",
+          "sites": [
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            }
+          ],
+          "task": {
+            "target_pair": [
+              0,
+              1
+            ],
+            "target": "signed_sqrt_zz",
+            "spectators": "identity",
+            "encoding": "ms0_msminus1",
+            "tensor_order": "site_0_left",
+            "detuning_convention": "reference_minus_transition",
+            "local_corrections": "none"
+          },
+          "control": {
+            "pulse_model": "instantaneous",
+            "addressing": "independent_ideal",
+            "noise": "none"
+          },
+          "environment": {
+            "nuclear_parameters": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "preparation": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "noise": {
+              "status": "specified",
+              "parameters": {
+                "model": "none"
+              }
+            },
+            "uncertainty": {
+              "status": "specified",
+              "parameters": {
+                "model": "deterministic"
+              }
+            },
+            "control_design": {
+              "status": "specified",
+              "parameters": {
+                "candidate_protocols": [
+                  "free",
+                  "closed_global_hahn",
+                  "hadamard_selective"
+                ]
+              }
+            },
+            "constraints": {
+              "status": "specified",
+              "parameters": {
+                "minimum_separation_m": 5e-09,
+                "maximum_field_t": 0.02
+              }
+            },
+            "numerics": {
+              "status": "specified",
+              "parameters": {
+                "method": "static_exponential",
+                "comparison_atol": 1e-10,
+                "comparison_rtol": 1e-10
+              }
+            },
+            "evaluation": {
+              "status": "specified",
+              "parameters": {
+                "scope": "whole_register",
+                "metrics": [
+                  "average_gate_fidelity",
+                  "residual_local_phases",
+                  "residual_pair_phases",
+                  "duration",
+                  "individual_pulse_count",
+                  "distinct_pulse_times"
+                ]
+              }
+            }
+          },
+          "provenance": {
+            "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+            "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+            "E": "Chosen zero strain splitting.",
+            "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+            "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+            "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+            "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+            "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+          }
+        },
+        "populations": [
+          {
+            "site": 0,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          },
+          {
+            "site": 1,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          },
+          {
+            "site": 2,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          }
+        ]
+      },
+      "gradient": {
+        "specification": {
+          "schema_version": 1,
+          "register": {
+            "positions": [
+              [
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.5e-08,
+                0.0,
+                0.0
+              ],
+              [
+                3e-08,
+                0.0,
+                0.0
+              ]
+            ],
+            "nv_axes": [
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ],
+              [
+                0.0,
+                0.0,
+                1.0
+              ]
+            ],
+            "transverse_references": [
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ],
+              [
+                1.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "field_at_reference": [
+              0.0,
+              0.0,
+              0.01
+            ],
+            "gradient": [
+              [
+                0,
+                0,
+                100000.0
+              ],
+              [
+                0,
+                0,
+                0
+              ],
+              [
+                100000.0,
+                0,
+                0
+              ]
+            ],
+            "reference_position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "source_free": true
+          },
+          "model": "ideal_longitudinal",
+          "sites": [
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            },
+            {
+              "D": 18032.741831605414,
+              "E": 0.0,
+              "gamma_e": 176085.95540243763,
+              "bare_detuning": 0.0
+            }
+          ],
+          "task": {
+            "target_pair": [
+              0,
+              1
+            ],
+            "target": "signed_sqrt_zz",
+            "spectators": "identity",
+            "encoding": "ms0_msminus1",
+            "tensor_order": "site_0_left",
+            "detuning_convention": "reference_minus_transition",
+            "local_corrections": "none"
+          },
+          "control": {
+            "pulse_model": "instantaneous",
+            "addressing": "independent_ideal",
+            "noise": "none"
+          },
+          "environment": {
+            "nuclear_parameters": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "preparation": {
+              "status": "not_applicable",
+              "parameters": {}
+            },
+            "noise": {
+              "status": "specified",
+              "parameters": {
+                "model": "none"
+              }
+            },
+            "uncertainty": {
+              "status": "specified",
+              "parameters": {
+                "model": "deterministic"
+              }
+            },
+            "control_design": {
+              "status": "specified",
+              "parameters": {
+                "candidate_protocols": [
+                  "free",
+                  "closed_global_hahn",
+                  "hadamard_selective"
+                ]
+              }
+            },
+            "constraints": {
+              "status": "specified",
+              "parameters": {
+                "minimum_separation_m": 5e-09,
+                "maximum_field_t": 0.02
+              }
+            },
+            "numerics": {
+              "status": "specified",
+              "parameters": {
+                "method": "static_exponential",
+                "comparison_atol": 1e-10,
+                "comparison_rtol": 1e-10
+              }
+            },
+            "evaluation": {
+              "status": "specified",
+              "parameters": {
+                "scope": "whole_register",
+                "metrics": [
+                  "average_gate_fidelity",
+                  "residual_local_phases",
+                  "residual_pair_phases",
+                  "duration",
+                  "individual_pulse_count",
+                  "distinct_pulse_times"
+                ]
+              }
+            }
+          },
+          "provenance": {
+            "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+            "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+            "E": "Chosen zero strain splitting.",
+            "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+            "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+            "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+            "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+            "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+          }
+        },
+        "populations": [
+          {
+            "site": 0,
+            "eigenstate_populations": [
+              7.786600035833857e-07,
+              0.9999960989466024,
+              3.122393396996257e-06
+            ]
+          },
+          {
+            "site": 1,
+            "eigenstate_populations": [
+              0.9980733727740827,
+              0.0019265717033877536,
+              5.552255045298805e-08
+            ]
+          },
+          {
+            "site": 2,
+            "eigenstate_populations": [
+              0.9997686900696646,
+              0.00022340210497898965,
+              7.907825373524009e-06
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "source_protocol_report": {
+    "report_version": 1,
+    "source_model": {
+      "report_version": 1,
+      "model": "ideal_longitudinal",
+      "specification": {
+        "schema_version": 1,
+        "register": {
+          "positions": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.5e-08,
+              0.0,
+              0.0
+            ],
+            [
+              3e-08,
+              0.0,
+              0.0
+            ]
+          ],
+          "nv_axes": [
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "transverse_references": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "field_at_reference": [
+            0.0,
+            0.0,
+            0.01
+          ],
+          "gradient": [
+            [
+              0,
+              0,
+              100000.0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              100000.0,
+              0,
+              0
+            ]
+          ],
+          "reference_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_free": true
+        },
+        "model": "ideal_longitudinal",
+        "sites": [
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": 176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": 176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": 176085.95540243763,
+            "bare_detuning": 0.0
+          }
+        ],
+        "task": {
+          "target_pair": [
+            0,
+            1
+          ],
+          "target": "signed_sqrt_zz",
+          "spectators": "identity",
+          "encoding": "ms0_msminus1",
+          "tensor_order": "site_0_left",
+          "detuning_convention": "reference_minus_transition",
+          "local_corrections": "none"
+        },
+        "control": {
+          "pulse_model": "instantaneous",
+          "addressing": "independent_ideal",
+          "noise": "none"
+        },
+        "environment": {
+          "nuclear_parameters": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "preparation": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "noise": {
+            "status": "specified",
+            "parameters": {
+              "model": "none"
+            }
+          },
+          "uncertainty": {
+            "status": "specified",
+            "parameters": {
+              "model": "deterministic"
+            }
+          },
+          "control_design": {
+            "status": "specified",
+            "parameters": {
+              "candidate_protocols": [
+                "free",
+                "closed_global_hahn",
+                "hadamard_selective"
+              ]
+            }
+          },
+          "constraints": {
+            "status": "specified",
+            "parameters": {
+              "minimum_separation_m": 5e-09,
+              "maximum_field_t": 0.02
+            }
+          },
+          "numerics": {
+            "status": "specified",
+            "parameters": {
+              "method": "static_exponential",
+              "comparison_atol": 1e-10,
+              "comparison_rtol": 1e-10
+            }
+          },
+          "evaluation": {
+            "status": "specified",
+            "parameters": {
+              "scope": "whole_register",
+              "metrics": [
+                "average_gate_fidelity",
+                "residual_local_phases",
+                "residual_pair_phases",
+                "duration",
+                "individual_pulse_count",
+                "distinct_pulse_times"
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+          "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+          "E": "Chosen zero strain splitting.",
+          "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+          "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+          "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+          "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+          "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+        }
+      },
+      "subsystem_dimensions": [
+        2,
+        2,
+        2
+      ],
+      "dimension": 8,
+      "detunings_rad_per_us": [
+        -0.05449721979294696,
+        -0.09688394629857237,
+        -0.05449721979294696
+      ],
+      "couplings_rad_per_us": [
+        [
+          0.0,
+          0.024220986574643093,
+          0.0030276233218303867
+        ],
+        [
+          0.024220986574643093,
+          0.0,
+          0.024220986574643093
+        ],
+        [
+          0.0030276233218303867,
+          0.024220986574643093,
+          0.0
+        ]
+      ],
+      "constant_rad_per_us": 0.05146959647111657,
+      "hamiltonian_diagonal_rad_per_us": [
+        0.0,
+        0.0,
+        0.0,
+        0.09688394629857236,
+        0.0,
+        0.012110493287321545,
+        0.09688394629857239,
+        0.2058783858844663
+      ],
+      "operator_conventions": {
+        "tensor_order": "site_0_left",
+        "computational_basis": "lexicographic binary order",
+        "local_operators": "Embedded Pauli X, Y, Z.",
+        "rotation": "exp(-i*theta*Pauli/2)",
+        "logical_embedding": "logical 0 -> ms=0; logical 1 -> ms=-1"
+      },
+      "assessment": {
+        "status": "ideal_design_baseline",
+        "tensor_order": "site_0_left",
+        "hamiltonian_units": "rad/us",
+        "rotation_convention": "exp(-i*theta*Pauli/2)",
+        "physical_approximation_validated": false,
+        "omitted": [
+          "transverse interactions",
+          "electronic leakage",
+          "nuclear dynamics",
+          "noise",
+          "finite-pulse effects",
+          "shared-drive crosstalk"
+        ]
+      },
+      "dipolar_projection": {
+        "status": "not_performed"
+      }
+    },
+    "target_pair": [
+      0,
+      1
+    ],
+    "duration_us": 32.4263489836405,
+    "pulse_model": "instantaneous",
+    "pulse_axis": "X",
+    "pulse_angle_rad": 3.141592653589793,
+    "target_diagonal": {
+      "real": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475
+      ],
+      "imag": [
+        -0.7071067811865475,
+        -0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        -0.7071067811865475,
+        -0.7071067811865475
+      ]
+    },
+    "target_convention": "exp(-i*sign(J_ab)*pi*Z_a*Z_b/4), spectator identity, site zero leftmost; no local corrections.",
+    "protocols": {
+      "free": {
+        "pulse_times_us": [
+          [],
+          [],
+          []
+        ],
+        "local_sign_averages": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 0,
+        "distinct_pulse_times_us": [],
+        "distinct_pulse_time_count": 0,
+        "closed_up_to_global_phase": true
+      },
+      "closed_global_hahn": {
+        "pulse_times_us": [
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 6,
+        "distinct_pulse_times_us": [
+          16.21317449182025,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 2,
+        "closed_up_to_global_phase": true
+      },
+      "hadamard_selective": {
+        "pulse_times_us": [
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            8.106587245910125,
+            16.21317449182025,
+            24.319761737730374,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          -2.1912511214832661e-16
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.6434383411124497e-16,
+            1.6434383411124497e-16,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 20,
+        "distinct_pulse_times_us": [
+          4.053293622955063,
+          8.106587245910125,
+          12.159880868865187,
+          16.21317449182025,
+          20.266468114775314,
+          24.319761737730374,
+          28.373055360685438,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 8,
+        "closed_up_to_global_phase": true
+      }
+    },
+    "limits": [
+      "Sign averages apply to the static longitudinal model.",
+      "Schedules include closing pulses.",
+      "Ideal independent addressing is assumed.",
+      "No finite-pulse, nuclear or leakage dynamics are evaluated.",
+      "No gate propagation or fidelity calculation is performed."
+    ]
+  },
+  "schedule": {
+    "duration_us": 32.4263489836405,
+    "pulse_duration_us": 0.2523133050562908,
+    "phase_cycle": "xy8_targets",
+    "events": [
+      {
+        "start_us": 3.8009803178987718,
+        "end_us": 4.053293622955063,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 7.854273940853835,
+        "end_us": 8.106587245910125,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15743.624411373725,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 11.907567563808897,
+        "end_us": 12.159880868865187,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 15.96086118676396,
+        "end_us": 16.21317449182025,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15743.624411373725,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 20.014154809719024,
+        "end_us": 20.266468114775314,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 24.067448432674084,
+        "end_us": 24.319761737730374,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15743.624411373725,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 28.120742055629147,
+        "end_us": 28.373055360685438,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 32.17403567858421,
+        "end_us": 32.4263489836405,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16271.882277581037,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 16007.753344477382,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15743.624411373725,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      }
+    ],
+    "envelope_convention": "Unit mean over each pulse window."
+  },
+  "pulse_shape": "sine",
+  "frame": "Interaction picture of the local rotating Hamiltonian.",
+  "results": [
+    {
+      "steps_per_event": 1024,
+      "average_gate_fidelity": 0.9970684272776111,
+      "average_leakage": 5.3785787466822045e-09,
+      "isometry_error": 3.346425501199077e-12,
+      "logical_operation": {
+        "real": [
+          [
+            0.6967344137354444,
+            -0.003238788591167211,
+            -0.015994652754658275,
+            0.0008299741558445801,
+            0.027714538304861716,
+            -0.00010987074422827841,
+            0.00019491329010338075,
+            -8.512376099536462e-05
+          ],
+          [
+            0.0004770144291537406,
+            0.6965529399192876,
+            -0.006776935373148232,
+            -0.00677288652366215,
+            -0.00029330570932079616,
+            0.03382135869748099,
+            -0.0001993853333567673,
+            0.00112752868505865
+          ],
+          [
+            -0.015313349838004562,
+            -0.006588020344706596,
+            -0.6866835557057928,
+            -0.0005114935398487952,
+            0.011038174637863796,
+            -6.585567425861723e-05,
+            -0.025082011611945426,
+            -0.00013324253123455027
+          ],
+          [
+            0.000706716621404117,
+            -0.006646868449554233,
+            -0.0048228983597340715,
+            -0.6843594962760885,
+            -0.00010500429221181853,
+            0.010369314415993423,
+            -0.0002245204636052063,
+            -0.022540127967817732
+          ],
+          [
+            0.02826538439468138,
+            -0.0005514021958248533,
+            0.012711218992089407,
+            -0.00013042197208913174,
+            -0.6876268672616931,
+            0.0004182846430537216,
+            -0.0086316449113244,
+            0.0014018888896500544
+          ],
+          [
+            -0.00015109940239520824,
+            0.033861156715672525,
+            3.051795128205898e-05,
+            0.012252709675402748,
+            -0.0033214370806513302,
+            -0.6863966349496805,
+            -0.00235409209404343,
+            -0.001692424139376622
+          ],
+          [
+            -0.0002094788797009659,
+            -0.0002183042886984662,
+            -0.025362238407661983,
+            0.0002277602854568467,
+            -0.009273721199794112,
+            -0.0023510355195470118,
+            0.6952175500080456,
+            -0.005041041714267434
+          ],
+          [
+            7.556044462428014e-05,
+            0.0007776567939515322,
+            -6.1684319507546565e-06,
+            -0.02329733629802084,
+            0.0012996387610511,
+            -0.0025001305496885114,
+            -0.000496779850535618,
+            0.6973456434134944
+          ]
+        ],
+        "imag": [
+          [
+            0.7158098345354279,
+            -0.0007236881594855703,
+            -0.00716119055718976,
+            0.004428061211163239,
+            -0.03271560215941116,
+            0.0004432231132208957,
+            0.000594833518092484,
+            3.647969188361667e-05
+          ],
+          [
+            0.003088647505785886,
+            0.714983396761997,
+            -0.001308260407553796,
+            0.03124950737962646,
+            -0.00024564908979049206,
+            -0.037245532361993725,
+            0.00015054630199110925,
+            0.0005790827144463793
+          ],
+          [
+            0.006929519197729017,
+            0.0014360612191426543,
+            0.724746484165616,
+            -0.004989730979109731,
+            0.012509990117411166,
+            0.00021309503967848728,
+            0.044131166118402766,
+            6.215349676550305e-05
+          ],
+          [
+            -0.004564139026658416,
+            -0.031663088591007325,
+            -3.7801863878545407e-06,
+            0.7266631723995011,
+            3.868799060794723e-05,
+            0.011896177362128925,
+            -3.5111950262646786e-05,
+            0.04200265518522143
+          ],
+          [
+            0.03262474643880649,
+            0.0002890806228383908,
+            0.01074683096921368,
+            -2.406885624321396e-05,
+            0.7244195937306216,
+            -0.0032939441861369054,
+            -0.012364666403413993,
+            0.0020913193492983506
+          ],
+          [
+            -0.00014658257451323332,
+            0.03689262291561361,
+            -6.453259145028923e-05,
+            0.011087244113256758,
+            0.0005579416632507919,
+            0.7252861715615365,
+            0.001552535412494689,
+            0.004087588916045489
+          ],
+          [
+            -0.0006409862190366941,
+            -2.9135735660821867e-05,
+            -0.043698997218449,
+            0.00016719091051851603,
+            0.012849106814942874,
+            -0.0015668719245432873,
+            0.7168224936986849,
+            0.0003791192945949955
+          ],
+          [
+            0.0001049055189032825,
+            -0.0009190640900077738,
+            -0.0005380357104637078,
+            -0.04158041683032961,
+            -0.00212010336843056,
+            -0.003734252611443075,
+            0.0050305161369913675,
+            0.7151109476685731
+          ]
+        ]
+      }
+    },
+    {
+      "steps_per_event": 2048,
+      "average_gate_fidelity": 0.9970676225647654,
+      "average_leakage": 5.61297499758254e-09,
+      "isometry_error": 5.626910627938899e-12,
+      "logical_operation": {
+        "real": [
+          [
+            0.6966799145134418,
+            -0.003239305834332932,
+            -0.015945757852696755,
+            0.0007991812295599925,
+            0.027730474046315817,
+            -0.00010951290320775389,
+            0.00019471540743776653,
+            -8.541555703182902e-05
+          ],
+          [
+            0.0004789836191037696,
+            0.6965666560805011,
+            -0.006773386284591958,
+            -0.0069819363585811155,
+            -0.0002963130611586549,
+            0.03383388648867605,
+            -0.0002005568675076744,
+            0.0011241323984814428
+          ],
+          [
+            -0.01526604810438657,
+            -0.006583899384123791,
+            -0.6867294255653517,
+            -0.0005104081720667939,
+            0.0110434737222563,
+            -6.50795470988736e-05,
+            -0.02509376829858254,
+            -0.00013084114909261263
+          ],
+          [
+            0.00067572817353858,
+            -0.006855381632512671,
+            -0.004824464107687251,
+            -0.684351087814796,
+            -0.00010451299694217975,
+            0.010374563219658961,
+            -0.0002249563388060142,
+            -0.022550350100167146
+          ],
+          [
+            0.028275810886967435,
+            -0.0005541892499716374,
+            0.012707532349289377,
+            -0.00013001428320645147,
+            -0.6876780978562533,
+            0.0004198394320170563,
+            -0.008667949932584391,
+            0.00137445952150697
+          ],
+          [
+            -0.00015053834366815088,
+            0.03387678588760797,
+            3.0883657712562184e-05,
+            0.012249080154576727,
+            -0.0033218557438110504,
+            -0.6863830906605062,
+            -0.0023691202478515147,
+            -0.0018339867355761784
+          ],
+          [
+            -0.0002093516351151683,
+            -0.00021998670629414202,
+            -0.025368454565362186,
+            0.0002279385625193769,
+            -0.009311960897758664,
+            -0.002365368596618836,
+            0.6951657146363943,
+            -0.005044190768995269
+          ],
+          [
+            7.685974452218508e-05,
+            0.0007725797086879943,
+            -3.737980296945101e-06,
+            -0.0233079450321163,
+            0.0012715501609387508,
+            -0.0026413108070156687,
+            -0.0004969350196568787,
+            0.697351590394267
+          ]
+        ],
+        "imag": [
+          [
+            0.7158635031881653,
+            -0.0007250076377293239,
+            -0.0071266342618855555,
+            0.004424467606140665,
+            -0.032720908297611505,
+            0.00044826403810833856,
+            0.0005956894646454821,
+            3.5172467283406286e-05
+          ],
+          [
+            0.0030897974124421876,
+            0.7149710129292394,
+            -0.0013348936750482705,
+            0.031158048054533552,
+            -0.0002453527852307331,
+            -0.03725293150688128,
+            0.00015149272887347964,
+            0.0005854462234852528
+          ],
+          [
+            0.006891548440298388,
+            0.0014614574517863351,
+            0.7247027654763801,
+            -0.0049923802108628795,
+            0.012503662975348691,
+            0.0002126334326476084,
+            0.04415096469706127,
+            6.649525938399853e-05
+          ],
+          [
+            -0.004560080029645341,
+            -0.03156856447208843,
+            -4.06210368478699e-06,
+            0.726671693995414,
+            3.90563709546089e-05,
+            0.011896289189206573,
+            -3.330429467011817e-05,
+            0.04202381053720224
+          ],
+          [
+            0.032633337733440654,
+            0.00028857441004987003,
+            0.01075634358007985,
+            -2.4006990361739052e-05,
+            0.7243697801627453,
+            -0.0032942140495087627,
+            -0.012359300853826952,
+            0.0020973567609753976
+          ],
+          [
+            -0.0001509943520762119,
+            0.03690186663287584,
+            -6.404929897309081e-05,
+            0.011091690162185558,
+            0.0005592286162115522,
+            0.725297684025981,
+            0.0015389559491927871,
+            0.004039491780066242
+          ],
+          [
+            -0.0006367550156403894,
+            -2.7499220382895068e-05,
+            -0.04372137988408821,
+            0.0001657230173351142,
+            0.012843352103137293,
+            -0.001553919601559245,
+            0.7168707484179389,
+            0.000378779812657362
+          ],
+          [
+            0.00010489179486814614,
+            -0.0009193320711708004,
+            -0.0005424199821708369,
+            -0.041598560317498236,
+            -0.0021260828796888036,
+            -0.003683367038719524,
+            0.005032928349348353,
+            0.7151035211130373
+          ]
+        ]
+      }
+    }
+  ],
+  "fidelity_refinement_change": 8.047128456922792e-07,
+  "limits": [
+    "Electronic excitation-number RWA.",
+    "No nuclei or noise; no physical local corrections.",
+    "Nominal timing; no physical-sequence optimisation."
+  ]
+}

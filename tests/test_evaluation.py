@@ -20,7 +20,7 @@ def test_selective_operation_matches_whole_register_target():
     """Protect the spectator while exposing unwanted evolution in the baselines."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -104,7 +104,7 @@ def test_finite_evaluation_recovers_short_pulse_limit():
     """Recover ideal fidelities with short square and sine pulses."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -177,7 +177,7 @@ def test_zero_drive_recovers_free_evolution_for_every_schedule():
     """Recover free evolution when a common amplitude error disables the drive."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -220,7 +220,7 @@ def test_exact_amplitude_calibration_recovers_finite_pulse_baseline():
     """Recover calibrated register operations with an exact gain estimate."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -256,7 +256,7 @@ def test_static_detuning_accumulates_over_the_complete_duration():
     """Recover the analytical detuning phase when the drive is disabled."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))

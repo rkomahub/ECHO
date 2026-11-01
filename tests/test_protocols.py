@@ -14,7 +14,7 @@ def test_candidates_have_expected_local_and_pair_sign_averages():
     """Distinguish free, global echo and selective interaction retention."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     characterisation = longitudinal_characterisation_report(

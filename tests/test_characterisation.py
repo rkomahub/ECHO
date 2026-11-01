@@ -18,7 +18,7 @@ def test_chain_characterisation_matches_dipolar_law_and_distance_scaling():
     """Recover signed chain couplings, projection shifts and cubic timings."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     scenario = longitudinal_scenario_from_dict(specification)
@@ -78,7 +78,7 @@ def test_aligned_chain_has_identical_axial_electronic_transitions():
     """Recover axial spin-one transition frequencies and transverse strengths."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     scenario = longitudinal_scenario_from_dict(specification)

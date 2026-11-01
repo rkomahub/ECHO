@@ -61,7 +61,12 @@ def characterise_longitudinal_scenario(scenario) -> dict:
     }
 
 
-def characterise_local_electrons(scenario, strength_threshold=1e-10) -> list:
+def characterise_local_electrons(
+    scenario,
+    strength_threshold=1e-10,
+    *,
+    field_profile_tesla=None,
+) -> list:
     """Return isolated-site electronic energies and local-Sx transition strengths."""
     if (
         isinstance(strength_threshold, bool)
@@ -70,6 +75,17 @@ def characterise_local_electrons(scenario, strength_threshold=1e-10) -> list:
         or strength_threshold < 0
     ):
         raise ValueError("strength_threshold must be finite and nonnegative.")
+
+    fields = None
+    if field_profile_tesla is not None:
+        if np.iscomplexobj(field_profile_tesla):
+            raise ValueError("field_profile_tesla must be real.")
+        fields = np.asarray(field_profile_tesla, dtype=float)
+        if (
+            fields.shape != (scenario.register.number_of_nv, 3)
+            or not np.all(np.isfinite(fields))
+        ):
+            raise ValueError("Provide a finite microwave field vector per site.")
 
     register = scenario.register
     system = SpinSystem([1])
@@ -82,6 +98,7 @@ def characterise_local_electrons(scenario, strength_threshold=1e-10) -> list:
             local_frame=register.local_frames[index],
             gyromagnetic_ratio=parameters["gamma_e"],
         )
+
         hamiltonian = electronic_nv_hamiltonian(
             system=system,
             electron_site=0,
@@ -89,9 +106,23 @@ def characterise_local_electrons(scenario, strength_threshold=1e-10) -> list:
             E=parameters["E"],
             omega_e=omega,
         )
+
+        drive = sx
+        if fields is not None:
+            coefficients = local_zeeman_vector(
+                field_lab=fields[index],
+                local_frame=register.local_frames[index],
+                gyromagnetic_ratio=parameters["gamma_e"],
+            )
+            drive = 0.0 * sx
+            for coefficient, operator in zip(
+                coefficients, spin_operators(1)
+            ):
+                drive += coefficient * operator
+
         transitions = allowed_transitions(
             hamiltonian,
-            sx,
+            drive,
             threshold=strength_threshold,
         )
 
@@ -101,7 +132,12 @@ def characterise_local_electrons(scenario, strength_threshold=1e-10) -> list:
             "energies_rad_per_us": np.asarray(
                 hamiltonian.eigenenergies(), dtype=float
             ),
-            "control_operator": "local_Sx",
+            "control_operator": (
+                "local_Sx" if fields is None else "physical_microwave_profile"
+            ),
+            "strength_units": (
+                "dimensionless" if fields is None else "(rad/us)^2"
+            ),
             "strength_threshold": float(strength_threshold),
             "transitions": [
                 {

@@ -1,0 +1,1626 @@
+{
+  "physical_dimension": 27,
+  "logical_dimension": 8,
+  "frame": "Exact interaction picture of the local electronic Hamiltonian.",
+  "average": "Uniform over logical computational-basis inputs.",
+  "records": [
+    {
+      "time_us": 0.0,
+      "mean_stay_probability": 1.0,
+      "mean_exchange_probability": 0.0,
+      "mean_other_logical_transfer_probability": 0.0,
+      "mean_leakage_probability": 0.0
+    },
+    {
+      "time_us": 0.1621317449182025,
+      "mean_stay_probability": 0.9999378330775053,
+      "mean_exchange_probability": 6.216581938191383e-05,
+      "mean_other_logical_transfer_probability": 3.6302848195473115e-11,
+      "mean_leakage_probability": 1.0670401714678181e-09
+    },
+    {
+      "time_us": 0.324263489836405,
+      "mean_stay_probability": 0.9997513639874043,
+      "mean_exchange_probability": 0.00024863241711874995,
+      "mean_other_logical_transfer_probability": 7.961249827510456e-11,
+      "mean_leakage_probability": 3.5163251089686004e-09
+    },
+    {
+      "time_us": 0.48639523475460755,
+      "mean_stay_probability": 0.9994406867470491,
+      "mean_exchange_probability": 0.0005593072323332153,
+      "mean_other_logical_transfer_probability": 5.170769376253951e-11,
+      "mean_leakage_probability": 5.968638345785358e-09
+    },
+    {
+      "time_us": 0.64852697967281,
+      "mean_stay_probability": 0.9990059570708589,
+      "mean_exchange_probability": 0.0009940360616334596,
+      "mean_other_logical_transfer_probability": 3.0662878120293122e-12,
+      "mean_leakage_probability": 6.8653626849865035e-09
+    },
+    {
+      "time_us": 0.8106587245910125,
+      "mean_stay_probability": 0.9984473910885119,
+      "mean_exchange_probability": 0.0015526031487096239,
+      "mean_other_logical_transfer_probability": 2.152406584669547e-11,
+      "mean_leakage_probability": 5.738964663692946e-09
+    },
+    {
+      "time_us": 0.9727904695092151,
+      "mean_stay_probability": 0.9977652654268606,
+      "mean_exchange_probability": 0.002234731301048853,
+      "mean_other_logical_transfer_probability": 7.361026777023014e-11,
+      "mean_leakage_probability": 3.1979368459882452e-09
+    },
+    {
+      "time_us": 1.1349222144274176,
+      "mean_stay_probability": 0.9969599170423928,
+      "mean_exchange_probability": 0.003040082035433102,
+      "mean_other_logical_transfer_probability": 6.526299945155319e-11,
+      "mean_leakage_probability": 8.570389874542193e-10
+    },
+    {
+      "time_us": 1.29705395934562,
+      "mean_stay_probability": 0.99603174419813,
+      "mean_exchange_probability": 0.003968255760264388,
+      "mean_other_logical_transfer_probability": 1.1749713961758773e-11,
+      "mean_leakage_probability": 3.169875797299677e-11
+    },
+    {
+      "time_us": 1.4591857042638225,
+      "mean_stay_probability": 0.9949812066777184,
+      "mean_exchange_probability": 0.0050187919997516615,
+      "mean_other_logical_transfer_probability": 9.735534742324414e-12,
+      "mean_leakage_probability": 1.3116703639146253e-09
+    },
+    {
+      "time_us": 1.621317449182025,
+      "mean_stay_probability": 0.9938088264360623,
+      "mean_exchange_probability": 0.006191169660819971,
+      "mean_other_logical_transfer_probability": 6.261315759645128e-11,
+      "mean_leakage_probability": 3.83592503808743e-09
+    },
+    {
+      "time_us": 1.7834491941002275,
+      "mean_stay_probability": 0.9925151864348118,
+      "mean_exchange_probability": 0.007484807335176393,
+      "mean_other_logical_transfer_probability": 7.481831325306664e-11,
+      "mean_leakage_probability": 6.149955962769505e-09
+    },
+    {
+      "time_us": 1.9455809390184302,
+      "mean_stay_probability": 0.9911009295355326,
+      "mean_exchange_probability": 0.008899063627172589,
+      "mean_other_logical_transfer_probability": 2.459701930296306e-11,
+      "mean_leakage_probability": 6.8116108320228234e-09
+    },
+    {
+      "time_us": 2.1077126839366325,
+      "mean_stay_probability": 0.9895667570335278,
+      "mean_exchange_probability": 0.010433237501416606,
+      "mean_other_logical_transfer_probability": 2.7820620789403673e-12,
+      "mean_leakage_probability": 5.4706622899994035e-09
+    },
+    {
+      "time_us": 2.269844428854835,
+      "mean_stay_probability": 0.9879134284041728,
+      "mean_exchange_probability": 0.012086568653653845,
+      "mean_other_logical_transfer_probability": 4.845405177075775e-11,
+      "mean_leakage_probability": 2.893975057000295e-09
+    },
+    {
+      "time_us": 2.4319761737730374,
+      "mean_stay_probability": 0.9861417613136559,
+      "mean_exchange_probability": 0.013858237919087085,
+      "mean_other_logical_transfer_probability": 7.89158913532716e-11,
+      "mean_leakage_probability": 6.906176005332911e-10
+    },
+    {
+      "time_us": 2.59410791869124,
+      "mean_stay_probability": 0.9842526321101308,
+      "mean_exchange_probability": 0.015747367730037768,
+      "mean_other_logical_transfer_probability": 3.947892206580265e-11,
+      "mean_leakage_probability": 1.2403812721013596e-10
+    },
+    {
+      "time_us": 2.756239663609443,
+      "mean_stay_probability": 0.9822469757775848,
+      "mean_exchange_probability": 0.017753022624823145,
+      "mean_other_logical_transfer_probability": 1.6702779179134288e-12,
+      "mean_leakage_probability": 1.5814897145938952e-09
+    },
+    {
+      "time_us": 2.918371408527645,
+      "mean_stay_probability": 0.980125786028204,
+      "mean_exchange_probability": 0.019874209794068176,
+      "mean_other_logical_transfer_probability": 3.346251504141975e-11,
+      "mean_leakage_probability": 4.1420174020480385e-09
+    },
+    {
+      "time_us": 3.080503153445848,
+      "mean_stay_probability": 0.9778901139983195,
+      "mean_exchange_probability": 0.022109879646739144,
+      "mean_other_logical_transfer_probability": 7.703939040942077e-11,
+      "mean_leakage_probability": 6.277548560671859e-09
+    },
+    {
+      "time_us": 3.24263489836405,
+      "mean_stay_probability": 0.9755410668483693,
+      "mean_exchange_probability": 0.024458926382442927,
+      "mean_other_logical_transfer_probability": 5.3970210396910824e-11,
+      "mean_leakage_probability": 6.706058461665115e-09
+    },
+    {
+      "time_us": 3.4047666432822528,
+      "mean_stay_probability": 0.9730798062278221,
+      "mean_exchange_probability": 0.02692018857772666,
+      "mean_other_logical_transfer_probability": 6.4109563198900206e-12,
+      "mean_leakage_probability": 5.177045311686763e-09
+    },
+    {
+      "time_us": 3.566898388200455,
+      "mean_stay_probability": 0.9705075475563625,
+      "mean_exchange_probability": 0.029492449797876116,
+      "mean_other_logical_transfer_probability": 2.0051073689184462e-11,
+      "mean_leakage_probability": 2.6152357342192233e-09
+    },
+    {
+      "time_us": 3.7290301331186577,
+      "mean_stay_probability": 0.9678255600936927,
+      "mean_exchange_probability": 0.0321744392562322,
+      "mean_other_logical_transfer_probability": 6.967944498498362e-11,
+      "mean_leakage_probability": 5.753707858907048e-10
+    },
+    {
+      "time_us": 3.8911618780368604,
+      "mean_stay_probability": 0.965035167120446,
+      "mean_exchange_probability": 0.03496483254229993,
+      "mean_other_logical_transfer_probability": 6.577760910545397e-11,
+      "mean_leakage_probability": 2.693029109078436e-10
+    },
+    {
+      "time_us": 4.053293622955063,
+      "mean_stay_probability": 0.9621377457112099,
+      "mean_exchange_probability": 0.03786225240616761,
+      "mean_other_logical_transfer_probability": 1.6037457297900783e-11,
+      "mean_leakage_probability": 1.8668611378451275e-09
+    },
+    {
+      "time_us": 4.215425367873265,
+      "mean_stay_probability": 0.9591347260216682,
+      "mean_exchange_probability": 0.04086526956481068,
+      "mean_other_logical_transfer_probability": 1.0294285822068842e-11,
+      "mean_leakage_probability": 4.4200043282991935e-09
+    },
+    {
+      "time_us": 4.377557112791468,
+      "mean_stay_probability": 0.95602759010132,
+      "mean_exchange_probability": 0.04397240349690978,
+      "mean_other_logical_transfer_probability": 5.822810069582423e-11,
+      "mean_leakage_probability": 6.350249902324801e-09
+    },
+    {
+      "time_us": 4.53968885770967,
+      "mean_stay_probability": 0.9528178701371345,
+      "mean_exchange_probability": 0.04718212323727733,
+      "mean_other_logical_transfer_probability": 7.313345347850145e-11,
+      "mean_leakage_probability": 6.552966652657764e-09
+    },
+    {
+      "time_us": 4.701820602627873,
+      "mean_stay_probability": 0.9495071469419839,
+      "mean_exchange_probability": 0.05049284816429685,
+      "mean_other_logical_transfer_probability": 2.8803868065383558e-11,
+      "mean_leakage_probability": 4.873406150617433e-09
+    },
+    {
+      "time_us": 4.863952347546075,
+      "mean_stay_probability": 0.9460970487944542,
+      "mean_exchange_probability": 0.05390294883458784,
+      "mean_other_logical_transfer_probability": 5.57947838584189e-12,
+      "mean_leakage_probability": 2.369931567350317e-09
+    },
+    {
+      "time_us": 5.026084092464278,
+      "mean_stay_probability": 0.9425892515514582,
+      "mean_exchange_probability": 0.0574107478787942,
+      "mean_other_logical_transfer_probability": 4.4702029924160676e-11,
+      "mean_leakage_probability": 5.162647429341436e-10
+    },
+    {
+      "time_us": 5.18821583738248,
+      "mean_stay_probability": 0.9389854784911775,
+      "mean_exchange_probability": 0.0610145209848115,
+      "mean_other_logical_transfer_probability": 7.50857408999809e-11,
+      "mean_leakage_probability": 4.562966625686728e-10
+    },
+    {
+      "time_us": 5.3503475823006825,
+      "mean_stay_probability": 0.9352874998710906,
+      "mean_exchange_probability": 0.06471249792309794,
+      "mean_other_logical_transfer_probability": 4.251424246049718e-11,
+      "mean_leakage_probability": 2.1578195133722847e-09
+    },
+    {
+      "time_us": 5.512479327218886,
+      "mean_stay_probability": 0.931497131712512,
+      "mean_exchange_probability": 0.06850286359484925,
+      "mean_other_logical_transfer_probability": 6.390035066065044e-12,
+      "mean_leakage_probability": 4.6573848400395206e-09
+    },
+    {
+      "time_us": 5.674611072137088,
+      "mean_stay_probability": 0.9276162345738007,
+      "mean_exchange_probability": 0.07238375902139915,
+      "mean_other_logical_transfer_probability": 3.1375004853947916e-11,
+      "mean_leakage_probability": 6.370253997764796e-09
+    },
+    {
+      "time_us": 5.83674281705529,
+      "mean_stay_probability": 0.9236467112653359,
+      "mean_exchange_probability": 0.07635328229918273,
+      "mean_other_logical_transfer_probability": 7.163046921218344e-11,
+      "mean_leakage_probability": 6.359354968950118e-09
+    },
+    {
+      "time_us": 5.9988745619734924,
+      "mean_stay_probability": 0.9195905058006153,
+      "mean_exchange_probability": 0.08040948957917257,
+      "mean_other_logical_transfer_probability": 5.492333686355707e-11,
+      "mean_leakage_probability": 4.574973433681802e-09
+    },
+    {
+      "time_us": 6.161006306891696,
+      "mean_stay_probability": 0.915449601758373,
+      "mean_exchange_probability": 0.08455039606464612,
+      "mean_other_logical_transfer_probability": 1.2261207312322235e-11,
+      "mean_leakage_probability": 2.164012770313271e-09
+    },
+    {
+      "time_us": 6.323138051809898,
+      "mean_stay_probability": 0.9112260222981804,
+      "mean_exchange_probability": 0.08877397716639437,
+      "mean_other_logical_transfer_probability": 2.0363851859569895e-11,
+      "mean_leakage_probability": 5.143918490786195e-10
+    },
+    {
+      "time_us": 6.4852697967281,
+      "mean_stay_probability": 0.9069218295814783,
+      "mean_exchange_probability": 0.09307816966428151,
+      "mean_other_logical_transfer_probability": 6.366977730054676e-11,
+      "mean_leakage_probability": 6.722524615122663e-10
+    },
+    {
+      "time_us": 6.647401541646303,
+      "mean_stay_probability": 0.9025391244875496,
+      "mean_exchange_probability": 0.09746087298074965,
+      "mean_other_logical_transfer_probability": 6.413071909052797e-11,
+      "mean_leakage_probability": 2.4438974667632223e-09
+    },
+    {
+      "time_us": 6.8095332865645055,
+      "mean_stay_probability": 0.8980800447145706,
+      "mean_exchange_probability": 0.10191995039600912,
+      "mean_other_logical_transfer_probability": 2.1905328095976183e-11,
+      "mean_leakage_probability": 4.8455248317602025e-09
+    },
+    {
+      "time_us": 6.971665031482708,
+      "mean_stay_probability": 0.893546763433989,
+      "mean_exchange_probability": 0.10645323020280013,
+      "mean_other_logical_transfer_probability": 1.327418508790615e-11,
+      "mean_leakage_probability": 6.342031865578501e-09
+    },
+    {
+      "time_us": 7.13379677640091,
+      "mean_stay_probability": 0.8889414870092883,
+      "mean_exchange_probability": 0.11105850678181581,
+      "mean_other_logical_transfer_probability": 5.2807294346802075e-11,
+      "mean_leakage_probability": 6.1351396724672824e-09
+    },
+    {
+      "time_us": 7.295928521319113,
+      "mean_stay_probability": 0.884266453929814,
+      "mean_exchange_probability": 0.11573354171921858,
+      "mean_other_logical_transfer_probability": 6.889273606620703e-11,
+      "mean_leakage_probability": 4.294994160519484e-09
+    },
+    {
+      "time_us": 7.458060266237315,
+      "mean_stay_probability": 0.8795239330009056,
+      "mean_exchange_probability": 0.12047606495399917,
+      "mean_other_logical_transfer_probability": 3.348434968431819e-11,
+      "mean_leakage_probability": 2.0015609652824573e-09
+    },
+    {
+      "time_us": 7.620192011155518,
+      "mean_stay_probability": 0.874716223294858,
+      "mean_exchange_probability": 0.12528377613145622,
+      "mean_other_logical_transfer_probability": 1.0940998062979757e-11,
+      "mean_leakage_probability": 5.66262579788869e-10
+    },
+    {
+      "time_us": 7.782323756073721,
+      "mean_stay_probability": 0.8698456531027117,
+      "mean_exchange_probability": 0.13015434594731812,
+      "mean_other_logical_transfer_probability": 4.102669104668225e-11,
+      "mean_leakage_probability": 9.045964239301463e-10
+    },
+    {
+      "time_us": 7.944455500991923,
+      "mean_stay_probability": 0.864914579628671,
+      "mean_exchange_probability": 0.13508541758215445,
+      "mean_other_logical_transfer_probability": 6.880468824248968e-11,
+      "mean_leakage_probability": 2.7143111294997805e-09
+    },
+    {
+      "time_us": 8.106587245910125,
+      "mean_stay_probability": 0.85992538691787,
+      "mean_exchange_probability": 0.14007460805702437,
+      "mean_other_logical_transfer_probability": 4.496290877758361e-11,
+      "mean_leakage_probability": 4.9806948833421686e-09
+    },
+    {
+      "time_us": 8.268718990828328,
+      "mean_stay_probability": 0.8548804841881102,
+      "mean_exchange_probability": 0.14511950949797014,
+      "mean_other_logical_transfer_probability": 1.3336668754920483e-11,
+      "mean_leakage_probability": 6.2714482845009135e-09
+    },
+    {
+      "time_us": 8.43085073574653,
+      "mean_stay_probability": 0.8497823037956403,
+      "mean_exchange_probability": 0.15021769031496232,
+      "mean_other_logical_transfer_probability": 3.0319449319753985e-11,
+      "mean_leakage_probability": 5.892633030086367e-09
+    },
+    {
+      "time_us": 8.592982480664732,
+      "mean_stay_probability": 0.8446332995609642,
+      "mean_exchange_probability": 0.15536669632630723,
+      "mean_other_logical_transfer_probability": 6.43132456356134e-11,
+      "mean_leakage_probability": 4.043430135618993e-09
+    },
+    {
+      "time_us": 8.755114225582936,
+      "mean_stay_probability": 0.8394359459266285,
+      "mean_exchange_probability": 0.16056405214739353,
+      "mean_other_logical_transfer_probability": 5.44834828924621e-11,
+      "mean_leakage_probability": 1.8849099986550604e-09
+    },
+    {
+      "time_us": 8.917245970501138,
+      "mean_stay_probability": 0.8341927367517579,
+      "mean_exchange_probability": 0.1658072625714001,
+      "mean_other_logical_transfer_probability": 1.9628341804711537e-11,
+      "mean_leakage_probability": 6.639933873664361e-10
+    },
+    {
+      "time_us": 9.07937771541934,
+      "mean_stay_probability": 0.8289061846858508,
+      "mean_exchange_probability": 0.17109381415071687,
+      "mean_other_logical_transfer_probability": 2.233063930142937e-11,
+      "mean_leakage_probability": 1.1421253565142175e-09
+    },
+    {
+      "time_us": 9.241509460337543,
+      "mean_stay_probability": 0.8235788203073058,
+      "mean_exchange_probability": 0.1764211766854462,
+      "mean_other_logical_transfer_probability": 5.658224473995459e-11,
+      "mean_leakage_probability": 2.9587209915429792e-09
+    },
+    {
+      "time_us": 9.403641205255745,
+      "mean_stay_probability": 0.8182131901987926,
+      "mean_exchange_probability": 0.18178680469341696,
+      "mean_other_logical_transfer_probability": 6.067936780459284e-11,
+      "mean_leakage_probability": 5.064092728835721e-09
+    },
+    {
+      "time_us": 9.565772950173947,
+      "mean_stay_probability": 0.8128118551152104,
+      "mean_exchange_probability": 0.18718813870480894,
+      "mean_other_logical_transfer_probability": 2.8390851342555055e-11,
+      "mean_leakage_probability": 6.165318479306451e-09
+    },
+    {
+      "time_us": 9.72790469509215,
+      "mean_stay_probability": 0.807377387865087,
+      "mean_exchange_probability": 0.19262260648059995,
+      "mean_other_logical_transfer_probability": 1.8095416722075264e-11,
+      "mean_leakage_probability": 5.645323998713845e-09
+    },
+    {
+      "time_us": 9.890036440010354,
+      "mean_stay_probability": 0.8019123719159207,
+      "mean_exchange_probability": 0.1980876242264773,
+      "mean_other_logical_transfer_probability": 4.722368424682007e-11,
+      "mean_leakage_probability": 3.8265031213025764e-09
+    },
+    {
+      "time_us": 10.052168184928556,
+      "mean_stay_probability": 0.7964194001411677,
+      "mean_exchange_probability": 0.20358059796400432,
+      "mean_other_logical_transfer_probability": 6.288291950907871e-11,
+      "mean_leakage_probability": 1.8143831044188694e-09
+    },
+    {
+      "time_us": 10.214299929846758,
+      "mean_stay_probability": 0.7909010740929119,
+      "mean_exchange_probability": 0.20909892510870984,
+      "mean_other_logical_transfer_probability": 3.790446743146451e-11,
+      "mean_leakage_probability": 7.964344234773523e-10
+    },
+    {
+      "time_us": 10.37643167476496,
+      "mean_stay_probability": 0.7853600025660059,
+      "mean_exchange_probability": 0.21463999605537468,
+      "mean_other_logical_transfer_probability": 1.789990596040101e-11,
+      "mean_leakage_probability": 1.3754623071902266e-09
+    },
+    {
+      "time_us": 10.538563419683163,
+      "mean_stay_probability": 0.7797988010339334,
+      "mean_exchange_probability": 0.22020119579544195,
+      "mean_other_logical_transfer_probability": 3.797889517705604e-11,
+      "mean_leakage_probability": 3.1684736306700785e-09
+    },
+    {
+      "time_us": 10.700695164601365,
+      "mean_stay_probability": 0.7742200894336282,
+      "mean_exchange_probability": 0.2257799053933128,
+      "mean_other_logical_transfer_probability": 6.118346695863117e-11,
+      "mean_leakage_probability": 5.100920170798582e-09
+    },
+    {
+      "time_us": 10.862826909519567,
+      "mean_stay_probability": 0.7686264906702229,
+      "mean_exchange_probability": 0.23137350324236586,
+      "mean_other_logical_transfer_probability": 4.649255053847637e-11,
+      "mean_leakage_probability": 6.0313541621711164e-09
+    },
+    {
+      "time_us": 11.024958654437771,
+      "mean_stay_probability": 0.763020628191768,
+      "mean_exchange_probability": 0.2369793663230331,
+      "mean_other_logical_transfer_probability": 2.1300151131841222e-11,
+      "mean_leakage_probability": 5.406171182316457e-09
+    },
+    {
+      "time_us": 11.187090399355974,
+      "mean_stay_probability": 0.7574051249270843,
+      "mean_exchange_probability": 0.24259487137640584,
+      "mean_other_logical_transfer_probability": 3.03845831565605e-11,
+      "mean_leakage_probability": 3.646999517550831e-09
+    },
+    {
+      "time_us": 11.349222144274176,
+      "mean_stay_probability": 0.7517826017938329,
+      "mean_exchange_probability": 0.24821739635566345,
+      "mean_other_logical_transfer_probability": 5.6344397934008366e-11,
+      "mean_leakage_probability": 1.7878172183551765e-09
+    },
+    {
+      "time_us": 11.511353889192378,
+      "mean_stay_probability": 0.7461556770970886,
+      "mean_exchange_probability": 0.25384432194916356,
+      "mean_other_logical_transfer_probability": 5.282022152256366e-11,
+      "mean_leakage_probability": 9.509412934090849e-10
+    },
+    {
+      "time_us": 11.67348563411058,
+      "mean_stay_probability": 0.7405269651119724,
+      "mean_exchange_probability": 0.2594730332547984,
+      "mean_other_logical_transfer_probability": 2.7265641993910524e-11,
+      "mean_leakage_probability": 1.5969715691730496e-09
+    },
+    {
+      "time_us": 11.835617379028783,
+      "mean_stay_probability": 0.734899075080476,
+      "mean_exchange_probability": 0.2651009215533457,
+      "mean_other_logical_transfer_probability": 2.5520749470195008e-11,
+      "mean_leakage_probability": 3.3379485339215126e-09
+    },
+    {
+      "time_us": 11.997749123946985,
+      "mean_stay_probability": 0.7292746094083292,
+      "mean_exchange_probability": 0.27072538546254915,
+      "mean_other_logical_transfer_probability": 4.959745515735491e-11,
+      "mean_leakage_probability": 5.098893452365845e-09
+    },
+    {
+      "time_us": 12.159880868865189,
+      "mean_stay_probability": 0.7236561616758627,
+      "mean_exchange_probability": 0.27634383230603665,
+      "mean_other_logical_transfer_probability": 5.610458375892954e-11,
+      "mean_leakage_probability": 5.878213011537242e-09
+    },
+    {
+      "time_us": 12.322012613783391,
+      "mean_stay_probability": 0.7180463154198374,
+      "mean_exchange_probability": 0.2819536793584485,
+      "mean_other_logical_transfer_probability": 3.4433453275655923e-11,
+      "mean_leakage_probability": 5.185866875939715e-09
+    },
+    {
+      "time_us": 12.484144358701593,
+      "mean_stay_probability": 0.7124476415869805,
+      "mean_exchange_probability": 0.28755235485438574,
+      "mean_other_logical_transfer_probability": 2.3850480358587254e-11,
+      "mean_leakage_probability": 3.50499887507225e-09
+    },
+    {
+      "time_us": 12.646276103619796,
+      "mean_stay_probability": 0.7068626986824009,
+      "mean_exchange_probability": 0.2931372994736626,
+      "mean_other_logical_transfer_probability": 4.236709929624291e-11,
+      "mean_leakage_probability": 1.800230534029844e-09
+    },
+    {
+      "time_us": 12.808407848537998,
+      "mean_stay_probability": 0.7012940309453959,
+      "mean_exchange_probability": 0.29870596785788217,
+      "mean_other_logical_transfer_probability": 5.620343571931878e-11,
+      "mean_leakage_probability": 1.115278915575931e-09
+    },
+    {
+      "time_us": 12.9705395934562,
+      "mean_stay_probability": 0.6957441678030445,
+      "mean_exchange_probability": 0.30425583031842673,
+      "mean_other_logical_transfer_probability": 4.138917238716293e-11,
+      "mean_leakage_probability": 1.8005035875981537e-09
+    },
+    {
+      "time_us": 13.132671338374402,
+      "mean_stay_probability": 0.6902156221459653,
+      "mean_exchange_probability": 0.30978437436360257,
+      "mean_other_logical_transfer_probability": 2.520825988264099e-11,
+      "mean_leakage_probability": 3.4655157885007115e-09
+    },
+    {
+      "time_us": 13.294803083292607,
+      "mean_stay_probability": 0.684710888883248,
+      "mean_exchange_probability": 0.31528910596671944,
+      "mean_other_logical_transfer_probability": 3.598583845291183e-11,
+      "mean_leakage_probability": 5.066701556560372e-09
+    },
+    {
+      "time_us": 13.456934828210809,
+      "mean_stay_probability": 0.6792324433552399,
+      "mean_exchange_probability": 0.32076755087318704,
+      "mean_other_logical_transfer_probability": 5.356695704776214e-11,
+      "mean_leakage_probability": 5.715299461717691e-09
+    },
+    {
+      "time_us": 13.619066573129011,
+      "mean_stay_probability": 0.6737827395212899,
+      "mean_exchange_probability": 0.3262172553962148,
+      "mean_other_logical_transfer_probability": 4.694469059911235e-11,
+      "mean_leakage_probability": 4.991570337981762e-09
+    },
+    {
+      "time_us": 13.781198318047213,
+      "mean_stay_probability": 0.6683642087602673,
+      "mean_exchange_probability": 0.3316357877777675,
+      "mean_other_logical_transfer_probability": 2.889634243643476e-11,
+      "mean_leakage_probability": 3.3986238513388973e-09
+    },
+    {
+      "time_us": 13.943330062965416,
+      "mean_stay_probability": 0.6629792588345415,
+      "mean_exchange_probability": 0.3370207392742116,
+      "mean_other_logical_transfer_probability": 3.145051513821214e-11,
+      "mean_leakage_probability": 1.8439867297206204e-09
+    },
+    {
+      "time_us": 14.105461807883618,
+      "mean_stay_probability": 0.6576302728660779,
+      "mean_exchange_probability": 0.34236972582179226,
+      "mean_other_logical_transfer_probability": 4.908766207169089e-11,
+      "mean_leakage_probability": 1.2791418290421772e-09
+    },
+    {
+      "time_us": 14.26759355280182,
+      "mean_stay_probability": 0.6523196084414404,
+      "mean_exchange_probability": 0.34768038948500873,
+      "mean_other_logical_transfer_probability": 5.03295541444957e-11,
+      "mean_leakage_probability": 1.981323246675355e-09
+    },
+    {
+      "time_us": 14.429725297720024,
+      "mean_stay_probability": 0.6470495964141285,
+      "mean_exchange_probability": 0.3529504000211143,
+      "mean_other_logical_transfer_probability": 3.388768562079635e-11,
+      "mean_leakage_probability": 3.5537130337277397e-09
+    },
+    {
+      "time_us": 14.591857042638226,
+      "mean_stay_probability": 0.641822538988154,
+      "mean_exchange_probability": 0.3581774559955651,
+      "mean_other_logical_transfer_probability": 2.927834826091753e-11,
+      "mean_leakage_probability": 5.012841580131914e-09
+    },
+    {
+      "time_us": 14.753988787556429,
+      "mean_stay_probability": 0.6366407086323759,
+      "mean_exchange_probability": 0.3633592857531347,
+      "mean_other_logical_transfer_probability": 4.386813269447337e-11,
+      "mean_leakage_probability": 5.5520964636062864e-09
+    },
+    {
+      "time_us": 14.91612053247463,
+      "mean_stay_probability": 0.6315063467127081,
+      "mean_exchange_probability": 0.36849364838945814,
+      "mean_other_logical_transfer_probability": 5.129229608539289e-11,
+      "mean_leakage_probability": 4.826441698711985e-09
+    },
+    {
+      "time_us": 15.078252277392833,
+      "mean_stay_probability": 0.6264216619454507,
+      "mean_exchange_probability": 0.3735783347177533,
+      "mean_other_logical_transfer_probability": 3.906230694452792e-11,
+      "mean_leakage_probability": 3.3245354071812433e-09
+    },
+    {
+      "time_us": 15.240384022311035,
+      "mean_stay_probability": 0.6213888297130656,
+      "mean_exchange_probability": 0.3786111683548872,
+      "mean_other_logical_transfer_probability": 2.9462878674776535e-11,
+      "mean_leakage_probability": 1.9096199411260017e-09
+    },
+    {
+      "time_us": 15.402515767229238,
+      "mean_stay_probability": 0.6164099912559665,
+      "mean_exchange_probability": 0.38359000727040904,
+      "mean_other_logical_transfer_probability": 3.898577513549518e-11,
+      "mean_leakage_probability": 1.4349736569617177e-09
+    },
+    {
+      "time_us": 15.564647512147442,
+      "mean_stay_probability": 0.6114872527586321,
+      "mean_exchange_probability": 0.38851274504622235,
+      "mean_other_logical_transfer_probability": 5.007465950277618e-11,
+      "mean_leakage_probability": 2.1363764934445644e-09
+    },
+    {
+      "time_us": 15.726779257065644,
+      "mean_stay_probability": 0.6066226840588911,
+      "mean_exchange_probability": 0.3933773122678544,
+      "mean_other_logical_transfer_probability": 4.344175651886488e-11,
+      "mean_leakage_probability": 3.6085279769467257e-09
+    },
+    {
+      "time_us": 15.888911001983846,
+      "mean_stay_probability": 0.6018183174054103,
+      "mean_exchange_probability": 0.398181677605907,
+      "mean_other_logical_transfer_probability": 3.1555401384407827e-11,
+      "mean_leakage_probability": 4.945009733979647e-09
+    },
+    {
+      "time_us": 16.05104274690205,
+      "mean_stay_probability": 0.5970761460842784,
+      "mean_exchange_probability": 0.4029238484660226,
+      "mean_other_logical_transfer_probability": 3.527628249356189e-11,
+      "mean_leakage_probability": 5.3970690177367325e-09
+    },
+    {
+      "time_us": 16.21317449182025,
+      "mean_stay_probability": 0.5923981234564519,
+      "mean_exchange_probability": 0.40760187180734186,
+      "mean_other_logical_transfer_probability": 4.729729399332719e-11,
+      "mean_leakage_probability": 4.690013323850059e-09
+    },
+    {
+      "time_us": 16.375306236738453,
+      "mean_stay_probability": 0.5877861617592113,
+      "mean_exchange_probability": 0.41221383495565594,
+      "mean_other_logical_transfer_probability": 4.63631355148895e-11,
+      "mean_leakage_probability": 3.278136938538439e-09
+    },
+    {
+      "time_us": 16.537437981656655,
+      "mean_stay_probability": 0.5832421313922278,
+      "mean_exchange_probability": 0.41675786652749186,
+      "mean_other_logical_transfer_probability": 3.481074350650484e-11,
+      "mean_leakage_probability": 1.9872003820217894e-09
+    },
+    {
+      "time_us": 16.699569726574857,
+      "mean_stay_probability": 0.5787678605396686,
+      "mean_exchange_probability": 0.42123213787854874,
+      "mean_other_logical_transfer_probability": 3.3208441895286644e-11,
+      "mean_leakage_probability": 1.5780677659861593e-09
+    },
+    {
+      "time_us": 16.86170147149306,
+      "mean_stay_probability": 0.5743651337379321,
+      "mean_exchange_probability": 0.42563486402062267,
+      "mean_other_logical_transfer_probability": 4.377482357362062e-11,
+      "mean_leakage_probability": 2.264780577036282e-09
+    },
+    {
+      "time_us": 17.023833216411262,
+      "mean_stay_probability": 0.5700356914294873,
+      "mean_exchange_probability": 0.4299643048726671,
+      "mean_other_logical_transfer_probability": 4.756450450249926e-11,
+      "mean_leakage_probability": 3.6379995372577297e-09
+    },
+    {
+      "time_us": 17.185964961329464,
+      "mean_stay_probability": 0.5657812287557844,
+      "mean_exchange_probability": 0.43421876632591055,
+      "mean_other_logical_transfer_probability": 3.8395419609802947e-11,
+      "mean_leakage_probability": 4.869939402235095e-09
+    },
+    {
+      "time_us": 17.34809670624767,
+      "mean_stay_probability": 0.5616033943472893,
+      "mean_exchange_probability": 0.4383966004039158,
+      "mean_other_logical_transfer_probability": 3.283902062028286e-11,
+      "mean_leakage_probability": 5.256439247150599e-09
+    },
+    {
+      "time_us": 17.510228451165872,
+      "mean_stay_probability": 0.5575037893534242,
+      "mean_exchange_probability": 0.4424962060539425,
+      "mean_other_logical_transfer_probability": 4.031637138975469e-11,
+      "mean_leakage_probability": 4.579147900306367e-09
+    },
+    {
+      "time_us": 17.672360196084075,
+      "mean_stay_probability": 0.5534839670791465,
+      "mean_exchange_probability": 0.4465160295938285,
+      "mean_other_logical_transfer_probability": 4.717683185488361e-11,
+      "mean_leakage_probability": 3.253674845419843e-09
+    },
+    {
+      "time_us": 17.834491941002277,
+      "mean_stay_probability": 0.5495454321447999,
+      "mean_exchange_probability": 0.45045456575931464,
+      "mean_other_logical_transfer_probability": 4.156719310936957e-11,
+      "mean_leakage_probability": 2.0678778149979436e-09
+    },
+    {
+      "time_us": 17.99662368592048,
+      "mean_stay_probability": 0.5456896398786708,
+      "mean_exchange_probability": 0.4543103583999931,
+      "mean_other_logical_transfer_probability": 3.387581178759582e-11,
+      "mean_leakage_probability": 1.7061903049751485e-09
+    },
+    {
+      "time_us": 18.15875543083868,
+      "mean_stay_probability": 0.5419179958501068,
+      "mean_exchange_probability": 0.45808200174616165,
+      "mean_other_logical_transfer_probability": 3.75560319430556e-11,
+      "mean_leakage_probability": 2.3682229171441106e-09
+    },
+    {
+      "time_us": 18.320887175756884,
+      "mean_stay_probability": 0.538231855181965,
+      "mean_exchange_probability": 0.4617681411522156,
+      "mean_other_logical_transfer_probability": 4.562349847063472e-11,
+      "mean_leakage_probability": 3.650580217867192e-09
+    },
+    {
+      "time_us": 18.483018920675086,
+      "mean_stay_probability": 0.5346325214353702,
+      "mean_exchange_probability": 0.4653674737435188,
+      "mean_other_logical_transfer_probability": 4.382906305138944e-11,
+      "mean_leakage_probability": 4.7933924186602025e-09
+    },
+    {
+      "time_us": 18.645150665593288,
+      "mean_stay_probability": 0.5311212459858601,
+      "mean_exchange_probability": 0.46887874883164904,
+      "mean_other_logical_transfer_probability": 3.5799615056845725e-11,
+      "mean_leakage_probability": 5.1332600191354525e-09
+    },
+    {
+      "time_us": 18.80728241051149,
+      "mean_stay_probability": 0.5276992275001668,
+      "mean_exchange_probability": 0.4723007680087759,
+      "mean_other_logical_transfer_probability": 3.5841760788004864e-11,
+      "mean_leakage_probability": 4.489178361451364e-09
+    },
+    {
+      "time_us": 18.969414155429693,
+      "mean_stay_probability": 0.5243676109737413,
+      "mean_exchange_probability": 0.4756323857014119,
+      "mean_other_logical_transfer_probability": 4.347704989059541e-11,
+      "mean_leakage_probability": 3.244515374919172e-09
+    },
+    {
+      "time_us": 19.131545900347895,
+      "mean_stay_probability": 0.5211274881680574,
+      "mean_exchange_probability": 0.4788725096692614,
+      "mean_other_logical_transfer_probability": 4.498535601596126e-11,
+      "mean_leakage_probability": 2.145153059681921e-09
+    },
+    {
+      "time_us": 19.293677645266097,
+      "mean_stay_probability": 0.5179798963904522,
+      "mean_exchange_probability": 0.4820201016817982,
+      "mean_other_logical_transfer_probability": 3.802860876645265e-11,
+      "mean_leakage_probability": 1.8190729340483626e-09
+    },
+    {
+      "time_us": 19.4558093901843,
+      "mean_stay_probability": 0.5149258189968031,
+      "mean_exchange_probability": 0.4850741785352681,
+      "mean_other_logical_transfer_probability": 3.5216936411239056e-11,
+      "mean_leakage_probability": 2.450924659898623e-09
+    },
+    {
+      "time_us": 19.617941135102505,
+      "mean_stay_probability": 0.5119661839959464,
+      "mean_exchange_probability": 0.48803381242297056,
+      "mean_other_logical_transfer_probability": 4.129068624454469e-11,
+      "mean_leakage_probability": 3.653737992059555e-09
+    },
+    {
+      "time_us": 19.780072880020708,
+      "mean_stay_probability": 0.5091018639369255,
+      "mean_exchange_probability": 0.49089813133018134,
+      "mean_other_logical_transfer_probability": 4.5134768911481396e-11,
+      "mean_leakage_probability": 4.720008085661623e-09
+    },
+    {
+      "time_us": 19.94220462493891,
+      "mean_stay_probability": 0.5063336755272574,
+      "mean_exchange_probability": 0.4936663194231505,
+      "mean_other_logical_transfer_probability": 4.0068881951546704e-11,
+      "mean_leakage_probability": 5.0271448314380695e-09
+    },
+    {
+      "time_us": 20.104336369857112,
+      "mean_stay_probability": 0.503662378898167,
+      "mean_exchange_probability": 0.4963376166163805,
+      "mean_other_logical_transfer_probability": 3.5466657146947496e-11,
+      "mean_leakage_probability": 4.4148621089383136e-09
+    },
+    {
+      "time_us": 20.266468114775314,
+      "mean_stay_probability": 0.5010886775099296,
+      "mean_exchange_probability": 0.4989113191241501,
+      "mean_other_logical_transfer_probability": 3.947214299539323e-11,
+      "mean_leakage_probability": 3.2437939368534593e-09
+    },
+    {
+      "time_us": 20.428599859693517,
+      "mean_stay_probability": 0.49861321837374045,
+      "mean_exchange_probability": 0.5013867794380711,
+      "mean_other_logical_transfer_probability": 4.4575390641699155e-11,
+      "mean_leakage_probability": 2.2155339085975533e-09
+    },
+    {
+      "time_us": 20.59073160461172,
+      "mean_stay_probability": 0.4962365911487876,
+      "mean_exchange_probability": 0.503763406913467,
+      "mean_other_logical_transfer_probability": 4.1620758234320446e-11,
+      "mean_leakage_probability": 1.918043404597905e-09
+    },
+    {
+      "time_us": 20.75286334952992,
+      "mean_stay_probability": 0.4939593290405195,
+      "mean_exchange_probability": 0.5060406684337447,
+      "mean_other_logical_transfer_probability": 3.6239434279987757e-11,
+      "mean_leakage_probability": 2.5189819679931476e-09
+    },
+    {
+      "time_us": 20.914995094448123,
+      "mean_stay_probability": 0.4917819076775223,
+      "mean_exchange_probability": 0.5082180885926367,
+      "mean_other_logical_transfer_probability": 3.820235649990907e-11,
+      "mean_leakage_probability": 3.6531144456297254e-09
+    },
+    {
+      "time_us": 21.077126839366326,
+      "mean_stay_probability": 0.48970474535222197,
+      "mean_exchange_probability": 0.5102952500228671,
+      "mean_other_logical_transfer_probability": 4.368292720835866e-11,
+      "mean_leakage_probability": 4.652883812783287e-09
+    },
+    {
+      "time_us": 21.239258584284528,
+      "mean_stay_probability": 0.4877282020553133,
+      "mean_exchange_probability": 0.5122717928817713,
+      "mean_other_logical_transfer_probability": 4.261947699367183e-11,
+      "mean_leakage_probability": 4.934776489413069e-09
+    },
+    {
+      "time_us": 21.40139032920273,
+      "mean_stay_probability": 0.48585258049353713,
+      "mean_exchange_probability": 0.5141474150964066,
+      "mean_other_logical_transfer_probability": 3.7170530573936006e-11,
+      "mean_leakage_probability": 4.3509750840338275e-09
+    },
+    {
+      "time_us": 21.563522074120932,
+      "mean_stay_probability": 0.48407812503953657,
+      "mean_exchange_probability": 0.5159218716694608,
+      "mean_other_logical_transfer_probability": 3.74405393388493e-11,
+      "mean_leakage_probability": 3.2454201258789044e-09
+    },
+    {
+      "time_us": 21.725653819039135,
+      "mean_stay_probability": 0.4824050225784464,
+      "mean_exchange_probability": 0.517594975081173,
+      "mean_other_logical_transfer_probability": 4.277562895486509e-11,
+      "mean_leakage_probability": 2.278476175104491e-09
+    },
+    {
+      "time_us": 21.887785563957337,
+      "mean_stay_probability": 0.4808334024365214,
+      "mean_exchange_probability": 0.5191665955520657,
+      "mean_other_logical_transfer_probability": 4.319684132991599e-11,
+      "mean_leakage_probability": 2.00585784052251e-09
+    },
+    {
+      "time_us": 22.049917308875543,
+      "mean_stay_probability": 0.47936333638126183,
+      "mean_exchange_probability": 0.5206366608861074,
+      "mean_other_logical_transfer_probability": 3.801230313316791e-11,
+      "mean_leakage_probability": 2.579163497570683e-09
+    },
+    {
+      "time_us": 22.212049053793745,
+      "mean_stay_probability": 0.47799483919923025,
+      "mean_exchange_probability": 0.5220051571646038,
+      "mean_other_logical_transfer_probability": 3.6984757281868396e-11,
+      "mean_leakage_probability": 3.6522854551846107e-09
+    },
+    {
+      "time_us": 22.374180798711947,
+      "mean_stay_probability": 0.47672786730569655,
+      "mean_exchange_probability": 0.5232721280210302,
+      "mean_other_logical_transfer_probability": 4.201802961473589e-11,
+      "mean_leakage_probability": 4.5930040015036686e-09
+    },
+    {
+      "time_us": 22.53631254363015,
+      "mean_stay_probability": 0.47556232037463375,
+      "mean_exchange_probability": 0.5244376748367007,
+      "mean_other_logical_transfer_probability": 4.3595230654699066e-11,
+      "mean_leakage_probability": 4.8510261076306336e-09
+    },
+    {
+      "time_us": 22.69844428854835,
+      "mean_stay_probability": 0.4744980402672538,
+      "mean_exchange_probability": 0.5255019553887582,
+      "mean_other_logical_transfer_probability": 3.869283154475629e-11,
+      "mean_leakage_probability": 4.292611337885725e-09
+    },
+    {
+      "time_us": 22.860576033466554,
+      "mean_stay_probability": 0.47353481220839005,
+      "mean_exchange_probability": 0.5264651844612482,
+      "mean_other_logical_transfer_probability": 3.658567578142252e-11,
+      "mean_leakage_probability": 3.2451919620418483e-09
+    },
+    {
+      "time_us": 23.022707778384756,
+      "mean_stay_probability": 0.4726723648343021,
+      "mean_exchange_probability": 0.5273276328885677,
+      "mean_other_logical_transfer_probability": 4.138311886191629e-11,
+      "mean_leakage_probability": 2.3357745418833323e-09
+    },
+    {
+      "time_us": 23.18483952330296,
+      "mean_stay_probability": 0.47191037046242135,
+      "mean_exchange_probability": 0.528089627441149,
+      "mean_other_logical_transfer_probability": 4.4041258707324274e-11,
+      "mean_leakage_probability": 2.0865877855583025e-09
+    },
+    {
+      "time_us": 23.34697126822116,
+      "mean_stay_probability": 0.47124844592282356,
+      "mean_exchange_probability": 0.5287515513823743,
+      "mean_other_logical_transfer_probability": 3.9331667200600243e-11,
+      "mean_leakage_probability": 2.637486404493045e-09
+    },
+    {
+      "time_us": 23.509103013139363,
+      "mean_stay_probability": 0.4706861522317155,
+      "mean_exchange_probability": 0.5293138441554783,
+      "mean_other_logical_transfer_probability": 3.606431042130107e-11,
+      "mean_leakage_probability": 3.6529255060585354e-09
+    },
+    {
+      "time_us": 23.671234758057565,
+      "mean_stay_probability": 0.4702229949358729,
+      "mean_exchange_probability": 0.5297770004792123,
+      "mean_other_logical_transfer_probability": 4.067946565520067e-11,
+      "mean_leakage_probability": 4.538817590485779e-09
+    },
+    {
+      "time_us": 23.833366502975768,
+      "mean_stay_probability": 0.4698584249132807,
+      "mean_exchange_probability": 0.5301415702933928,
+      "mean_other_logical_transfer_probability": 4.4642529811674265e-11,
+      "mean_leakage_probability": 4.77030219730328e-09
+    },
+    {
+      "time_us": 23.99549824789397,
+      "mean_stay_probability": 0.46959183792963044,
+      "mean_exchange_probability": 0.5304081578335261,
+      "mean_other_logical_transfer_probability": 4.016727253559188e-11,
+      "mean_leakage_probability": 4.2354148551336726e-09
+    },
+    {
+      "time_us": 24.157629992812172,
+      "mean_stay_probability": 0.46942257604694204,
+      "mean_exchange_probability": 0.5305774207077619,
+      "mean_other_logical_transfer_probability": 3.540527173013017e-11,
+      "mean_leakage_probability": 3.241647605341154e-09
+    },
+    {
+      "time_us": 24.319761737730378,
+      "mean_stay_probability": 0.4693499276074708,
+      "mean_exchange_probability": 0.5306500697945891,
+      "mean_other_logical_transfer_probability": 3.964513017805096e-11,
+      "mean_leakage_probability": 2.3907289794095445e-09
+    },
+    {
+      "time_us": 24.48189348264858,
+      "mean_stay_probability": 0.4693731291995208,
+      "mean_exchange_probability": 0.5306268686528411,
+      "mean_other_logical_transfer_probability": 4.5311703622249734e-11,
+      "mean_leakage_probability": 2.1653138415204973e-09
+    },
+    {
+      "time_us": 24.644025227566782,
+      "mean_stay_probability": 0.46949136414991394,
+      "mean_exchange_probability": 0.5305086331078035,
+      "mean_other_logical_transfer_probability": 4.1456967005819654e-11,
+      "mean_leakage_probability": 2.6979980111259463e-09
+    },
+    {
+      "time_us": 24.806156972484985,
+      "mean_stay_probability": 0.4697037647975798,
+      "mean_exchange_probability": 0.5302962314026074,
+      "mean_other_logical_transfer_probability": 3.4796230196022974e-11,
+      "mean_leakage_probability": 3.655070650156324e-09
+    },
+    {
+      "time_us": 24.968288717403187,
+      "mean_stay_probability": 0.4700094120466219,
+      "mean_exchange_probability": 0.5299905833694576,
+      "mean_other_logical_transfer_probability": 3.8062876286803114e-11,
+      "mean_leakage_probability": 4.4862890758225066e-09
+    },
+    {
+      "time_us": 25.13042046232139,
+      "mean_stay_probability": 0.4704073360793271,
+      "mean_exchange_probability": 0.529592659183157,
+      "mean_other_logical_transfer_probability": 4.577068405614835e-11,
+      "mean_leakage_probability": 4.687711223482378e-09
+    },
+    {
+      "time_us": 25.29255220723959,
+      "mean_stay_probability": 0.47089651699871893,
+      "mean_exchange_probability": 0.5291034787792865,
+      "mean_other_logical_transfer_probability": 4.3344155501792e-11,
+      "mean_leakage_probability": 4.175972468677896e-09
+    },
+    {
+      "time_us": 25.454683952157794,
+      "mean_stay_probability": 0.47147588578465727,
+      "mean_exchange_probability": 0.5285241108862448,
+      "mean_other_logical_transfer_probability": 3.459177915473714e-11,
+      "mean_leakage_probability": 3.2363307879274714e-09
+    },
+    {
+      "time_us": 25.616815697075996,
+      "mean_stay_probability": 0.47214432545644425,
+      "mean_exchange_probability": 0.5278556720097861,
+      "mean_other_logical_transfer_probability": 3.5886624553739816e-11,
+      "mean_leakage_probability": 2.4474041900169823e-09
+    },
+    {
+      "time_us": 25.778947441994198,
+      "mean_stay_probability": 0.47290067141918213,
+      "mean_exchange_probability": 0.5270993263261387,
+      "mean_other_logical_transfer_probability": 4.561054854600066e-11,
+      "mean_leakage_probability": 2.2474409433513374e-09
+    },
+    {
+      "time_us": 25.9410791869124,
+      "mean_stay_probability": 0.4737437126099714,
+      "mean_exchange_probability": 0.5262562845088873,
+      "mean_other_logical_transfer_probability": 4.57612751887222e-11,
+      "mean_leakage_probability": 2.7621077345604685e-09
+    },
+    {
+      "time_us": 26.103210931830603,
+      "mean_stay_probability": 0.4746721921507605,
+      "mean_exchange_probability": 0.5253278040836126,
+      "mean_other_logical_transfer_probability": 3.5221725109634825e-11,
+      "mean_leakage_probability": 3.6572468157501928e-09
+    },
+    {
+      "time_us": 26.265342676748805,
+      "mean_stay_probability": 0.47568480749031905,
+      "mean_exchange_probability": 0.524315188047359,
+      "mean_other_logical_transfer_probability": 3.331178475179381e-11,
+      "mean_leakage_probability": 4.429593893692196e-09
+    },
+    {
+      "time_us": 26.427474421667007,
+      "mean_stay_probability": 0.47678021180263086,
+      "mean_exchange_probability": 0.5232197836152542,
+      "mean_other_logical_transfer_probability": 4.441914537728667e-11,
+      "mean_leakage_probability": 4.599754766976005e-09
+    },
+    {
+      "time_us": 26.589606166585213,
+      "mean_stay_probability": 0.477957014314059,
+      "mean_exchange_probability": 0.5220429814304284,
+      "mean_other_logical_transfer_probability": 4.8377989488588764e-11,
+      "mean_leakage_probability": 4.11244473355432e-09
+    },
+    {
+      "time_us": 26.751737911503415,
+      "mean_stay_probability": 0.4792137822491603,
+      "mean_exchange_probability": 0.5207862145146778,
+      "mean_other_logical_transfer_probability": 3.70449047394748e-11,
+      "mean_leakage_probability": 3.2333497027873585e-09
+    },
+    {
+      "time_us": 26.913869656421618,
+      "mean_stay_probability": 0.48054904104175095,
+      "mean_exchange_probability": 0.5194509564118988,
+      "mean_other_logical_transfer_probability": 3.0795659745281545e-11,
+      "mean_leakage_probability": 2.5101419007565025e-09
+    },
+    {
+      "time_us": 27.07600140133982,
+      "mean_stay_probability": 0.48196127593524213,
+      "mean_exchange_probability": 0.5180387215791834,
+      "mean_other_logical_transfer_probability": 4.192422210886403e-11,
+      "mean_leakage_probability": 2.337645439087888e-09
+    },
+    {
+      "time_us": 27.238133146258022,
+      "mean_stay_probability": 0.48344893292173347,
+      "mean_exchange_probability": 0.5165510641110876,
+      "mean_other_logical_transfer_probability": 5.063095639822814e-11,
+      "mean_leakage_probability": 2.8285873319637466e-09
+    },
+    {
+      "time_us": 27.400264891176224,
+      "mean_stay_probability": 0.485010419267871,
+      "mean_exchange_probability": 0.5149895770825297,
+      "mean_other_logical_transfer_probability": 4.021225032870839e-11,
+      "mean_leakage_probability": 3.6564271161605526e-09
+    },
+    {
+      "time_us": 27.562396636094427,
+      "mean_stay_probability": 0.48664410403892683,
+      "mean_exchange_probability": 0.5133558915008333,
+      "mean_other_logical_transfer_probability": 2.8981452978851087e-11,
+      "mean_leakage_probability": 4.362368253841668e-09
+    },
+    {
+      "time_us": 27.72452838101263,
+      "mean_stay_probability": 0.4883483200525453,
+      "mean_exchange_probability": 0.5116516754059963,
+      "mean_other_logical_transfer_probability": 3.812817629753593e-11,
+      "mean_leakage_probability": 4.504535084396714e-09
+    },
+    {
+      "time_us": 27.88666012593083,
+      "mean_stay_probability": 0.4901213637495588,
+      "mean_exchange_probability": 0.509878632121702,
+      "mean_other_logical_transfer_probability": 5.1828051149705005e-11,
+      "mean_leakage_probability": 4.045291627521386e-09
+    },
+    {
+      "time_us": 28.048791870849033,
+      "mean_stay_probability": 0.4919614977854665,
+      "mean_exchange_probability": 0.5080384989508612,
+      "mean_other_logical_transfer_probability": 4.454798928799459e-11,
+      "mean_leakage_probability": 3.2383728366726686e-09
+    },
+    {
+      "time_us": 28.210923615767236,
+      "mean_stay_probability": 0.49386695135195396,
+      "mean_exchange_probability": 0.5061330460684029,
+      "mean_other_logical_transfer_probability": 2.856950514222224e-11,
+      "mean_leakage_probability": 2.583272877977872e-09
+    },
+    {
+      "time_us": 28.373055360685438,
+      "mean_stay_probability": 0.4958359218356657,
+      "mean_exchange_probability": 0.504164075756023,
+      "mean_other_logical_transfer_probability": 3.3386598437490244e-11,
+      "mean_leakage_probability": 2.4386888989055164e-09
+    },
+    {
+      "time_us": 28.53518710560364,
+      "mean_stay_probability": 0.4978665756670658,
+      "mean_exchange_probability": 0.5021334213037302,
+      "mean_other_logical_transfer_probability": 5.130945911845603e-11,
+      "mean_leakage_probability": 2.8940984302868513e-09
+    },
+    {
+      "time_us": 28.697318850521842,
+      "mean_stay_probability": 0.4999570493984363,
+      "mean_exchange_probability": 0.5000429467918697,
+      "mean_other_logical_transfer_probability": 4.951803723621214e-11,
+      "mean_leakage_probability": 3.6479893537783097e-09
+    },
+    {
+      "time_us": 28.859450595440048,
+      "mean_stay_probability": 0.5021054505425098,
+      "mean_exchange_probability": 0.4978945451938643,
+      "mean_other_logical_transfer_probability": 3.013118297408009e-11,
+      "mean_leakage_probability": 4.279181652054674e-09
+    },
+    {
+      "time_us": 29.02158234035825,
+      "mean_stay_probability": 0.5043098581243015,
+      "mean_exchange_probability": 0.4956901374526651,
+      "mean_other_logical_transfer_probability": 2.840357469474234e-11,
+      "mean_leakage_probability": 4.401664188663421e-09
+    },
+    {
+      "time_us": 29.183714085276453,
+      "mean_stay_probability": 0.5065683252271113,
+      "mean_exchange_probability": 0.49343167079814737,
+      "mean_other_logical_transfer_probability": 4.8634835696318026e-11,
+      "mean_leakage_probability": 3.97778448236974e-09
+    },
+    {
+      "time_us": 29.345845830194655,
+      "mean_stay_probability": 0.5088788795600303,
+      "mean_exchange_probability": 0.4911211171713349,
+      "mean_other_logical_transfer_probability": 5.427091074073007e-11,
+      "mean_leakage_probability": 3.257404423568554e-09
+    },
+    {
+      "time_us": 29.507977575112857,
+      "mean_stay_probability": 0.511239525097605,
+      "mean_exchange_probability": 0.4887604721605835,
+      "mean_other_logical_transfer_probability": 3.3936137321034005e-11,
+      "mean_leakage_probability": 2.6708255145937645e-09
+    },
+    {
+      "time_us": 29.67010932003106,
+      "mean_stay_probability": 0.5136482435335046,
+      "mean_exchange_probability": 0.48635175385746754,
+      "mean_other_logical_transfer_probability": 2.4139334144198668e-11,
+      "mean_leakage_probability": 2.5504685889235836e-09
+    },
+    {
+      "time_us": 29.83224106494926,
+      "mean_stay_probability": 0.5161029948704767,
+      "mean_exchange_probability": 0.4838970020916441,
+      "mean_other_logical_transfer_probability": 4.3741651483087875e-11,
+      "mean_leakage_probability": 2.9539380065662185e-09
+    },
+    {
+      "time_us": 29.994372809867464,
+      "mean_stay_probability": 0.5186017188689813,
+      "mean_exchange_probability": 0.4813982774455997,
+      "mean_other_logical_transfer_probability": 5.7784392091590176e-11,
+      "mean_leakage_probability": 3.6259455262987254e-09
+    },
+    {
+      "time_us": 30.156504554785666,
+      "mean_stay_probability": 0.5211423358900505,
+      "mean_exchange_probability": 0.4788576599469444,
+      "mean_other_logical_transfer_probability": 3.9813541585692824e-11,
+      "mean_leakage_probability": 4.176795062283802e-09
+    },
+    {
+      "time_us": 30.31863629970387,
+      "mean_stay_probability": 0.5237227482101812,
+      "mean_exchange_probability": 0.47627724763314966,
+      "mean_other_logical_transfer_probability": 2.162926984629832e-11,
+      "mean_leakage_probability": 4.292161869007053e-09
+    },
+    {
+      "time_us": 30.48076804462207,
+      "mean_stay_probability": 0.526340841283762,
+      "mean_exchange_probability": 0.4736591547772829,
+      "mean_other_logical_transfer_probability": 3.7045057984398257e-11,
+      "mean_leakage_probability": 3.915980929585452e-09
+    },
+    {
+      "time_us": 30.642899789540273,
+      "mean_stay_probability": 0.5289944858845526,
+      "mean_exchange_probability": 0.4710055107450488,
+      "mean_other_logical_transfer_probability": 5.906389787401613e-11,
+      "mean_leakage_probability": 3.295724143211331e-09
+    },
+    {
+      "time_us": 30.805031534458475,
+      "mean_stay_probability": 0.5316815391664583,
+      "mean_exchange_probability": 0.46831845801108246,
+      "mean_other_logical_transfer_probability": 4.710622677583021e-11,
+      "mean_leakage_probability": 2.776022588847685e-09
+    },
+    {
+      "time_us": 30.967163279376678,
+      "mean_stay_probability": 0.5343998455744243,
+      "mean_exchange_probability": 0.4656001516835641,
+      "mean_other_logical_transfer_probability": 2.1765998431424827e-11,
+      "mean_leakage_probability": 2.669644207466334e-09
+    },
+    {
+      "time_us": 31.129295024294883,
+      "mean_stay_probability": 0.5371472386747194,
+      "mean_exchange_probability": 0.4628527582757722,
+      "mean_other_logical_transfer_probability": 2.943120789539915e-11,
+      "mean_leakage_probability": 3.0026890712991263e-09
+    },
+    {
+      "time_us": 31.291426769213086,
+      "mean_stay_probability": 0.5399215416006499,
+      "mean_exchange_probability": 0.46007845483076804,
+      "mean_other_logical_transfer_probability": 5.737903464447796e-11,
+      "mean_leakage_probability": 3.5836485705012824e-09
+    },
+    {
+      "time_us": 31.453558514131288,
+      "mean_stay_probability": 0.5427205684071874,
+      "mean_exchange_probability": 0.4572794274406669,
+      "mean_other_logical_transfer_probability": 5.4725275486794014e-11,
+      "mean_leakage_probability": 4.0548506209442695e-09
+    },
+    {
+      "time_us": 31.61569025904949,
+      "mean_stay_probability": 0.5455421255616879,
+      "mean_exchange_probability": 0.4544578702366617,
+      "mean_other_logical_transfer_probability": 2.5067548979632746e-11,
+      "mean_leakage_probability": 4.178546239584278e-09
+    },
+    {
+      "time_us": 31.777822003967692,
+      "mean_stay_probability": 0.5483840133983344,
+      "mean_exchange_probability": 0.451615982687284,
+      "mean_other_logical_transfer_probability": 2.2149843424626158e-11,
+      "mean_leakage_probability": 3.867996667682976e-09
+    },
+    {
+      "time_us": 31.939953748885895,
+      "mean_stay_probability": 0.5512440275195862,
+      "mean_exchange_probability": 0.44875596905944476,
+      "mean_other_logical_transfer_probability": 5.2464661189565305e-11,
+      "mean_leakage_probability": 3.3572459461302325e-09
+    },
+    {
+      "time_us": 32.1020854938041,
+      "mean_stay_probability": 0.5541199605090859,
+      "mean_exchange_probability": 0.44588003649439106,
+      "mean_other_logical_transfer_probability": 6.131461345538624e-11,
+      "mean_leakage_probability": 2.9005009867406583e-09
+    },
+    {
+      "time_us": 32.264217238722296,
+      "mean_stay_probability": 0.5570096031371413,
+      "mean_exchange_probability": 0.4429903940761888,
+      "mean_other_logical_transfer_probability": 3.151169978390742e-11,
+      "mean_leakage_probability": 2.789991174630619e-09
+    },
+    {
+      "time_us": 32.4263489836405,
+      "mean_stay_probability": 0.5599107451480274,
+      "mean_exchange_probability": 0.44008925180296465,
+      "mean_other_logical_transfer_probability": 1.6601808302212643e-11,
+      "mean_leakage_probability": 3.034614712377816e-09
+    }
+  ],
+  "limits": [
+    "Bare logical subspace must be invariant under local evolution.",
+    "No controls, nuclei or noise.",
+    "Population diagnostics do not quantify all phase or gate errors."
+  ],
+  "source_specification": {
+    "schema_version": 1,
+    "register": {
+      "positions": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.5e-08,
+          0.0,
+          0.0
+        ],
+        [
+          3e-08,
+          0.0,
+          0.0
+        ]
+      ],
+      "nv_axes": [
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "transverse_references": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "field_at_reference": [
+        0.0,
+        0.0,
+        0.01
+      ],
+      "gradient": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "reference_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_free": true
+    },
+    "model": "ideal_longitudinal",
+    "sites": [
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      }
+    ],
+    "task": {
+      "target_pair": [
+        0,
+        1
+      ],
+      "target": "signed_sqrt_zz",
+      "spectators": "identity",
+      "encoding": "ms0_msminus1",
+      "tensor_order": "site_0_left",
+      "detuning_convention": "reference_minus_transition",
+      "local_corrections": "none"
+    },
+    "control": {
+      "pulse_model": "instantaneous",
+      "addressing": "independent_ideal",
+      "noise": "none"
+    },
+    "environment": {
+      "nuclear_parameters": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "preparation": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "noise": {
+        "status": "specified",
+        "parameters": {
+          "model": "none"
+        }
+      },
+      "uncertainty": {
+        "status": "specified",
+        "parameters": {
+          "model": "deterministic"
+        }
+      },
+      "control_design": {
+        "status": "specified",
+        "parameters": {
+          "candidate_protocols": [
+            "free",
+            "closed_global_hahn",
+            "hadamard_selective"
+          ]
+        }
+      },
+      "constraints": {
+        "status": "specified",
+        "parameters": {
+          "minimum_separation_m": 5e-09,
+          "maximum_field_t": 0.02
+        }
+      },
+      "numerics": {
+        "status": "specified",
+        "parameters": {
+          "method": "static_exponential",
+          "comparison_atol": 1e-10,
+          "comparison_rtol": 1e-10
+        }
+      },
+      "evaluation": {
+        "status": "specified",
+        "parameters": {
+          "scope": "whole_register",
+          "metrics": [
+            "average_gate_fidelity",
+            "residual_local_phases",
+            "residual_pair_phases",
+            "duration",
+            "individual_pulse_count",
+            "distinct_pulse_times"
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+      "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+      "E": "Chosen zero strain splitting.",
+      "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+      "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+      "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+      "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+      "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+    }
+  },
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+    "git_dirty": true
+  },
+  "nominal_gate_duration_us": 32.4263489836405
+}

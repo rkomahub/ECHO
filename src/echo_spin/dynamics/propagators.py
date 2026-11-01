@@ -157,3 +157,50 @@ def logical_electron_nuclear_dynamical_map(
     )
 
     return logical_density
+
+
+def hermitian_propagator(hamiltonian: Qobj, time: float) -> Qobj:
+    """Propagate a finite Hermitian Hamiltonian through its spectral decomposition."""
+    if (
+        not hamiltonian.isherm
+        or not np.all(np.isfinite(hamiltonian.full()))
+        or not np.isfinite(time)
+    ):
+        raise ValueError("Provide a finite Hermitian Hamiltonian and finite time.")
+
+    energies, states = hamiltonian.eigenstates()
+    vectors = np.column_stack([
+        state.full().ravel() for state in states
+    ])
+    phases = np.exp(-1j * np.asarray(energies) * time)
+    matrix = np.einsum(
+        "ik,k,jk->ij",
+        vectors,
+        phases,
+        vectors.conj(),
+        optimize=False,
+    )
+    return Qobj(matrix, dims=hamiltonian.dims)
+
+
+def hermitian_time_dependent_propagator(hamiltonian, t0, t1, steps):
+    """Propagate a Hermitian Hamiltonian using midpoint spectral exponentials."""
+    if not np.all(np.isfinite([t0, t1])) or t1 <= t0:
+        raise ValueError("Provide finite increasing time boundaries.")
+    if (
+        isinstance(steps, (bool, np.bool_))
+        or not isinstance(steps, (int, np.integer))
+        or steps < 1
+    ):
+        raise ValueError("steps must be a positive integer.")
+
+    dt = (t1 - t0) / steps
+    propagator = None
+    for step in range(steps):
+        interval = hermitian_propagator(
+            hamiltonian(t0 + (step + 0.5) * dt), dt
+        )
+        propagator = (
+            interval if propagator is None else interval * propagator
+        )
+    return propagator

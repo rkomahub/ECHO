@@ -22,7 +22,7 @@ def test_ideal_implementation_groups_pulses_and_preserves_closing_events():
     """Compile simultaneous Hahn pulses without dropping the terminal event."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -113,7 +113,7 @@ def test_square_controls_preserve_duration_and_approach_ideal_limit():
     """Preserve elapsed time, recover ideal control and reject overlapping windows."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -165,7 +165,7 @@ def test_sine_controls_converge_with_time_resolution():
     """Check sine-pulse normalization and convergence of register evolution."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -227,7 +227,7 @@ def test_selective_phase_cycles_preserve_patterns_and_ideal_limit(
     """Verify per-site phase patterns and recover ideal selective evolution."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -289,7 +289,7 @@ def test_timing_offset_preserves_widths_closure_and_elapsed_time(
     """Shift interior events while retaining pulse widths and terminal events."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))

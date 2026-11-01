@@ -913,3 +913,57 @@ def plot_local_transition_spectra(
     axes[-1, 0].set_xlabel("Transition frequency (MHz)")
     figure.suptitle(title)
     return figure
+
+
+def plot_ideal_physical_comparison(report):
+    """Compare saved ideal and physical fidelities with electronic leakage."""
+    records = report["records"]
+    names = list(records)
+    labels = {
+        "free": "Free",
+        "closed_global_hahn": "Global Hahn",
+        "hadamard_selective": "Selective\nrecoupling",
+    }
+    positions = np.arange(len(names))
+    figure, axes = plt.subplots(
+        1, 2, figsize=(10, 4), constrained_layout=True
+    )
+
+    axes[0].bar(
+        positions - 0.18,
+        [records[name]["ideal_fidelity"] for name in names],
+        width=0.36, label="Ideal longitudinal",
+        color="lightgrey",
+    )
+    axes[0].bar(
+        positions + 0.18,
+        [
+            records[name]["physical"]["average_gate_fidelity"]
+            for name in names
+        ],
+        width=0.36, label="Physical electronic RWA",
+        color="tab:blue",
+    )
+    axes[0].set_ylabel("Whole-register average gate fidelity")
+    axes[0].set_ylim(0, 1.05)
+    axes[0].legend(fontsize="small")
+
+    axes[1].semilogy(
+        positions,
+        [records[name]["physical"]["average_leakage"] for name in names],
+        "o", color="tab:orange",
+    )
+    axes[1].set_ylabel("Mean electronic leakage")
+
+    for axis in axes:
+        axis.set_xticks(positions)
+        axis.set_xticklabels([
+            labels.get(name, name.replace("_", " ")) for name in names
+        ])
+        axis.grid(axis="y", alpha=0.25)
+
+    duration = records[names[0]]["duration_us"]
+    figure.suptitle(
+        f"Same register and target — T = {duration:.6g} µs"
+    )
+    return figure

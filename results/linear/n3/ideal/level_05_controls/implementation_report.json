@@ -1,0 +1,956 @@
+{
+  "report_version": 1,
+  "source_protocol_report": {
+    "report_version": 1,
+    "source_model": {
+      "report_version": 1,
+      "model": "ideal_longitudinal",
+      "specification": {
+        "schema_version": 1,
+        "register": {
+          "positions": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.5e-08,
+              0.0,
+              0.0
+            ],
+            [
+              3e-08,
+              0.0,
+              0.0
+            ]
+          ],
+          "nv_axes": [
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "transverse_references": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "field_at_reference": [
+            0.0,
+            0.0,
+            0.01
+          ],
+          "gradient": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "reference_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_free": true
+        },
+        "model": "ideal_longitudinal",
+        "sites": [
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          }
+        ],
+        "task": {
+          "target_pair": [
+            0,
+            1
+          ],
+          "target": "signed_sqrt_zz",
+          "spectators": "identity",
+          "encoding": "ms0_msminus1",
+          "tensor_order": "site_0_left",
+          "detuning_convention": "reference_minus_transition",
+          "local_corrections": "none"
+        },
+        "control": {
+          "pulse_model": "instantaneous",
+          "addressing": "independent_ideal",
+          "noise": "none"
+        },
+        "environment": {
+          "nuclear_parameters": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "preparation": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "noise": {
+            "status": "specified",
+            "parameters": {
+              "model": "none"
+            }
+          },
+          "uncertainty": {
+            "status": "specified",
+            "parameters": {
+              "model": "deterministic"
+            }
+          },
+          "control_design": {
+            "status": "specified",
+            "parameters": {
+              "candidate_protocols": [
+                "free",
+                "closed_global_hahn",
+                "hadamard_selective"
+              ]
+            }
+          },
+          "constraints": {
+            "status": "specified",
+            "parameters": {
+              "minimum_separation_m": 5e-09,
+              "maximum_field_t": 0.02
+            }
+          },
+          "numerics": {
+            "status": "unresolved",
+            "parameters": {}
+          },
+          "evaluation": {
+            "status": "specified",
+            "parameters": {
+              "scope": "whole_register",
+              "metrics": [
+                "average_gate_fidelity",
+                "residual_local_phases",
+                "residual_pair_phases",
+                "duration",
+                "individual_pulse_count",
+                "distinct_pulse_times"
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+          "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+          "E": "Chosen zero strain splitting.",
+          "gamma_e": "Signed Hamiltonian convention: -2*pi*28024.95 rad/us/T; magnitude from Joas et al., PRX 15, 021069 (2025).",
+          "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+          "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+          "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits."
+        }
+      },
+      "subsystem_dimensions": [
+        2,
+        2,
+        2
+      ],
+      "dimension": 8,
+      "detunings_rad_per_us": [
+        -0.05449721979294696,
+        -0.09688394629857237,
+        -0.05449721979294696
+      ],
+      "couplings_rad_per_us": [
+        [
+          0.0,
+          0.024220986574643093,
+          0.0030276233218303867
+        ],
+        [
+          0.024220986574643093,
+          0.0,
+          0.024220986574643093
+        ],
+        [
+          0.0030276233218303867,
+          0.024220986574643093,
+          0.0
+        ]
+      ],
+      "constant_rad_per_us": 0.05146959647111657,
+      "hamiltonian_diagonal_rad_per_us": [
+        0.0,
+        0.0,
+        0.0,
+        0.09688394629857236,
+        0.0,
+        0.012110493287321545,
+        0.09688394629857239,
+        0.2058783858844663
+      ],
+      "operator_conventions": {
+        "tensor_order": "site_0_left",
+        "computational_basis": "lexicographic binary order",
+        "local_operators": "Embedded Pauli X, Y, Z.",
+        "rotation": "exp(-i*theta*Pauli/2)",
+        "logical_embedding": "logical 0 -> ms=0; logical 1 -> ms=-1"
+      },
+      "assessment": {
+        "status": "ideal_design_baseline",
+        "tensor_order": "site_0_left",
+        "hamiltonian_units": "rad/us",
+        "rotation_convention": "exp(-i*theta*Pauli/2)",
+        "physical_approximation_validated": false,
+        "omitted": [
+          "transverse interactions",
+          "electronic leakage",
+          "nuclear dynamics",
+          "noise",
+          "finite-pulse effects",
+          "shared-drive crosstalk"
+        ]
+      },
+      "dipolar_projection": {
+        "status": "static_diagnostic_only",
+        "physical_dimension": 27,
+        "logical_dimension": 8,
+        "omitted_in_subspace_norm_rad_per_us": 0.225581965679381,
+        "discarded_subspace_coupling_norm_rad_per_us": 0.26707418453103987,
+        "interpretation": "Dipolar terms only; no energetic or dynamical suppression assessment. Norms are not gate errors.",
+        "matrices_rad_per_us": {
+          "projected": {
+            "real": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                -0.14532591944785855,
+                0.0,
+                -0.01816573993098232,
+                -0.14532591944785855,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                -0.006055246643660773,
+                0.0,
+                0.0,
+                -0.14532591944785855
+              ],
+              [
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                -0.01816573993098232
+              ],
+              [
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                0.09688394629857237,
+                0.0,
+                -0.04844197314928619,
+                -0.006055246643660773,
+                0.0
+              ],
+              [
+                0.0,
+                -0.006055246643660773,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.14532591944785855
+              ],
+              [
+                -0.01816573993098232,
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.012110493287321547,
+                -0.04844197314928619,
+                0.0
+              ],
+              [
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                -0.006055246643660773,
+                0.0,
+                -0.04844197314928619,
+                0.09688394629857237,
+                0.0
+              ],
+              [
+                0.0,
+                -0.14532591944785855,
+                -0.01816573993098232,
+                0.0,
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                0.20587838588446628
+              ]
+            ],
+            "imag": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          "longitudinal": {
+            "real": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.09688394629857236,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.012110493287321545,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.09688394629857239,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.2058783858844663
+              ]
+            ],
+            "imag": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          }
+        }
+      },
+      "source_level_2_software": {
+        "python": "3.9.6",
+        "packages": {
+          "echo-spin": "0.1.0",
+          "numpy": "2.0.2",
+          "scipy": "1.13.1",
+          "qutip": "5.0.4",
+          "matplotlib": "3.9.4"
+        },
+        "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+        "git_dirty": true
+      },
+      "software": {
+        "python": "3.9.6",
+        "packages": {
+          "echo-spin": "0.1.0",
+          "numpy": "2.0.2",
+          "scipy": "1.13.1",
+          "qutip": "5.0.4",
+          "matplotlib": "3.9.4"
+        },
+        "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+        "git_dirty": true
+      }
+    },
+    "target_pair": [
+      0,
+      1
+    ],
+    "duration_us": 32.4263489836405,
+    "pulse_model": "instantaneous",
+    "pulse_axis": "X",
+    "pulse_angle_rad": 3.141592653589793,
+    "target_diagonal": {
+      "real": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475
+      ],
+      "imag": [
+        -0.7071067811865475,
+        -0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        -0.7071067811865475,
+        -0.7071067811865475
+      ]
+    },
+    "target_convention": "exp(-i*sign(J_ab)*pi*Z_a*Z_b/4), spectator identity, site zero leftmost; no local corrections.",
+    "protocols": {
+      "free": {
+        "pulse_times_us": [
+          [],
+          [],
+          []
+        ],
+        "local_sign_averages": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 0,
+        "distinct_pulse_times_us": [],
+        "distinct_pulse_time_count": 0,
+        "closed_up_to_global_phase": true
+      },
+      "closed_global_hahn": {
+        "pulse_times_us": [
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 6,
+        "distinct_pulse_times_us": [
+          16.21317449182025,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 2,
+        "closed_up_to_global_phase": true
+      },
+      "hadamard_selective": {
+        "pulse_times_us": [
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            8.106587245910125,
+            16.21317449182025,
+            24.319761737730374,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          -2.1912511214832661e-16
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.6434383411124497e-16,
+            1.6434383411124497e-16,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 20,
+        "distinct_pulse_times_us": [
+          4.053293622955063,
+          8.106587245910125,
+          12.159880868865187,
+          16.21317449182025,
+          20.266468114775314,
+          24.319761737730374,
+          28.373055360685438,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 8,
+        "closed_up_to_global_phase": true
+      }
+    },
+    "limits": [
+      "Sign averages apply to the static longitudinal model.",
+      "Schedules include closing pulses.",
+      "Ideal independent addressing is assumed.",
+      "No finite-pulse, nuclear or leakage dynamics are evaluated.",
+      "No gate propagation or fidelity calculation is performed."
+    ],
+    "software": {
+      "python": "3.9.6",
+      "packages": {
+        "echo-spin": "0.1.0",
+        "numpy": "2.0.2",
+        "scipy": "1.13.1",
+        "qutip": "5.0.4",
+        "matplotlib": "3.9.4"
+      },
+      "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+      "git_dirty": true
+    }
+  },
+  "implementation": "instantaneous_local_X_pi",
+  "duration_us": 32.4263489836405,
+  "operator_conventions": {
+    "local_pulse": "exp(-i*pi*X_i/2) = -i*X_i",
+    "simultaneous_pulses": "Product of commuting local pulses.",
+    "tensor_order": "site_0_left",
+    "interval_order": "Free interval 0, pulse event 0, free interval 1, and so on, ending with the final free interval."
+  },
+  "protocols": {
+    "free": {
+      "event_times_us": [],
+      "addressed_sites": [],
+      "free_intervals_us": [
+        32.4263489836405
+      ],
+      "event_operator_count": 0,
+      "checks": {
+        "nonnegative_intervals": true,
+        "duration_matches": true,
+        "closed_up_to_global_phase": true
+      }
+    },
+    "closed_global_hahn": {
+      "event_times_us": [
+        16.21317449182025,
+        32.4263489836405
+      ],
+      "addressed_sites": [
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          1,
+          2
+        ]
+      ],
+      "free_intervals_us": [
+        16.21317449182025,
+        16.21317449182025,
+        0.0
+      ],
+      "event_operator_count": 2,
+      "checks": {
+        "nonnegative_intervals": true,
+        "duration_matches": true,
+        "closed_up_to_global_phase": true
+      }
+    },
+    "hadamard_selective": {
+      "event_times_us": [
+        4.053293622955063,
+        8.106587245910125,
+        12.159880868865187,
+        16.21317449182025,
+        20.266468114775314,
+        24.319761737730374,
+        28.373055360685438,
+        32.4263489836405
+      ],
+      "addressed_sites": [
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2
+        ],
+        [
+          0,
+          1
+        ],
+        [
+          0,
+          1,
+          2
+        ]
+      ],
+      "free_intervals_us": [
+        4.053293622955063,
+        4.053293622955063,
+        4.053293622955062,
+        4.053293622955064,
+        4.053293622955064,
+        4.05329362295506,
+        4.053293622955064,
+        4.053293622955064,
+        0.0
+      ],
+      "event_operator_count": 8,
+      "checks": {
+        "nonnegative_intervals": true,
+        "duration_matches": true,
+        "closed_up_to_global_phase": true
+      }
+    }
+  },
+  "limits": [
+    "Closure follows from validated even X-pi pulse counts per site.",
+    "No finite pulse duration or shared-drive response is represented.",
+    "No gate propagation or fidelity calculation is performed."
+  ],
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+    "git_dirty": true
+  }
+}

@@ -1,0 +1,1141 @@
+{
+  "report_version": 1,
+  "comparison": "systematic_amplitude_error",
+  "source_protocol_report": {
+    "report_version": 1,
+    "source_model": {
+      "report_version": 1,
+      "model": "ideal_longitudinal",
+      "specification": {
+        "schema_version": 1,
+        "register": {
+          "positions": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.5e-08,
+              0.0,
+              0.0
+            ],
+            [
+              3e-08,
+              0.0,
+              0.0
+            ]
+          ],
+          "nv_axes": [
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ],
+            [
+              0.0,
+              0.0,
+              1.0
+            ]
+          ],
+          "transverse_references": [
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "field_at_reference": [
+            0.0,
+            0.0,
+            0.01
+          ],
+          "gradient": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "reference_position": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "source_free": true
+        },
+        "model": "ideal_longitudinal",
+        "sites": [
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          },
+          {
+            "D": 18032.741831605414,
+            "E": 0.0,
+            "gamma_e": -176085.95540243763,
+            "bare_detuning": 0.0
+          }
+        ],
+        "task": {
+          "target_pair": [
+            0,
+            1
+          ],
+          "target": "signed_sqrt_zz",
+          "spectators": "identity",
+          "encoding": "ms0_msminus1",
+          "tensor_order": "site_0_left",
+          "detuning_convention": "reference_minus_transition",
+          "local_corrections": "none"
+        },
+        "control": {
+          "pulse_model": "instantaneous",
+          "addressing": "independent_ideal",
+          "noise": "none"
+        },
+        "environment": {
+          "nuclear_parameters": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "preparation": {
+            "status": "not_applicable",
+            "parameters": {}
+          },
+          "noise": {
+            "status": "specified",
+            "parameters": {
+              "model": "none"
+            }
+          },
+          "uncertainty": {
+            "status": "specified",
+            "parameters": {
+              "model": "deterministic"
+            }
+          },
+          "control_design": {
+            "status": "specified",
+            "parameters": {
+              "candidate_protocols": [
+                "free",
+                "closed_global_hahn",
+                "hadamard_selective"
+              ]
+            }
+          },
+          "constraints": {
+            "status": "specified",
+            "parameters": {
+              "minimum_separation_m": 5e-09,
+              "maximum_field_t": 0.02
+            }
+          },
+          "numerics": {
+            "status": "unresolved",
+            "parameters": {}
+          },
+          "evaluation": {
+            "status": "specified",
+            "parameters": {
+              "scope": "whole_register",
+              "metrics": [
+                "average_gate_fidelity",
+                "residual_local_phases",
+                "residual_pair_phases",
+                "duration",
+                "individual_pulse_count",
+                "distinct_pulse_times"
+              ]
+            }
+          }
+        },
+        "provenance": {
+          "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+          "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+          "E": "Chosen zero strain splitting.",
+          "gamma_e": "Signed Hamiltonian convention: -2*pi*28024.95 rad/us/T; magnitude from Joas et al., PRX 15, 021069 (2025).",
+          "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+          "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+          "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits."
+        }
+      },
+      "subsystem_dimensions": [
+        2,
+        2,
+        2
+      ],
+      "dimension": 8,
+      "detunings_rad_per_us": [
+        -0.05449721979294696,
+        -0.09688394629857237,
+        -0.05449721979294696
+      ],
+      "couplings_rad_per_us": [
+        [
+          0.0,
+          0.024220986574643093,
+          0.0030276233218303867
+        ],
+        [
+          0.024220986574643093,
+          0.0,
+          0.024220986574643093
+        ],
+        [
+          0.0030276233218303867,
+          0.024220986574643093,
+          0.0
+        ]
+      ],
+      "constant_rad_per_us": 0.05146959647111657,
+      "hamiltonian_diagonal_rad_per_us": [
+        0.0,
+        0.0,
+        0.0,
+        0.09688394629857236,
+        0.0,
+        0.012110493287321545,
+        0.09688394629857239,
+        0.2058783858844663
+      ],
+      "operator_conventions": {
+        "tensor_order": "site_0_left",
+        "computational_basis": "lexicographic binary order",
+        "local_operators": "Embedded Pauli X, Y, Z.",
+        "rotation": "exp(-i*theta*Pauli/2)",
+        "logical_embedding": "logical 0 -> ms=0; logical 1 -> ms=-1"
+      },
+      "assessment": {
+        "status": "ideal_design_baseline",
+        "tensor_order": "site_0_left",
+        "hamiltonian_units": "rad/us",
+        "rotation_convention": "exp(-i*theta*Pauli/2)",
+        "physical_approximation_validated": false,
+        "omitted": [
+          "transverse interactions",
+          "electronic leakage",
+          "nuclear dynamics",
+          "noise",
+          "finite-pulse effects",
+          "shared-drive crosstalk"
+        ]
+      },
+      "dipolar_projection": {
+        "status": "static_diagnostic_only",
+        "physical_dimension": 27,
+        "logical_dimension": 8,
+        "omitted_in_subspace_norm_rad_per_us": 0.225581965679381,
+        "discarded_subspace_coupling_norm_rad_per_us": 0.26707418453103987,
+        "interpretation": "Dipolar terms only; no energetic or dynamical suppression assessment. Norms are not gate errors.",
+        "matrices_rad_per_us": {
+          "projected": {
+            "real": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                -0.14532591944785855,
+                0.0,
+                -0.01816573993098232,
+                -0.14532591944785855,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                -0.006055246643660773,
+                0.0,
+                0.0,
+                -0.14532591944785855
+              ],
+              [
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                -0.01816573993098232
+              ],
+              [
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                0.09688394629857237,
+                0.0,
+                -0.04844197314928619,
+                -0.006055246643660773,
+                0.0
+              ],
+              [
+                0.0,
+                -0.006055246643660773,
+                -0.04844197314928619,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.14532591944785855
+              ],
+              [
+                -0.01816573993098232,
+                0.0,
+                0.0,
+                -0.04844197314928619,
+                0.0,
+                0.012110493287321547,
+                -0.04844197314928619,
+                0.0
+              ],
+              [
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                -0.006055246643660773,
+                0.0,
+                -0.04844197314928619,
+                0.09688394629857237,
+                0.0
+              ],
+              [
+                0.0,
+                -0.14532591944785855,
+                -0.01816573993098232,
+                0.0,
+                -0.14532591944785855,
+                0.0,
+                0.0,
+                0.20587838588446628
+              ]
+            ],
+            "imag": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          "longitudinal": {
+            "real": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.09688394629857236,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.012110493287321545,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.09688394629857239,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.2058783858844663
+              ]
+            ],
+            "imag": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ]
+          }
+        }
+      },
+      "source_level_2_software": {
+        "python": "3.9.6",
+        "packages": {
+          "echo-spin": "0.1.0",
+          "numpy": "2.0.2",
+          "scipy": "1.13.1",
+          "qutip": "5.0.4",
+          "matplotlib": "3.9.4"
+        },
+        "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+        "git_dirty": true
+      },
+      "software": {
+        "python": "3.9.6",
+        "packages": {
+          "echo-spin": "0.1.0",
+          "numpy": "2.0.2",
+          "scipy": "1.13.1",
+          "qutip": "5.0.4",
+          "matplotlib": "3.9.4"
+        },
+        "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+        "git_dirty": true
+      }
+    },
+    "target_pair": [
+      0,
+      1
+    ],
+    "duration_us": 32.4263489836405,
+    "pulse_model": "instantaneous",
+    "pulse_axis": "X",
+    "pulse_angle_rad": 3.141592653589793,
+    "target_diagonal": {
+      "real": [
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475
+      ],
+      "imag": [
+        -0.7071067811865475,
+        -0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        0.7071067811865475,
+        -0.7071067811865475,
+        -0.7071067811865475
+      ]
+    },
+    "target_convention": "exp(-i*sign(J_ab)*pi*Z_a*Z_b/4), spectator identity, site zero leftmost; no local corrections.",
+    "protocols": {
+      "free": {
+        "pulse_times_us": [
+          [],
+          [],
+          []
+        ],
+        "local_sign_averages": [
+          1.0,
+          1.0,
+          1.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 0,
+        "distinct_pulse_times_us": [],
+        "distinct_pulse_time_count": 0,
+        "closed_up_to_global_phase": true
+      },
+      "closed_global_hahn": {
+        "pulse_times_us": [
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ],
+          [
+            16.21317449182025,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 6,
+        "distinct_pulse_times_us": [
+          16.21317449182025,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 2,
+        "closed_up_to_global_phase": true
+      },
+      "hadamard_selective": {
+        "pulse_times_us": [
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            4.053293622955063,
+            8.106587245910125,
+            12.159880868865187,
+            16.21317449182025,
+            20.266468114775314,
+            24.319761737730374,
+            28.373055360685438,
+            32.4263489836405
+          ],
+          [
+            8.106587245910125,
+            16.21317449182025,
+            24.319761737730374,
+            32.4263489836405
+          ]
+        ],
+        "local_sign_averages": [
+          0.0,
+          0.0,
+          -2.1912511214832661e-16
+        ],
+        "pair_sign_averages": [
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.0,
+            1.0,
+            1.6434383411124497e-16
+          ],
+          [
+            1.6434383411124497e-16,
+            1.6434383411124497e-16,
+            1.0
+          ]
+        ],
+        "individual_pulse_count": 20,
+        "distinct_pulse_times_us": [
+          4.053293622955063,
+          8.106587245910125,
+          12.159880868865187,
+          16.21317449182025,
+          20.266468114775314,
+          24.319761737730374,
+          28.373055360685438,
+          32.4263489836405
+        ],
+        "distinct_pulse_time_count": 8,
+        "closed_up_to_global_phase": true
+      }
+    },
+    "limits": [
+      "Sign averages apply to the static longitudinal model.",
+      "Schedules include closing pulses.",
+      "Ideal independent addressing is assumed.",
+      "No finite-pulse, nuclear or leakage dynamics are evaluated.",
+      "No gate propagation or fidelity calculation is performed."
+    ],
+    "software": {
+      "python": "3.9.6",
+      "packages": {
+        "echo-spin": "0.1.0",
+        "numpy": "2.0.2",
+        "scipy": "1.13.1",
+        "qutip": "5.0.4",
+        "matplotlib": "3.9.4"
+      },
+      "git_revision": "bfd25a5a443168f7d125a4744a8790d1b2ba122d",
+      "git_dirty": true
+    }
+  },
+  "pulse_shape": "square",
+  "pulse_duration_us": 0.02,
+  "duration_us": 32.4263489836405,
+  "integration_steps": null,
+  "baseline_amplitude_error": 0.0,
+  "records": [
+    {
+      "amplitude_error": -0.05,
+      "peak_rabi_frequency_rad_per_us": 149.22565104551518,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.528788522122241,
+          "infidelity": 0.47121147787775897,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.02292819722704964,
+          "unitarity_error": 8.665737976686521e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9883345034700355,
+          "infidelity": 0.011665496529964514,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.011658443786201067,
+          "unitarity_error": 1.1922797518961715e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    },
+    {
+      "amplitude_error": -0.02,
+      "peak_rabi_frequency_rad_per_us": 153.93804002589988,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5480181175741867,
+          "infidelity": 0.4519818824258133,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.003698601775103949,
+          "unitarity_error": 7.542545306581215e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9982537557608242,
+          "infidelity": 0.0017462442391757982,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.001739191495412351,
+          "unitarity_error": 1.2498453440288257e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    },
+    {
+      "amplitude_error": -0.01,
+      "peak_rabi_frequency_rad_per_us": 155.50883635269477,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5508080024409566,
+          "infidelity": 0.4491919975590434,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.0009087169083340507,
+          "unitarity_error": 9.571988839526442e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9995645168896254,
+          "infidelity": 0.0004354831103745571,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.00042843036661111,
+          "unitarity_error": 2.570539352238705e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    },
+    {
+      "amplitude_error": 0.0,
+      "peak_rabi_frequency_rad_per_us": 157.07963267948966,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5517167193492907,
+          "infidelity": 0.4482832806507093,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 8.633606215625679e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9999929472562366,
+          "infidelity": 7.052743763447111e-06,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 1.971349682049565e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    },
+    {
+      "amplitude_error": 0.01,
+      "peak_rabi_frequency_rad_per_us": 158.65042900628455,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5507337405420676,
+          "infidelity": 0.4492662594579324,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.0009829788072230894,
+          "unitarity_error": 9.64435608473589e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9995564500463467,
+          "infidelity": 0.000443549953653255,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.0004364972098898079,
+          "unitarity_error": 1.4980094077850578e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    },
+    {
+      "amplitude_error": 0.02,
+      "peak_rabi_frequency_rad_per_us": 160.22122533307945,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5478704211393961,
+          "infidelity": 0.4521295788606039,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.003846298209894572,
+          "unitarity_error": 7.693521670476092e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9982369996042608,
+          "infidelity": 0.0017630003957391782,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.001755947651975731,
+          "unitarity_error": 2.6258133927428715e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    },
+    {
+      "amplitude_error": 0.05,
+      "peak_rabi_frequency_rad_per_us": 164.93361431346415,
+      "protocols": {
+        "free": {
+          "average_gate_fidelity": 0.21799330736173808,
+          "infidelity": 0.782006692638262,
+          "baseline_infidelity": 0.782006692638262,
+          "excess_infidelity": 0.0,
+          "unitarity_error": 5.635614706157741e-17,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 0,
+            "distinct_pulse_time_count": 0
+          }
+        },
+        "closed_global_hahn": {
+          "average_gate_fidelity": 0.5284334752118133,
+          "infidelity": 0.4715665247881867,
+          "baseline_infidelity": 0.4482832806507093,
+          "excess_infidelity": 0.0232832441374774,
+          "unitarity_error": 9.015124203630962e-16,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 6,
+            "distinct_pulse_time_count": 2
+          }
+        },
+        "hadamard_selective": {
+          "average_gate_fidelity": 0.9882818902382815,
+          "infidelity": 0.011718109761718498,
+          "baseline_infidelity": 7.052743763447111e-06,
+          "excess_infidelity": 0.011711057017955051,
+          "unitarity_error": 2.068590365252834e-15,
+          "resources": {
+            "duration_us": 32.4263489836405,
+            "individual_pulse_count": 20,
+            "distinct_pulse_time_count": 8
+          }
+        }
+      }
+    }
+  ],
+  "limits": [
+    "One constant amplitude error shared by all sites and pulses.",
+    "Independent addressing and longitudinal qubit drift.",
+    "Pulse timings and target are fixed; no recalibration is applied.",
+    "Sine results require adequate time resolution."
+  ],
+  "phase_cycle": "xy4",
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "93e29e05c98e9726b703e5bb927410d801780840",
+    "git_dirty": true
+  }
+}

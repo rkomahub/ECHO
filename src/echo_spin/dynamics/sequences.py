@@ -10,7 +10,10 @@ from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.core.operators import embed_operator
 from echo_spin.core.system import SpinSystem
 from echo_spin.decoupling.modulation import modulation_function
-from echo_spin.dynamics.propagators import time_dependent_propagator
+from echo_spin.dynamics.propagators import (
+    hermitian_propagator,
+    time_dependent_propagator,
+)
 
 
 def toggling_hamiltonians(
@@ -317,5 +320,109 @@ def diagonal_x_pulse_propagator(
                 propagator = pulses[site] * propagator
 
         previous_time = time
+
+    return propagator
+
+
+def hermitian_pulse_propagator(
+    free_hamiltonian,
+    control_operator,
+    duration,
+    envelope,
+    steps=128,
+):
+    """Propagate a real envelope with midpoint sampling and Hermitian exponentials."""
+    if not np.isfinite(duration) or duration <= 0:
+        raise ValueError("duration must be finite and positive.")
+    if (
+        isinstance(steps, (bool, np.bool_))
+        or not isinstance(steps, (int, np.integer))
+        or steps < 1
+    ):
+        raise ValueError("steps must be a positive integer.")
+
+    dt = duration / steps
+    propagator = qeye(free_hamiltonian.dims[0])
+    for step in range(steps):
+        coefficient = envelope((step + 0.5) * dt)
+        if np.iscomplexobj(coefficient) or not np.isfinite(coefficient):
+            raise ValueError("Envelope samples must be finite and real.")
+
+        hamiltonian = free_hamiltonian + coefficient * control_operator
+        propagator = (
+            hermitian_propagator(hamiltonian, dt) * propagator
+        )
+
+    return propagator
+
+
+def periodic_square_propagator(
+    free_hamiltonian,
+    magnetic_operator,
+    carrier,
+    duration,
+    steps_per_period=256,
+):
+    """Propagate a cosine-driven square pulse using carrier-period repetition."""
+    if (
+        not np.isfinite(carrier)
+        or carrier <= 0
+        or not np.isfinite(duration)
+        or duration < 0
+    ):
+        raise ValueError("Provide a positive carrier and nonnegative duration.")
+    if (
+        isinstance(steps_per_period, (bool, np.bool_))
+        or not isinstance(steps_per_period, (int, np.integer))
+        or steps_per_period < 1
+    ):
+        raise ValueError("steps_per_period must be a positive integer.")
+
+    period = 2 * np.pi / carrier
+    cycles = int(duration // period)
+    remainder = duration - cycles * period
+    propagator = qeye(free_hamiltonian.dims[0])
+
+    def envelope(time):
+        """Return the unit-amplitude laboratory carrier."""
+        return np.cos(carrier * time)
+
+    if cycles:
+        cycle = hermitian_pulse_propagator(
+            free_hamiltonian,
+            magnetic_operator,
+            period,
+            envelope,
+            steps=steps_per_period,
+        )
+        power = np.eye(cycle.shape[0], dtype=complex)
+        factor = cycle.full()
+        exponent = cycles
+
+        while exponent:
+            if exponent % 2:
+                power = np.einsum(
+                    "ij,jk->ik", factor, power, optimize=False
+                )
+            exponent //= 2
+            if exponent:
+                factor = np.einsum(
+                    "ij,jk->ik", factor, factor, optimize=False
+                )
+
+        propagator = Qobj(power, dims=cycle.dims)
+
+    if remainder > 0:
+        steps = max(
+            1, int(np.ceil(steps_per_period * remainder / period))
+        )
+        tail = hermitian_pulse_propagator(
+            free_hamiltonian,
+            magnetic_operator,
+            remainder,
+            envelope,
+            steps=steps,
+        )
+        propagator = tail * propagator
 
     return propagator

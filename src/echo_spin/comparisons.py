@@ -6,6 +6,7 @@ from echo_spin.characterisation import longitudinal_characterisation_report
 from echo_spin.evaluation import (
     evaluate_finite_protocols,
     evaluate_ideal_implementation,
+    finite_evaluation_report,
 )
 from echo_spin.implementation import ideal_implementation_report
 from echo_spin.protocols import ideal_protocol_report
@@ -198,4 +199,88 @@ def scan_pulse_durations(protocol_report, durations_us, *, steps=128) -> dict:
             "Resolution change is a numerical diagnostic, not an error bound.",
             "No leakage, nuclear dynamics, noise or hardware amplitude bounds.",
         ],
+    }
+
+
+def scan_amplitude_errors(
+    protocol_report,
+    amplitude_errors,
+    pulse_duration_us,
+    *,
+    shape="square",
+    steps=128,
+    phase_cycle="x",
+) -> dict:
+    """Compare systematic amplitude offsets against calibrated finite controls."""
+    errors = list(amplitude_errors)
+    if not errors or any(
+        isinstance(value, (bool, np.bool_))
+        or not isinstance(value, (int, float, np.integer, np.floating))
+        or not np.isfinite(value)
+        or value < -1
+        for value in errors
+    ):
+        raise ValueError("Provide finite amplitude errors of at least -1.")
+
+    baseline = finite_evaluation_report(
+        protocol_report,
+        pulse_duration_us,
+        shape=shape,
+        steps=steps,
+        amplitude_error=0.0,
+        phase_cycle=phase_cycle,
+    )
+    records = []
+
+    for error in errors:
+        evaluation = (
+            baseline if error == 0 else finite_evaluation_report(
+                protocol_report,
+                pulse_duration_us,
+                shape=shape,
+                steps=steps,
+                amplitude_error=float(error),
+                phase_cycle=phase_cycle,
+            )
+        )
+        protocols = {}
+        for name, result in evaluation["protocols"].items():
+            infidelity = 1 - result["average_gate_fidelity"]
+            baseline_infidelity = (
+                1 - baseline["protocols"][name]["average_gate_fidelity"]
+            )
+            protocols[name] = {
+                "average_gate_fidelity": result["average_gate_fidelity"],
+                "infidelity": infidelity,
+                "baseline_infidelity": baseline_infidelity,
+                "excess_infidelity": infidelity - baseline_infidelity,
+                "unitarity_error": result["unitarity_error"],
+                "resources": result["resources"],
+            }
+
+        records.append({
+            "amplitude_error": float(error),
+            "peak_rabi_frequency_rad_per_us": (
+                evaluation["peak_rabi_frequency_rad_per_us"]
+            ),
+            "protocols": protocols,
+        })
+
+    return {
+        "report_version": 1,
+        "comparison": "systematic_amplitude_error",
+        "source_protocol_report": protocol_report,
+        "pulse_shape": shape,
+        "pulse_duration_us": baseline["pulse_duration_us"],
+        "duration_us": baseline["duration_us"],
+        "integration_steps": baseline["integration_steps"],
+        "baseline_amplitude_error": 0.0,
+        "records": records,
+        "limits": [
+            "One constant amplitude error shared by all sites and pulses.",
+            "Independent addressing and longitudinal qubit drift.",
+            "Pulse timings and target are fixed; no recalibration is applied.",
+            "Sine results require adequate time resolution.",
+        ],
+        "phase_cycle": phase_cycle,
     }

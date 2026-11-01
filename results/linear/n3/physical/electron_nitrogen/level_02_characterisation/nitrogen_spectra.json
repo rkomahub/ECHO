@@ -1,0 +1,645 @@
+{
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+    "git_dirty": true
+  },
+  "specification": {
+    "schema_version": 1,
+    "register": {
+      "positions": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.5e-08,
+          0.0,
+          0.0
+        ],
+        [
+          3e-08,
+          0.0,
+          0.0
+        ]
+      ],
+      "nv_axes": [
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "transverse_references": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "field_at_reference": [
+        0.0,
+        0.0,
+        0.01
+      ],
+      "gradient": [
+        [
+          0,
+          0,
+          100000.0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          100000.0,
+          0,
+          0
+        ]
+      ],
+      "reference_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_free": true
+    },
+    "model": "ideal_longitudinal",
+    "sites": [
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      }
+    ],
+    "task": {
+      "target_pair": [
+        0,
+        1
+      ],
+      "target": "signed_sqrt_zz",
+      "spectators": "identity",
+      "encoding": "ms0_msminus1",
+      "tensor_order": "site_0_left",
+      "detuning_convention": "reference_minus_transition",
+      "local_corrections": "none"
+    },
+    "control": {
+      "pulse_model": "instantaneous",
+      "addressing": "independent_ideal",
+      "noise": "none"
+    },
+    "environment": {
+      "nuclear_parameters": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "preparation": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "noise": {
+        "status": "specified",
+        "parameters": {
+          "model": "none"
+        }
+      },
+      "uncertainty": {
+        "status": "specified",
+        "parameters": {
+          "model": "deterministic"
+        }
+      },
+      "control_design": {
+        "status": "specified",
+        "parameters": {
+          "candidate_protocols": [
+            "free",
+            "closed_global_hahn",
+            "hadamard_selective"
+          ]
+        }
+      },
+      "constraints": {
+        "status": "specified",
+        "parameters": {
+          "minimum_separation_m": 5e-09,
+          "maximum_field_t": 0.02
+        }
+      },
+      "numerics": {
+        "status": "specified",
+        "parameters": {
+          "method": "static_exponential",
+          "comparison_atol": 1e-10,
+          "comparison_rtol": 1e-10
+        }
+      },
+      "evaluation": {
+        "status": "specified",
+        "parameters": {
+          "scope": "whole_register",
+          "metrics": [
+            "average_gate_fidelity",
+            "residual_local_phases",
+            "residual_pair_phases",
+            "duration",
+            "individual_pulse_count",
+            "distinct_pulse_times"
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+      "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+      "E": "Chosen zero strain splitting.",
+      "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+      "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+      "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+      "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+      "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+    }
+  },
+  "nuclear_parameters": {
+    "sites": [
+      {
+        "isotope": "14N",
+        "spin": 1.0,
+        "gamma_n": -19.32878703128796,
+        "Q": -31.070351344003054,
+        "A": [
+          [
+            -16.461945504810515,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -16.461945504810515,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -13.584246634122264
+          ]
+        ],
+        "frame": "nv_local",
+        "source": "Starting values inherited from ECHO Joas references: configs/joas/plot_two_nv_transitions.py and tests/models/test_joas_full.py; not calibrated to this register."
+      },
+      {
+        "isotope": "14N",
+        "spin": 1.0,
+        "gamma_n": -19.32878703128796,
+        "Q": -31.070351344003054,
+        "A": [
+          [
+            -16.461945504810515,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -16.461945504810515,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -13.584246634122264
+          ]
+        ],
+        "frame": "nv_local",
+        "source": "Starting values inherited from ECHO Joas references: configs/joas/plot_two_nv_transitions.py and tests/models/test_joas_full.py; not calibrated to this register."
+      },
+      {
+        "isotope": "14N",
+        "spin": 1.0,
+        "gamma_n": -19.32878703128796,
+        "Q": -31.070351344003054,
+        "A": [
+          [
+            -16.461945504810515,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            -16.461945504810515,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -13.584246634122264
+          ]
+        ],
+        "frame": "nv_local",
+        "source": "Starting values inherited from ECHO Joas references: configs/joas/plot_two_nv_transitions.py and tests/models/test_joas_full.py; not calibrated to this register."
+      }
+    ]
+  },
+  "field_profile_tesla": [
+    [
+      0.0001,
+      0.0,
+      0.0
+    ],
+    [
+      0.0001,
+      0.0,
+      0.0
+    ],
+    [
+      0.0001,
+      0.0,
+      0.0
+    ]
+  ],
+  "spectra": [
+    {
+      "site": 0,
+      "energies_relative_to_ground_rad_per_us": [
+        0.0,
+        0.3836225448467303,
+        31.246933351372718,
+        16258.698276160845,
+        16285.496865935682,
+        16303.176208937715,
+        19780.03080846896,
+        19807.599580566835,
+        19824.8923637907
+      ],
+      "transitions": [
+        {
+          "frequency_rad_per_us": 31.246933351347252,
+          "strength": 0.00046580580044143245,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 2
+        },
+        {
+          "frequency_rad_per_us": 16285.496865935656,
+          "strength": 155.03082624878,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 4
+        },
+        {
+          "frequency_rad_per_us": 19780.030808468935,
+          "strength": 155.03118329242247,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 6
+        },
+        {
+          "frequency_rad_per_us": 19807.599580566803,
+          "strength": 1.5871196157901716e-09,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 30.863310806525988,
+          "strength": 0.00046528039316274514,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 2
+        },
+        {
+          "frequency_rad_per_us": 16258.314653615998,
+          "strength": 155.03112600922336,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 3
+        },
+        {
+          "frequency_rad_per_us": 16285.113243390835,
+          "strength": 5.136338659812058e-09,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 4
+        },
+        {
+          "frequency_rad_per_us": 19807.21595802198,
+          "strength": 155.03082066488417,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 16271.929275586343,
+          "strength": 155.03063321763884,
+          "lower_eigenstate": 2,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 19793.645430439326,
+          "strength": 155.03068428986484,
+          "lower_eigenstate": 2,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 44.47793277687015,
+          "strength": 0.00019430873257413828,
+          "lower_eigenstate": 3,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 17.67934300203342,
+          "strength": 0.00019535374361150278,
+          "lower_eigenstate": 4,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 3539.3954978550173,
+          "strength": 0.000526667576284077,
+          "lower_eigenstate": 4,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 3504.423371629113,
+          "strength": 0.0005261141157622522,
+          "lower_eigenstate": 5,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 44.861555321738706,
+          "strength": 0.0001370255334883413,
+          "lower_eigenstate": 6,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 17.292783223871083,
+          "strength": 0.00013762230326709848,
+          "lower_eigenstate": 7,
+          "upper_eigenstate": 8
+        }
+      ],
+      "strength_units": "(rad/us)^2"
+    },
+    {
+      "site": 1,
+      "energies_relative_to_ground_rad_per_us": [
+        0.0,
+        0.44115538423648104,
+        31.275651981246483,
+        15994.627149673579,
+        16021.368028524099,
+        16039.076363046937,
+        20044.159561827946,
+        20071.78613965615,
+        20089.04993058555
+      ],
+      "transitions": [
+        {
+          "frequency_rad_per_us": 31.27565198121738,
+          "strength": 0.00046893495232035686,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 2
+        },
+        {
+          "frequency_rad_per_us": 16021.36802852408,
+          "strength": 155.03082349173727,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 4
+        },
+        {
+          "frequency_rad_per_us": 20044.159561827928,
+          "strength": 155.03118645677998,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 6
+        },
+        {
+          "frequency_rad_per_us": 20071.78613965613,
+          "strength": 1.1015715209583538e-09,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 30.834496596999088,
+          "strength": 0.00046832495373371895,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 2
+        },
+        {
+          "frequency_rad_per_us": 15994.185994289342,
+          "strength": 155.0311201933514,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 3
+        },
+        {
+          "frequency_rad_per_us": 16020.926873139862,
+          "strength": 4.2576457267394425e-09,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 4
+        },
+        {
+          "frequency_rad_per_us": 20071.344984271913,
+          "strength": 155.0308170551666,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 16007.800711065702,
+          "strength": 155.03062467965987,
+          "lower_eigenstate": 2,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 20057.774278604313,
+          "strength": 155.03068377791743,
+          "lower_eigenstate": 2,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 44.44921337335836,
+          "strength": 0.0002001246045971345,
+          "lower_eigenstate": 3,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 17.708334522838413,
+          "strength": 0.00020122089449677792,
+          "lower_eigenstate": 4,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 4067.6819020614494,
+          "strength": 0.0005299948623786302,
+          "lower_eigenstate": 4,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 4032.709776609212,
+          "strength": 0.0005293509795623927,
+          "lower_eigenstate": 5,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 44.89036875760212,
+          "strength": 0.00013386117599718166,
+          "lower_eigenstate": 6,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 17.263790929398965,
+          "strength": 0.00013443534093357675,
+          "lower_eigenstate": 7,
+          "upper_eigenstate": 8
+        }
+      ],
+      "strength_units": "(rad/us)^2"
+    },
+    {
+      "site": 2,
+      "energies_relative_to_ground_rad_per_us": [
+        0.0,
+        0.4986837200485752,
+        31.30436132406612,
+        15730.556027852064,
+        15757.239205029327,
+        15774.976530991196,
+        20308.28831985264,
+        20335.972708112822,
+        20353.2075067118
+      ],
+      "transitions": [
+        {
+          "frequency_rad_per_us": 31.304361324037018,
+          "strength": 0.00047253216011014005,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 2
+        },
+        {
+          "frequency_rad_per_us": 15757.239205029306,
+          "strength": 155.03082025681684,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 4
+        },
+        {
+          "frequency_rad_per_us": 20308.288319852618,
+          "strength": 155.0311895034603,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 6
+        },
+        {
+          "frequency_rad_per_us": 20335.9727081128,
+          "strength": 7.913820789821311e-10,
+          "lower_eigenstate": 0,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 30.805677604002994,
+          "strength": 0.00047183504967669265,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 2
+        },
+        {
+          "frequency_rad_per_us": 15730.057344132008,
+          "strength": 155.03111409258042,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 3
+        },
+        {
+          "frequency_rad_per_us": 15756.740521309272,
+          "strength": 3.6552135582586777e-09,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 4
+        },
+        {
+          "frequency_rad_per_us": 20335.474024392766,
+          "strength": 155.03081296068,
+          "lower_eigenstate": 1,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 15743.672169667137,
+          "strength": 155.03061537811172,
+          "lower_eigenstate": 2,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 20321.903145387747,
+          "strength": 155.03068265998547,
+          "lower_eigenstate": 2,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 44.42050313913205,
+          "strength": 0.00020622537560475025,
+          "lower_eigenstate": 3,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 17.73732596186892,
+          "strength": 0.00020737628633484575,
+          "lower_eigenstate": 4,
+          "upper_eigenstate": 5
+        },
+        {
+          "frequency_rad_per_us": 4595.968301682478,
+          "strength": 0.0005338189074221564,
+          "lower_eigenstate": 4,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 4560.996177121626,
+          "strength": 0.0005330821290749809,
+          "lower_eigenstate": 5,
+          "upper_eigenstate": 7
+        },
+        {
+          "frequency_rad_per_us": 44.919186859166075,
+          "strength": 0.0001308144955779854,
+          "lower_eigenstate": 6,
+          "upper_eigenstate": 8
+        },
+        {
+          "frequency_rad_per_us": 17.234798598983616,
+          "strength": 0.00013136725054072761,
+          "lower_eigenstate": 7,
+          "upper_eigenstate": 8
+        }
+      ],
+      "strength_units": "(rad/us)^2"
+    }
+  ],
+  "limit": "Isolated-site lines; no preparation-dependent weighting."
+}

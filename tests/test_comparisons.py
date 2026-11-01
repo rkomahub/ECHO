@@ -5,7 +5,11 @@ from pathlib import Path
 import numpy as np
 
 from echo_spin.characterisation import longitudinal_characterisation_report
-from echo_spin.comparisons import scan_pair_separations, scan_pulse_durations
+from echo_spin.comparisons import (
+    scan_amplitude_errors,
+    scan_pair_separations,
+    scan_pulse_durations,
+)
 from echo_spin.protocols import ideal_protocol_report
 from echo_spin.representation import longitudinal_model_report
 from echo_spin.scenario import longitudinal_scenario_from_dict
@@ -15,7 +19,7 @@ def test_spacing_scan_preserves_failures_and_recovers_cubic_gate_time():
     """Retain rejected points while verifying ideal scaling and input preservation."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(path.read_text(encoding="utf-8"))
     original = deepcopy(specification)
@@ -89,7 +93,7 @@ def test_pulse_scan_saves_both_shapes_and_rejected_windows():
     """Preserve scan inputs, resolution diagnostics and infeasible durations."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     scenario = longitudinal_scenario_from_dict(
         json.loads(path.read_text(encoding="utf-8"))
@@ -127,3 +131,44 @@ def test_pulse_scan_saves_both_shapes_and_rejected_windows():
         assert result["resolution_change"] >= 0
         assert result["unitarity_error"] < 1e-10
         assert result["fidelity_resolution_change"] >= 0
+
+
+def test_amplitude_scan_preserves_baseline_and_uncontrolled_evolution():
+    """Preserve zero-error performance and amplitude-independent free evolution."""
+    path = (
+        Path(__file__).resolve().parents[1]
+        / "configs/registers/linear/n3/ideal/scenario.json"
+    )
+    scenario = longitudinal_scenario_from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    source = ideal_protocol_report(
+        longitudinal_model_report(
+            longitudinal_characterisation_report(scenario)
+        )
+    )
+    report = json.loads(json.dumps(
+        scan_amplitude_errors(source, [-0.02, 0.0, 0.02], 0.02),
+        allow_nan=False,
+    ))
+    records = report["records"]
+    baseline = records[1]
+
+    for result in baseline["protocols"].values():
+        assert result["excess_infidelity"] == 0.0
+
+    for record in records:
+        np.testing.assert_allclose(
+            record["protocols"]["free"]["average_gate_fidelity"],
+            baseline["protocols"]["free"]["average_gate_fidelity"],
+            atol=1e-12,
+            rtol=0.0,
+        )
+
+    peaks = [
+        record["peak_rabi_frequency_rad_per_us"]
+        for record in records
+    ]
+    np.testing.assert_allclose(
+        np.asarray(peaks) / peaks[1], [0.98, 1.0, 1.02]
+    )

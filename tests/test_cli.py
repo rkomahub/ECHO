@@ -44,7 +44,7 @@ def test_scenario_cli_reports_complete_handoff(capsys):
     """Expose the resolved register, task, provenance and modelling limits."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     original = json.loads(path.read_text(encoding="utf-8"))
 
@@ -79,7 +79,7 @@ def test_scenario_cli_rejects_invalid_task_without_partial_output(
     """Reject an invalid scenario before emitting a handoff report."""
     source = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
     specification = json.loads(source.read_text(encoding="utf-8"))
     specification["task"]["target_pair"] = [0, 3]
@@ -100,7 +100,7 @@ def test_scenario_cli_distinguishes_validated_and_inapplicable_records(capsys):
     """Report section status without claiming propagation or physical validity."""
     path = (
         Path(__file__).resolve().parents[1]
-        / "configs/registers/linear/n3/scenario.json"
+        / "configs/registers/linear/n3/ideal/scenario.json"
     )
 
     assert main([str(path), "--scenario"]) == 0

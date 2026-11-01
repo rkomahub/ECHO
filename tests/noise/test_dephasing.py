@@ -1,20 +1,24 @@
 import numpy as np
 import pytest
-from qutip import basis, sigmax, sigmay, sigmaz, tensor
+from qutip import Qobj, basis, qeye, sigmax, sigmay, sigmaz, tensor
 
 from echo_spin.control.rotations import single_qubit_rotation
 from echo_spin.core.basis import project_operator
 from echo_spin.decoupling.modulation import modulation_function
+from echo_spin.electronic_reference import propagate_shared_events
 from echo_spin.gates.gates import average_gate_fidelity, sqrt_zz_gate
 from echo_spin.noise.dephasing import (
     dephasing_channel,
     dephasing_hamiltonian,
     diagonal_dephasing_channel,
+    electronic_detuning_noise_model,
     ensemble_dephasing_map,
     exponential_coherence,
     ornstein_uhlenbeck_noise,
+    ou_detuning_samples,
     quasistatic_coherence,
     quasistatic_dephasing_channel,
+    quasistatic_detuning_samples,
     sampled_noise_ensemble_map,
     sampled_noise_propagator,
     stochastic_dephasing_propagator,
@@ -504,9 +508,13 @@ def test_ensemble_ou_dephasing_matches_analytic_coherence():
         -np.abs(sample_times[:, None] - sample_times[None, :])
         / correlation_time
     )
-    sampled_phase_variance = float(
-        durations @ covariance @ durations
-    )
+    sampled_phase_variance = float(np.einsum(
+        "i,ij,j->",
+        durations,
+        covariance,
+        durations,
+        optimize=False,
+    ))
     sampled_coherence = np.exp(-sampled_phase_variance / 2)
 
     # Exact continuous-time OU free-induction coherence.
@@ -596,7 +604,9 @@ def test_ou_hahn_echo_matches_analytic_coherence():
         -np.abs(sample_times[:, None] - sample_times[None, :])
         / correlation_time
     )
-    phase_variance = float(weights @ covariance @ weights)
+    phase_variance = float(np.einsum(
+        "i,ij,j->", weights, covariance, weights, optimize=False
+    ))
     sampled_coherence = np.exp(-phase_variance / 2)
 
     ratio = total_time / correlation_time
@@ -1335,3 +1345,126 @@ def test_joint_diagonal_dephasing_matches_logical_channel():
         rtol=0.0,
     )
     assert actual.tr() == pytest.approx(0.73, abs=1e-12)
+
+
+def test_quasistatic_samples_recover_gaussian_free_coherence():
+    """Recover Gaussian ensemble dephasing with reproducible static offsets."""
+    parameters = {
+        "model": "quasistatic",
+        "operator": "Z/2",
+        "spatial_correlation": "independent",
+        "sites": [
+            {"sigma_rad_per_us": 0.2},
+            {"sigma_rad_per_us": 0.0},
+        ],
+        "seed": 2026,
+    }
+    samples = quasistatic_detuning_samples(parameters, 40000)
+    repeated = quasistatic_detuning_samples(parameters, 40000)
+
+    np.testing.assert_array_equal(samples, repeated)
+    assert np.all(samples[:, 1] == 0)
+
+    time = 5.0
+    coherence = np.mean(np.exp(-1j * samples[:, 0] * time))
+    expected = np.exp(-0.5 * (0.2 * time)**2)
+    np.testing.assert_allclose(coherence, expected, atol=0.01, rtol=0)
+
+
+def test_electronic_offsets_preserve_the_nominal_model():
+    """Apply the declared qutrit noise extension without changing the reference frame."""
+    zero = 0 * qeye([3, 3])
+    model = {
+        "specification": {"sites": [{}, {}]},
+        "drift_hamiltonian": zero,
+        "local_rotating_hamiltonian": zero,
+    }
+    noisy = electronic_detuning_noise_model(model, [0.4, -0.2])
+    state = tensor(basis(3, 0), basis(3, 1))
+    np.testing.assert_allclose(
+        noisy["drift_hamiltonian"].matrix_element(state.dag(), state),
+        0.3,
+    )
+    assert model["drift_hamiltonian"].norm("fro") == 0
+    assert noisy["local_rotating_hamiltonian"].norm("fro") == 0
+
+
+def test_time_dependent_drift_recovers_a_constant_noise_realisation():
+    """Apply the same detuning during both free intervals and driven evolution."""
+    drift = Qobj(np.diag([0.0, 0.1, 1.0]))
+    model = {
+        "specification": {"sites": [{}]},
+        "drift_hamiltonian": drift,
+        "raising_operator": Qobj([
+            [0, 0, 0], [0.2, 0, 0], [0.1, 0, 0]
+        ]),
+        "carrier_rad_per_us": 10.0,
+    }
+    schedule = {
+        "duration_us": 0.6,
+        "events": [{
+            "start_us": 0.2,
+            "end_us": 0.4,
+            "tones": [{
+                "carrier_rad_per_us": 10.0,
+                "phase_rad": 0.0,
+                "envelope_scale": 1.0,
+            }],
+        }],
+    }
+    noisy = electronic_detuning_noise_model(model, [0.2])
+    expected = propagate_shared_events(
+        noisy, schedule, shape="square", steps=4
+    )
+    actual = propagate_shared_events(
+        model,
+        schedule,
+        shape="square",
+        steps=4,
+        drift_at_time=lambda time: noisy["drift_hamiltonian"],
+        free_step_us=0.05,
+    )
+    assert (actual - expected).norm("fro") < 1e-10
+
+
+def test_common_noise_preserves_variance_and_requested_correlations():
+    """Recover common-fraction covariance and fully correlated OU trajectories."""
+    parameters = {
+        "model": "quasistatic",
+        "operator": "Z/2",
+        "spatial_correlation": {
+            "model": "common_fraction", "fraction": 0.6
+        },
+        "sites": [
+            {"sigma_rad_per_us": 0.2},
+            {"sigma_rad_per_us": 0.3},
+        ],
+        "seed": 2026,
+    }
+    samples = quasistatic_detuning_samples(parameters, 20000)
+    normalised = samples / np.array([0.2, 0.3])
+    normalised -= normalised.mean(axis=0)
+    covariance = np.einsum(
+        "ri,rj->ij", normalised, normalised, optimize=False
+    ) / (len(samples) - 1)
+    np.testing.assert_allclose(
+        covariance, [[1, 0.6], [0.6, 1]], atol=0.04, rtol=0
+    )
+
+    parameters["model"] = "ornstein_uhlenbeck"
+    parameters["spatial_correlation"]["fraction"] = 1.0
+    for site in parameters["sites"]:
+        site["correlation_time_us"] = 1.0
+
+    trajectories = ou_detuning_samples(
+        parameters, np.linspace(0, 1, 17), 2
+    )
+    np.testing.assert_allclose(
+        trajectories[:, :, 0] / 0.2,
+        trajectories[:, :, 1] / 0.3,
+        atol=1e-12,
+    )
+
+    parameters["sites"][1]["correlation_time_us"] = 2.0
+    with pytest.raises(ValueError, match="common correlation time"):
+        ou_detuning_samples(parameters, np.linspace(0, 1, 17), 2)

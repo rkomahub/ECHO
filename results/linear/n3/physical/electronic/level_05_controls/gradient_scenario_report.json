@@ -1,0 +1,425 @@
+{
+  "number_of_nv": 3,
+  "units": {
+    "positions": "m",
+    "magnetic_fields": "T",
+    "local_frames": "dimensionless",
+    "gradient": "T/m",
+    "D": "rad/us",
+    "E": "rad/us",
+    "gamma_e": "rad/us/T",
+    "bare_detuning": "rad/us"
+  },
+  "positions": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      1.5e-08,
+      0.0,
+      0.0
+    ],
+    [
+      3e-08,
+      0.0,
+      0.0
+    ]
+  ],
+  "local_frames": [
+    [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ],
+    [
+      [
+        1.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        0.0,
+        1.0
+      ]
+    ]
+  ],
+  "magnetic_fields": [
+    [
+      0.0,
+      0.0,
+      0.01
+    ],
+    [
+      0.0,
+      0.0,
+      0.0115
+    ],
+    [
+      0.0,
+      0.0,
+      0.013
+    ]
+  ],
+  "specification": {
+    "schema_version": 1,
+    "register": {
+      "positions": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.5e-08,
+          0.0,
+          0.0
+        ],
+        [
+          3e-08,
+          0.0,
+          0.0
+        ]
+      ],
+      "nv_axes": [
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "transverse_references": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "field_at_reference": [
+        0.0,
+        0.0,
+        0.01
+      ],
+      "gradient": [
+        [
+          0,
+          0,
+          100000.0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          100000.0,
+          0,
+          0
+        ]
+      ],
+      "reference_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_free": true
+    },
+    "model": "ideal_longitudinal",
+    "sites": [
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      }
+    ],
+    "task": {
+      "target_pair": [
+        0,
+        1
+      ],
+      "target": "signed_sqrt_zz",
+      "spectators": "identity",
+      "encoding": "ms0_msminus1",
+      "tensor_order": "site_0_left",
+      "detuning_convention": "reference_minus_transition",
+      "local_corrections": "none"
+    },
+    "control": {
+      "pulse_model": "instantaneous",
+      "addressing": "independent_ideal",
+      "noise": "none"
+    },
+    "environment": {
+      "nuclear_parameters": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "preparation": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "noise": {
+        "status": "specified",
+        "parameters": {
+          "model": "none"
+        }
+      },
+      "uncertainty": {
+        "status": "specified",
+        "parameters": {
+          "model": "deterministic"
+        }
+      },
+      "control_design": {
+        "status": "specified",
+        "parameters": {
+          "candidate_protocols": [
+            "free",
+            "closed_global_hahn",
+            "hadamard_selective"
+          ]
+        }
+      },
+      "constraints": {
+        "status": "specified",
+        "parameters": {
+          "minimum_separation_m": 5e-09,
+          "maximum_field_t": 0.02
+        }
+      },
+      "numerics": {
+        "status": "specified",
+        "parameters": {
+          "method": "static_exponential",
+          "comparison_atol": 1e-10,
+          "comparison_rtol": 1e-10
+        }
+      },
+      "evaluation": {
+        "status": "specified",
+        "parameters": {
+          "scope": "whole_register",
+          "metrics": [
+            "average_gate_fidelity",
+            "residual_local_phases",
+            "residual_pair_phases",
+            "duration",
+            "individual_pulse_count",
+            "distinct_pulse_times"
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+      "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+      "E": "Chosen zero strain splitting.",
+      "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+      "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+      "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+      "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+      "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+    }
+  },
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "f25a592e664dccd4ee618f730f8ceba8f2167317",
+    "git_dirty": true
+  },
+  "scope": {
+    "preparation": "Optional for unitary gate evaluation; specified logical product density matrices are validated but not propagated by this command.",
+    "nuclear_parameters": "Outside the selected model.",
+    "uncertainty": "Declared distributions are validated; this command does not sample parameters or execute an uncertainty ensemble.",
+    "hardware_bounds": "Specified static bounds are checked separately; finite-drive hardware limits are not assessed.",
+    "experimental_feasibility": "Not assessed.",
+    "individual_addressability": "Assumed, not established.",
+    "control_design": "Protocol identifiers and optional microwave templates are design records; they do not activate a protocol or finite pulses.",
+    "noise": "The active scenario is noiseless; conflicting active noise specifications are rejected.",
+    "numerics_and_evaluation": "Supported settings and metric identifiers are validated; this command performs no propagation or metric calculation."
+  },
+  "validation": {
+    "geometry_and_frames": "Passed.",
+    "affine_field": "Passed.",
+    "site_parameters": "Passed.",
+    "task_and_control_conventions": "Passed.",
+    "parameter_provenance": "Required entries present; sources not verified.",
+    "crystallographic_feasibility": "Not assessed.",
+    "hardware_feasibility": "Not assessed.",
+    "physical_model_validity": "Not established by input validation."
+  },
+  "environment": {
+    "nuclear_parameters": {
+      "status": "not_applicable",
+      "parameters": {}
+    },
+    "preparation": {
+      "status": "not_applicable",
+      "parameters": {}
+    },
+    "noise": {
+      "status": "specified",
+      "parameters": {
+        "model": "none"
+      }
+    },
+    "uncertainty": {
+      "status": "specified",
+      "parameters": {
+        "model": "deterministic"
+      }
+    },
+    "control_design": {
+      "status": "specified",
+      "parameters": {
+        "candidate_protocols": [
+          "free",
+          "closed_global_hahn",
+          "hadamard_selective"
+        ]
+      }
+    },
+    "constraints": {
+      "status": "specified",
+      "parameters": {
+        "minimum_separation_m": 5e-09,
+        "maximum_field_t": 0.02
+      }
+    },
+    "numerics": {
+      "status": "specified",
+      "parameters": {
+        "method": "static_exponential",
+        "comparison_atol": 1e-10,
+        "comparison_rtol": 1e-10
+      }
+    },
+    "evaluation": {
+      "status": "specified",
+      "parameters": {
+        "scope": "whole_register",
+        "metrics": [
+          "average_gate_fidelity",
+          "residual_local_phases",
+          "residual_pair_phases",
+          "duration",
+          "individual_pulse_count",
+          "distinct_pulse_times"
+        ]
+      }
+    }
+  },
+  "environment_validation": {
+    "nuclear_parameters": {
+      "status": "not_applicable",
+      "parameter_checks": "Not performed: section is not specified."
+    },
+    "preparation": {
+      "status": "not_applicable",
+      "parameter_checks": "Not performed: section is not specified."
+    },
+    "noise": {
+      "status": "specified",
+      "parameter_checks": "Passed for the supported schema."
+    },
+    "uncertainty": {
+      "status": "specified",
+      "parameter_checks": "Passed for the supported schema."
+    },
+    "control_design": {
+      "status": "specified",
+      "parameter_checks": "Passed for the supported schema."
+    },
+    "constraints": {
+      "status": "specified",
+      "parameter_checks": "Passed for the supported schema."
+    },
+    "numerics": {
+      "status": "specified",
+      "parameter_checks": "Passed for the supported schema."
+    },
+    "evaluation": {
+      "status": "specified",
+      "parameter_checks": "Passed for the supported schema."
+    }
+  },
+  "constraint_checks": {
+    "minimum_separation": "Passed.",
+    "maximum_site_field": "Passed."
+  }
+}

@@ -1,7 +1,10 @@
 import numpy as np
+from qutip import Qobj, tensor
 
 from echo_spin.decoupling.modulation import effective_zz_coupling
+from echo_spin.dynamics.propagators import hermitian_propagator
 from echo_spin.dynamics.sequences import finite_pulse_sequence_propagator
+from echo_spin.electronic_reference import propagate_shared_events
 from echo_spin.implementation import (
     implement_finite_protocols,
     implement_ideal_protocols,
@@ -403,3 +406,49 @@ def finite_evaluation_report(
             "Instantaneous sign-integrated phase diagnostics do not apply.",
         ],
     }
+
+
+def evaluate_shared_electronic_gate(
+    model,
+    schedule,
+    target,
+    *,
+    steps=1024,
+    drift_at_time=None,
+    free_step_us=0.05,
+    shape="sine",
+    include_operation=False,
+):
+    """Evaluate shared electronic controls in the fixed nominal local frame."""
+    number_of_nv = len(model["specification"]["sites"])
+    embedding = tensor([
+        Qobj([[1, 0], [0, 1], [0, 0]], dims=[[3], [2]])
+    ] * number_of_nv)
+    propagator = propagate_shared_events(
+        model, schedule, steps=steps, drift_at_time=drift_at_time,
+        free_step_us=free_step_us,
+        shape=shape,
+    )
+    frame = hermitian_propagator(
+        model["local_rotating_hamiltonian"], -schedule["duration_us"]
+    )
+    evolved = frame * propagator * embedding
+    logical = embedding.dag() * evolved
+    dimension = embedding.shape[1]
+    overlap = complex((target.dag() * logical).tr())
+    result = {
+        "average_gate_fidelity": float(
+            (logical.norm("fro")**2 + abs(overlap)**2)
+            / (dimension * (dimension + 1))
+        ),
+        "average_leakage": float(
+            (evolved - embedding * logical).norm("fro")**2 / dimension
+        ),
+    }
+    if include_operation:
+        matrix = logical.full()
+        result["logical_operation"] = {
+            "real": matrix.real.tolist(),
+            "imag": matrix.imag.tolist(),
+        }
+    return result

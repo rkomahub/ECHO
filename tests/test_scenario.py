@@ -18,7 +18,7 @@ from echo_spin.scenario import (
 
 CONFIGURATION = (
     Path(__file__).resolve().parents[1]
-    / "configs/registers/linear/n3/scenario.json"
+    / "configs/registers/linear/n3/ideal/scenario.json"
 )
 
 
