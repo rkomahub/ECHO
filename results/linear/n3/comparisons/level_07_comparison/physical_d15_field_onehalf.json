@@ -1,0 +1,449 @@
+{
+  "software": {
+    "python": "3.9.6",
+    "packages": {
+      "echo-spin": "0.1.0",
+      "numpy": "2.0.2",
+      "scipy": "1.13.1",
+      "qutip": "5.0.4",
+      "matplotlib": "3.9.4"
+    },
+    "git_revision": "c2b5d5fe4b96c3ab9d2dcc50168bd2d30c9cc4fe",
+    "git_dirty": true
+  },
+  "source_local_trial_path": "results/linear/n3/physical/electronic/level_05_controls/local_addressability.json",
+  "specification": {
+    "schema_version": 1,
+    "register": {
+      "positions": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.5000000000000002e-08,
+          0.0,
+          0.0
+        ],
+        [
+          3.0000000000000004e-08,
+          0.0,
+          0.0
+        ]
+      ],
+      "nv_axes": [
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ],
+        [
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "transverse_references": [
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ],
+        [
+          1.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "field_at_reference": [
+        0.0,
+        0.0,
+        0.015
+      ],
+      "gradient": [
+        [
+          0.0,
+          0.0,
+          100000.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          100000.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "reference_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "source_free": true
+    },
+    "model": "ideal_longitudinal",
+    "sites": [
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      },
+      {
+        "D": 18032.741831605414,
+        "E": 0.0,
+        "gamma_e": 176085.95540243763,
+        "bare_detuning": 0.0
+      }
+    ],
+    "task": {
+      "target_pair": [
+        0,
+        1
+      ],
+      "target": "signed_sqrt_zz",
+      "spectators": "identity",
+      "encoding": "ms0_msminus1",
+      "tensor_order": "site_0_left",
+      "detuning_convention": "reference_minus_transition",
+      "local_corrections": "none"
+    },
+    "control": {
+      "pulse_model": "instantaneous",
+      "addressing": "independent_ideal",
+      "noise": "none"
+    },
+    "environment": {
+      "nuclear_parameters": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "preparation": {
+        "status": "not_applicable",
+        "parameters": {}
+      },
+      "noise": {
+        "status": "specified",
+        "parameters": {
+          "model": "none"
+        }
+      },
+      "uncertainty": {
+        "status": "specified",
+        "parameters": {
+          "model": "deterministic"
+        }
+      },
+      "control_design": {
+        "status": "specified",
+        "parameters": {
+          "candidate_protocols": [
+            "free",
+            "closed_global_hahn",
+            "hadamard_selective"
+          ]
+        }
+      },
+      "constraints": {
+        "status": "specified",
+        "parameters": {
+          "minimum_separation_m": 5e-09,
+          "maximum_field_t": 0.02
+        }
+      },
+      "numerics": {
+        "status": "specified",
+        "parameters": {
+          "method": "static_exponential",
+          "comparison_atol": 1e-10,
+          "comparison_rtol": 1e-10
+        }
+      },
+      "evaluation": {
+        "status": "specified",
+        "parameters": {
+          "scope": "whole_register",
+          "metrics": [
+            "average_gate_fidelity",
+            "residual_local_phases",
+            "residual_pair_phases",
+            "duration",
+            "individual_pulse_count",
+            "distinct_pulse_times"
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "geometry_and_field": "Prescribed theoretical baseline; lab z is the common NV axis.",
+      "D": "Nominal choice: 2*pi*2870 rad/us; not calibrated.",
+      "E": "Chosen zero strain splitting.",
+      "gamma_e": "Positive coefficient g_e=-gamma_e_phys in H_Z=g_e B.S; magnitude g_e/(2*pi) approximately 28024.95 MHz/T. The physical electron gyromagnetic ratio is negative.",
+      "bare_detuning": "Chosen zero reference-minus-transition detuning before dipolar projection shifts.",
+      "units": "Positions: m; fields: T; gradients: T/m; D, E and detuning: rad/us; gamma_e: rad/us/T.",
+      "constraints": "Chosen trial bounds: minimum separation 5 nm and maximum field magnitude 20 mT at NV sites; not validated fabrication or hardware limits.",
+      "numerics": "Chosen baseline: static interval exponentials and comparison tolerances of 1e-10; numerical accuracy must be checked during propagation."
+    }
+  },
+  "separation_nm": 15.0,
+  "field_scale": 1.5,
+  "gradient_scale": 1.0,
+  "microwave_field_profile_tesla": [
+    [
+      0.0001,
+      0.0,
+      0.0
+    ],
+    [
+      0.0001,
+      0.0,
+      0.0
+    ],
+    [
+      0.0001,
+      0.0,
+      0.0
+    ]
+  ],
+  "pulse_duration_us": 0.2523133050562908,
+  "pulse_shape": "sine",
+  "phase_cycle": "xy8_targets",
+  "comparison_frame": "Nominal local rotating-Hamiltonian interaction frame.",
+  "limits": [
+    "Electronic microwave RWA; no nuclei, noise or dissipation.",
+    "Fixed pulse duration and microwave spatial profile.",
+    "Carriers and tone amplitudes reconstructed by local calibration.",
+    "No fidelity optimisation or entangling-duration recalibration."
+  ],
+  "schedule": {
+    "duration_us": 32.42634898364052,
+    "pulse_duration_us": 0.2523133050562908,
+    "phase_cycle": "xy8_targets",
+    "events": [
+      {
+        "start_us": 3.8009803178987744,
+        "end_us": 4.053293622955065,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 7.85427394085384,
+        "end_us": 8.10658724591013,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 14863.194634361536,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 11.907567563808906,
+        "end_us": 12.159880868865196,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 15.960861186763971,
+        "end_us": 16.21317449182026,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 14863.194634361536,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 20.014154809719038,
+        "end_us": 20.26646811477533,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 24.0674484326741,
+        "end_us": 24.319761737730392,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 14863.194634361536,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 28.120742055629165,
+        "end_us": 28.373055360685456,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      },
+      {
+        "start_us": 32.17403567858423,
+        "end_us": 32.42634898364052,
+        "tones": [
+          {
+            "intended_site": 0,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15391.452500568848,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 1,
+            "logical_axis": "X",
+            "carrier_rad_per_us": 15127.323567465193,
+            "phase_rad": 0.0,
+            "envelope_scale": 1.0
+          },
+          {
+            "intended_site": 2,
+            "logical_axis": "Y",
+            "carrier_rad_per_us": 14863.194634361536,
+            "phase_rad": -1.5707963267948966,
+            "envelope_scale": 1.0
+          }
+        ]
+      }
+    ],
+    "envelope_convention": "Unit mean over each pulse window.",
+    "protocol_name": "hadamard_selective"
+  },
+  "results": [
+    {
+      "average_gate_fidelity": 0.996848535327242,
+      "average_leakage": 7.906574336339534e-10,
+      "steps_per_event": 512
+    },
+    {
+      "average_gate_fidelity": 0.9971050911784466,
+      "average_leakage": 1.2469986919462076e-09,
+      "steps_per_event": 1024
+    }
+  ],
+  "status": "evaluated",
+  "fidelity_refinement_change": 0.00025655585120454294
+}
