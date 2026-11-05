@@ -1,0 +1,23 @@
+{
+  "status": "literature_based",
+  "source": "https://arxiv.org/abs/2406.04199",
+  "reference_site": "Joas NV1; not calibrated for the ECHO register",
+  "ramsey_time_us": 2.6,
+  "hahn_time_us": 55.0,
+  "sigma_rad_per_us": 0.543986032895429,
+  "correlation_time_us": 4082.154252393592,
+  "sigma_field_tesla": 3.0893209606193183e-06,
+  "gamma_coefficient_rad_per_us_per_t": 176085.95540243763,
+  "checks": {
+    "ramsey_chi": 1.0000000000000002,
+    "hahn_chi": 1.0000000000072928
+  },
+  "assumptions": [
+    "Stationary Gaussian single-component OU noise.",
+    "Coherence times interpreted as environmental 1/e envelope times.",
+    "Deterministic nitrogen beating excluded from the fitted envelope.",
+    "Negligible relaxation and pulse errors in the reference fit.",
+    "Nominal central values only; uncertainties not propagated.",
+    "Transfer to the three-NV register is a scenario choice."
+  ]
+}
