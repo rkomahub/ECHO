@@ -40,6 +40,8 @@ def main():
         "d20": "physical_d20.json",
         "gradient_half": "physical_d15_gradient_half.json",
         "gradient_double": "physical_d15_gradient_double_refined.json",
+        "field_half": "physical_d15_field_half_refined.json",
+        "field_onehalf": "physical_d15_field_onehalf_refined.json",
     }
     points = {
         label: read_point(arguments.reports_directory / filename)
@@ -55,6 +57,12 @@ def main():
         )],
         key=lambda point: point["gradient_scale"],
     )
+    field = sorted(
+        [points[name] for name in (
+            "field_half", "baseline", "field_onehalf"
+        )],
+        key=lambda point: point["field_scale"],
+    )
 
     arguments.output_directory.mkdir(parents=True, exist_ok=True)
     table_path = arguments.output_directory / "physical_comparison.csv"
@@ -63,7 +71,7 @@ def main():
         parser.error("Output exists; choose a new output directory.")
 
     figure, axes = plt.subplots(
-        1, 2, figsize=(8, 3.2), sharey=True, constrained_layout=True
+        1, 3, figsize=(11, 3.2), sharey=True, constrained_layout=True
     )
     for axis, records, key, label in (
         (
@@ -73,6 +81,10 @@ def main():
         (
             axes[1], gradient, "gradient_scale",
             r"Gradient scale $s_G$",
+        ),
+        (
+            axes[2], field, "field_scale",
+            r"Reference-field scale $s_B$",
         ),
     ):
         x = [point[key] for point in records]
@@ -85,6 +97,9 @@ def main():
     axes[0].set_ylabel(r"Whole-register infidelity $1-F_{\mathrm{avg}}$")
     axes[0].set_title(r"Fixed gradient: $1\,\mathrm{G/nm}$")
     axes[1].set_title(r"Fixed spacing: $15\,\mathrm{nm}$")
+    axes[2].set_title(
+        r"$d=15\,\mathrm{nm}$, gradient $1\,\mathrm{G/nm}$"
+    )
     figure.savefig(figure_path, bbox_inches="tight")
     plt.close(figure)
 

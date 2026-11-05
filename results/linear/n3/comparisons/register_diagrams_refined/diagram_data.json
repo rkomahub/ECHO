@@ -1,0 +1,61 @@
+{
+  "source_spectra": "results/linear/n3/physical/electron_nitrogen/level_02_characterisation/nitrogen_spectra.json",
+  "source_gate": "results/linear/n3/physical/electron_nitrogen/level_06_evaluation/nitrogen_selective_gate_frames.json",
+  "positions_nm": [
+    [
+      0.0,
+      0.0,
+      0.0
+    ],
+    [
+      14.999999999999998,
+      0.0,
+      0.0
+    ],
+    [
+      29.999999999999996,
+      0.0,
+      0.0
+    ]
+  ],
+  "fields_mT": [
+    [
+      0.0,
+      0.0,
+      10.0
+    ],
+    [
+      0.0,
+      0.0,
+      11.5
+    ],
+    [
+      0.0,
+      0.0,
+      13.0
+    ]
+  ],
+  "longitudinal_couplings_kHz": [
+    [
+      0.0,
+      3.854889739916883,
+      0.48186121748961036
+    ],
+    [
+      3.854889739916883,
+      0.0,
+      3.854889739916883
+    ],
+    [
+      0.48186121748961036,
+      3.854889739916883,
+      0.0
+    ]
+  ],
+  "carrier_rad_per_us": [
+    16285.496865935656,
+    16021.36802852408,
+    15757.239205029306
+  ],
+  "energy_layout": "Schematic band spacing; numerical labels are exact energies."
+}
